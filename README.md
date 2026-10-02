@@ -69,20 +69,27 @@ hidden data leaf beside it. An instance's address is then one hash and one curve
 tweak away from its parameters, which is all the mirrors in `mirrors/` need:
 
 ```python
-import json, sequentia_address            # mirrors/python
-d = json.load(open("templates/one_key/descriptor.json"))
+import sequentia_address                  # mirrors/python
+d = sequentia_address.loads(open("templates/one_key/descriptor.json").read())
 sequentia_address.derive(d, {"PK": "<32-byte x-only key, hex>"})["address"]["sequentia-testnet"]
 ```
 
 ```js
-import { derive } from './mirrors/js/sequentia-address.mjs';
+import { parseDescriptor, derive } from './mirrors/js/sequentia-address.mjs';
+const descriptor = parseDescriptor(text);
 derive(descriptor, { PK: '<hex>' }).address['sequentia-testnet'];
 ```
 
 ```go
 import sequentiaaddress "github.com/ConcatenaLabs/sequentia-contracts/mirrors/go"
+descriptor, err := sequentiaaddress.ParseDescriptor(raw)
 derived, err := sequentiaaddress.Derive(descriptor, map[string]string{"PK": "<hex>"})
 ```
+
+Each reader refuses a descriptor with a field the specification does not list,
+a number that is not an integer below 2^53, hex that is not exactly its width,
+or a key path the template does not declare, so that no two readers take one
+file for two templates.
 
 Each template directory holds the program, `descriptor.json` and `vectors.json`.
 The Rust crate, the three mirrors and CI all check every template's vectors, so

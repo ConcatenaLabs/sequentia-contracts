@@ -47,6 +47,7 @@ pub const NUMS_KEY: &str = "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bf
 /// A descriptor file: the template, its hash, the chains it is addressed on,
 /// and what was measured of it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Descriptor {
     /// Always [`DESCRIPTOR_VERSION`].
     pub descriptor: u64,
@@ -63,6 +64,7 @@ pub struct Descriptor {
 
 /// A chain an instance can be addressed on.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Chain {
     /// The name used in vectors and instances, such as `sequentia-testnet`.
     pub name: String,
@@ -75,12 +77,17 @@ pub struct Chain {
 
 /// The typed view of a version 1 template.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Template {
     pub name: String,
     pub version: u64,
     pub summary: String,
     pub layout: String,
     pub internal_key: String,
+    /// The name of the path in `paths` that the internal key spends by. Present
+    /// exactly when `internal_key` is not [`NUMS_KEY`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key_path: Option<String>,
     pub program: Program,
     pub params: Vec<Param>,
     pub paths: Vec<SpendPath>,
@@ -88,6 +95,7 @@ pub struct Template {
 
 /// The template's Simplicity program.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Program {
     /// Path of the source, relative to the descriptor file.
     pub source: String,
@@ -101,12 +109,14 @@ pub struct Program {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Compiler {
     pub name: String,
     pub version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WitnessValue {
     pub name: String,
     #[serde(rename = "type")]
@@ -117,6 +127,7 @@ pub struct WitnessValue {
 
 /// A template parameter. Parameters are committed in the data leaf, in order.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Param {
     pub name: String,
     #[serde(rename = "type")]
@@ -128,10 +139,47 @@ pub struct Param {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SpendPath {
     pub name: String,
     pub who: String,
     pub effect: String,
+}
+
+/// The largest integer a descriptor or vector file may hold, plus one. Every
+/// number in these files is a non-negative integer below 2^53, the range in
+/// which every JSON reader, JavaScript's included, reads the same value.
+pub const INTEGER_LIMIT: u64 = 1 << 53;
+
+/// Refuses any number that is not a non-negative integer below 2^53.
+///
+/// # Errors
+/// Names the first such number and where it is.
+pub fn check_integers(value: &Value, at: &str) -> Result<(), String> {
+    match value {
+        Value::Number(n) => match n.as_u64() {
+            Some(x) if x < INTEGER_LIMIT => Ok(()),
+            _ => Err(format!(
+                "{at}: {n} is not an integer in [0, 2^53); descriptors hold no other number"
+            )),
+        },
+        Value::Array(items) => items
+            .iter()
+            .enumerate()
+            .try_for_each(|(i, v)| check_integers(v, &format!("{at}[{i}]"))),
+        Value::Object(map) => map
+            .iter()
+            .try_for_each(|(k, v)| check_integers(v, &format!("{at}.{k}"))),
+        _ => Ok(()),
+    }
+}
+
+fn read_json(path: &Path) -> Result<Value, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let value: Value =
+        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+    check_integers(&value, &path.display().to_string())?;
+    Ok(value)
 }
 
 /// The roles a parameter may take.
@@ -207,8 +255,7 @@ impl Descriptor {
     /// # Errors
     /// When the file cannot be read or is not a descriptor.
     pub fn load(path: &Path) -> Result<Self, String> {
-        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
+        serde_json::from_value(read_json(path)?).map_err(|e| format!("{}: {e}", path.display()))
     }
 
     /// The typed template.
@@ -235,6 +282,7 @@ impl Descriptor {
                 self.descriptor
             ));
         }
+        check_integers(&self.template, "template")?;
         let text = canonical_json(&self.template);
         if !text.bytes().all(|b| (0x20..0x7f).contains(&b)) {
             return Err("a template is printable ASCII".into());
@@ -251,6 +299,33 @@ impl Descriptor {
             return Err(format!("layout {} is not {LAYOUT_FIXED_ROOT}", t.layout));
         }
         XOnlyPublicKey::from_str(&t.internal_key).map_err(|e| format!("internal_key: {e}"))?;
+        // An output has a key path unless its internal key is one nobody can
+        // sign for. A template either uses the NUMS key, or names the key path
+        // and describes it among its paths, so that a wallet shows it.
+        match (&t.key_path, t.internal_key == NUMS_KEY) {
+            (None, true) => {}
+            (Some(_), true) => {
+                return Err(
+                    "key_path is declared, but the internal key is the NUMS key, which \
+                            has no key path"
+                        .into(),
+                )
+            }
+            (None, false) => {
+                return Err(format!(
+                    "internal_key {} is not the NUMS key, so the output has a key path, and the \
+                     template does not declare it (key_path, and a path of that name in paths)",
+                    t.internal_key
+                ))
+            }
+            (Some(name), false) => {
+                if !t.paths.iter().any(|p| &p.name == name) {
+                    return Err(format!(
+                        "key_path {name} is not one of the template's paths"
+                    ));
+                }
+            }
+        }
         for p in &t.params {
             if type_width(&p.ty).is_none() {
                 return Err(format!(
@@ -399,6 +474,7 @@ pub fn address(output_key_hex: &str, hrp: &str) -> Option<String> {
 
 /// A golden-vector file.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Vectors {
     /// Always [`VECTORS_VERSION`].
     pub vectors: u64,
@@ -409,6 +485,7 @@ pub struct Vectors {
 
 /// One instance and everything its output is made of.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct AddressVector {
     pub name: String,
     pub params: BTreeMap<String, String>,
@@ -430,8 +507,7 @@ impl Vectors {
     /// # Errors
     /// When the file cannot be read or is not a vector file.
     pub fn load(path: &Path) -> Result<Self, String> {
-        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
+        serde_json::from_value(read_json(path)?).map_err(|e| format!("{}: {e}", path.display()))
     }
 
     /// Recomputes every derived field from each vector's name and parameters.

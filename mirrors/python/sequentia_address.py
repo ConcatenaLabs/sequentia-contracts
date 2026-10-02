@@ -17,6 +17,115 @@ G = (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
 
 LEAF_VERSION_SIMPLICITY = 0xBE
 WIDTHS = {"u8": 1, "u16": 2, "u32": 4, "u64": 8, "u128": 16, "u256": 32, "Pubkey": 32}
+NUMS_KEY = "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0"
+INTEGER_LIMIT = 2**53
+
+# The shape of a version 1 template: every field, its type, and which are
+# optional (a "?" suffix). A template with any other field is refused.
+_STR, _INT = "str", "int"
+_TEMPLATE = {
+    "name": _STR, "version": _INT, "summary": _STR, "layout": _STR,
+    "internal_key": _STR, "key_path?": _STR,
+    "program": {"source": _STR, "source_sha256": _STR, "cmr": _STR,
+                "compiler": {"name": _STR, "version": _STR},
+                "witness": [{"name": _STR, "type": _STR, "source": _STR}]},
+    "params": [{"name": _STR, "type": _STR, "role": _STR, "label": _STR}],
+    "paths": [{"name": _STR, "who": _STR, "effect": _STR}],
+}
+_DESCRIPTOR = {
+    "descriptor": _INT, "template": _TEMPLATE, "template_hash": _STR,
+    "chains": [{"name": _STR, "genesis": "str|null", "bech32_hrp": _STR}],
+    "measured?": "any",
+}
+
+
+def _check(value, shape, at):
+    if shape == "any":
+        return
+    if isinstance(shape, dict):
+        if not isinstance(value, dict):
+            raise ValueError("%s is not an object" % at)
+        fields = {k.rstrip("?"): k.endswith("?") for k in shape}
+        for k in value:
+            if k not in fields:
+                raise ValueError("%s: unknown field %s" % (at, k))
+        for k, optional in fields.items():
+            if k in value:
+                _check(value[k], shape[k + "?" if optional else k], "%s.%s" % (at, k))
+            elif not optional:
+                raise ValueError("%s: missing field %s" % (at, k))
+    elif isinstance(shape, list):
+        if not isinstance(value, list):
+            raise ValueError("%s is not an array" % at)
+        for i, item in enumerate(value):
+            _check(item, shape[0], "%s[%d]" % (at, i))
+    elif shape == _INT:
+        if type(value) is not int or not 0 <= value < INTEGER_LIMIT:
+            raise ValueError("%s: %r is not an integer in [0, 2^53)" % (at, value))
+    elif shape == _STR:
+        if not isinstance(value, str):
+            raise ValueError("%s is not a string" % at)
+    elif shape == "str|null":
+        if value is not None and not isinstance(value, str):
+            raise ValueError("%s is not a string or null" % at)
+
+
+def _integers(value, at):
+    """Every number anywhere is an integer in [0, 2^53)."""
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return
+    if isinstance(value, dict):
+        for k, v in value.items():
+            _integers(v, "%s.%s" % (at, k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            _integers(v, "%s[%d]" % (at, i))
+    elif type(value) is not int or not 0 <= value < INTEGER_LIMIT:
+        raise ValueError("%s: %r is not an integer in [0, 2^53)" % (at, value))
+
+
+def check_descriptor(descriptor):
+    """Refuse a descriptor whose shape is not version 1's, that holds a number
+    other than an integer in [0, 2^53), or whose key path is not declared."""
+    _integers(descriptor, "descriptor")
+    _check(descriptor, _DESCRIPTOR, "descriptor")
+    t = descriptor["template"]
+    if descriptor["descriptor"] != 1:
+        raise ValueError("descriptor version %d is not 1" % descriptor["descriptor"])
+    if t["layout"] != "fixed-root":
+        raise ValueError("layout %s is not fixed-root" % t["layout"])
+    if template_hash(t) != descriptor["template_hash"]:
+        raise ValueError("template_hash does not match the template")
+    nums = t["internal_key"] == NUMS_KEY
+    if nums and "key_path" in t:
+        raise ValueError("key_path is declared, but the internal key is the NUMS key")
+    if not nums:
+        if "key_path" not in t:
+            raise ValueError("the internal key is not the NUMS key and the template declares no key path")
+        if t["key_path"] not in [p["name"] for p in t["paths"]]:
+            raise ValueError("key_path %s is not one of the template's paths" % t["key_path"])
+    for p in t["params"]:
+        if p["type"] not in WIDTHS:
+            raise ValueError("parameter %s: type %s is not allowed" % (p["name"], p["type"]))
+
+
+def loads(text):
+    """Read a descriptor from JSON text, refusing what check_descriptor refuses."""
+    def no_float(s):
+        raise ValueError("%s is not an integer in [0, 2^53)" % s)
+    d = json.loads(text, parse_float=no_float, parse_constant=no_float)
+    check_descriptor(d)
+    return d
+
+
+def unhex(s, width=None):
+    """Lowercase hex, of exactly `width` bytes when given."""
+    if not isinstance(s, str) or len(s) % 2 or any(c not in "0123456789abcdef" for c in s):
+        raise ValueError("not lowercase hex: %r" % (s,))
+    b = bytes.fromhex(s)
+    if width is not None and len(b) != width:
+        raise ValueError("%d bytes where %d are needed" % (len(b), width))
+    return b
 
 
 def sha256(b):
@@ -42,10 +151,12 @@ def param_bytes(template, params):
         raise ValueError("%d parameters given, the template has %d" % (len(params), len(template["params"])))
     out = b""
     for p in template["params"]:
-        value = bytes.fromhex(params[p["name"]])
-        if len(value) != WIDTHS[p["type"]]:
-            raise ValueError("parameter %s has the wrong width" % p["name"])
-        out += value
+        if p["name"] not in params:
+            raise ValueError("parameter %s is missing" % p["name"])
+        try:
+            out += unhex(params[p["name"]], WIDTHS[p["type"]])
+        except ValueError as e:
+            raise ValueError("parameter %s: %s" % (p["name"], e))
     return out
 
 
@@ -113,14 +224,14 @@ def segwit_v1_address(hrp, program):
 
 
 def derive(descriptor, params):
+    check_descriptor(descriptor)
     t = descriptor["template"]
-    assert t["layout"] == "fixed-root"
     data = param_bytes(t, params)
-    cmr = bytes.fromhex(t["program"]["cmr"])
+    cmr = unhex(t["program"]["cmr"], 32)
     data_leaf = tagged("TapData", data)
     program_leaf = tagged("TapLeaf/elements", bytes([LEAF_VERSION_SIMPLICITY, len(cmr)]) + cmr)
     root = tagged("TapBranch/elements", b"".join(sorted([data_leaf, program_leaf])))
-    internal = bytes.fromhex(t["internal_key"])
+    internal = unhex(t["internal_key"], 32)
     tweak = tagged("TapTweak/elements", internal + root)
     q = _add(_lift_x(int.from_bytes(internal, "big")), _mul(int.from_bytes(tweak, "big") % N, G))
     output_key = q[0].to_bytes(32, "big")

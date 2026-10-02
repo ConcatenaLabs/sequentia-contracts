@@ -40,7 +40,8 @@ func mustHex(s string) *big.Int {
 	return n
 }
 
-// Descriptor is the part of a descriptor file address derivation reads.
+// Descriptor is the part of a descriptor file address derivation reads. Read
+// one with ParseDescriptor, which checks the whole file.
 type Descriptor struct {
 	Template     json.RawMessage `json:"template"`
 	TemplateHash string          `json:"template_hash"`
@@ -270,25 +271,29 @@ func SegwitV1Address(hrp string, program []byte) string {
 
 // Derive computes an instance's output from its parameter values (hex, by name).
 func Derive(d Descriptor, params map[string]string) (*Derived, error) {
+	if err := checkTemplate(d.Template, d.TemplateHash); err != nil {
+		return nil, err
+	}
 	var t template
 	if err := json.Unmarshal(d.Template, &t); err != nil {
 		return nil, err
-	}
-	if t.Layout != "fixed-root" {
-		return nil, fmt.Errorf("layout %s", t.Layout)
 	}
 	if len(params) != len(t.Params) {
 		return nil, fmt.Errorf("%d parameters given, the template has %d", len(params), len(t.Params))
 	}
 	var data []byte
 	for _, p := range t.Params {
-		v, err := hex.DecodeString(params[p.Name])
-		if err != nil || len(v) != widths[p.Type] {
-			return nil, fmt.Errorf("parameter %s has the wrong width", p.Name)
+		value, ok := params[p.Name]
+		if !ok {
+			return nil, fmt.Errorf("parameter %s is missing", p.Name)
+		}
+		v, err := unhex(value, widths[p.Type])
+		if err != nil {
+			return nil, fmt.Errorf("parameter %s: %v", p.Name, err)
 		}
 		data = append(data, v...)
 	}
-	cmr, err := hex.DecodeString(t.Program.CMR)
+	cmr, err := unhex(t.Program.CMR, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +304,7 @@ func Derive(d Descriptor, params map[string]string) (*Derived, error) {
 		lo, hi = hi, lo
 	}
 	root := Tagged("TapBranch/elements", append(append([]byte{}, lo...), hi...))
-	internal, err := hex.DecodeString(t.InternalKey)
+	internal, err := unhex(t.InternalKey, 32)
 	if err != nil {
 		return nil, err
 	}

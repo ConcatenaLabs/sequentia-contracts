@@ -116,6 +116,26 @@ does not change what the template is.
 whitespace, as `json.dumps(v, sort_keys=True, separators=(",", ":"))` writes it. A
 template is printable ASCII, so every language's encoder agrees.
 
+### Reading a descriptor
+
+Every reader refuses, rather than ignores, anything outside this specification,
+so that two readers never take one file for two different templates:
+
+- a field this page does not list, at any level, matched with its exact case
+  (`measured` alone is free-form, and outside the hash);
+- a number that is not an integer in [0, 2^53): no sign, no fraction, no
+  exponent. JavaScript reads 9007199254740993 as 9007199254740992 and `1.0` as
+  `1`, so a larger or non-integer number would hash differently in different
+  languages;
+- hex that is not lowercase or not exactly its width, trailing characters
+  included;
+- a key path that is not declared (above), and a template hash that does not
+  match.
+
+The Rust crate (`Descriptor::load`, `validate`), the Python mirror (`loads`,
+`derive`), the JavaScript mirror (`parseDescriptor`, `derive`) and the Go mirror
+(`ParseDescriptor`, `Derive`) apply these rules.
+
 ### The template
 
 | Field | Meaning |
@@ -124,7 +144,8 @@ template is printable ASCII, so every language's encoder agrees.
 | `version` | An integer; a changed template is a new version |
 | `summary` | One sentence a wallet can show |
 | `layout` | `fixed-root` |
-| `internal_key` | The x-only internal key, hex. `50929b74…3ac0`, BIP341's point with no known discrete logarithm, gives no key path |
+| `internal_key` | The x-only internal key, hex. `50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0`, BIP341's point with no known discrete logarithm, gives no key path |
+| `key_path` | Present exactly when `internal_key` is any other key: the name of the entry in `paths` that describes spending by that key. Absent with the NUMS key |
 | `program.source` | The source file, relative to the descriptor |
 | `program.source_sha256` | SHA-256 of the source with its helper includes resolved, exactly the text compiled (`seqc expand` prints it), so a verifier needs that text alone |
 | `program.compiler` | `{"name": "simplicityhl", "version": "<the pinned version>"}` |
@@ -132,6 +153,12 @@ template is printable ASCII, so every language's encoder agrees.
 | `program.witness` | Each witness value: `name`, `type`, and `source`, which is `param:<NAME>`, `signature:sig_all_hash:<NAME>` (a BIP340 signature by that parameter's key over `jet::sig_all_hash()`), or `spender` |
 | `params` | In data-leaf order: `name`, `type` (from the table above), `role` and `label` |
 | `paths` | Each way to spend: `name`, `who` can take it, and its `effect` in words |
+
+Any internal key but the NUMS key gives the output a key path: whoever holds
+that key spends the output with one signature, and the program never runs. A
+template therefore uses the NUMS key, or declares the key path in `key_path` and
+describes it in `paths`, so that a wallet shows it like any other way to spend.
+A template that does neither is refused.
 
 A parameter's `role` says how to show its value: `pubkey`, `asset`, `amount`,
 `script_hash`, `height`, `time`, `hash`, `feed` or `number`. A wallet renders an
@@ -178,8 +205,10 @@ instances:
 ```
 
 Each implementation reads `name` and `params` and must reproduce every other
-field exactly, and the template hash. A template's vectors include instances whose
-output keys have each parity.
+field exactly, and the template hash. A template's vectors include, for each
+order of the two leaf hashes (the data leaf below the program leaf, and above
+it), instances whose output keys have each parity, so that an implementation
+that does not sort the branch, or that drops the parity, fails them.
 
 ## Tools
 
