@@ -1,0 +1,29 @@
+/* S3: rebindable two-party transfer, bounded loop, M = 4.
+ *
+ * Both keys sign  msg = SHA256( TAG(8) || SALT(32) || m(1) || output_hash(0) || ... || output_hash(m-1) %%BINDDOC%%)
+ * where output_hash(j) is the jet's hash of output j (asset, amount, nonce, script, range proof).
+ * Nothing about the input outpoint, the other inputs, outputs >= m, lock time
+ * or sequence is covered, so the same two signatures spend ANY coin that
+ * carries this program (same keys, same salt).
+ * Witness: M (u8, 1..4), SIG_A, SIG_S. */
+fn add_out(ctx: Ctx8, i: u32) -> Ctx8 {
+    jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(i)))
+}
+
+fn main() {
+    let m: u8 = witness::M;
+    assert!(jet::lt_8(0, m));
+    assert!(jet::lt_8(m, 5));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, param::TAG);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, param::SALT);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, m);
+    let ctx: Ctx8 = add_out(ctx, 0);
+    let ctx: Ctx8 = match jet::lt_8(1, m) { true => add_out(ctx, 1), false => ctx, };
+    let ctx: Ctx8 = match jet::lt_8(2, m) { true => add_out(ctx, 2), false => ctx, };
+    let ctx: Ctx8 = match jet::lt_8(3, m) { true => add_out(ctx, 3), false => ctx, };
+%%BIND%%
+    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    jet::bip_0340_verify((param::A, msg), witness::SIG_A);
+    jet::bip_0340_verify((param::S, msg), witness::SIG_S);
+}

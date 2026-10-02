@@ -1,1 +1,3 @@
 /target
+/harness/tmp/
+__pycache__/

@@ -1,0 +1,78 @@
+/* S5: leave one, keep the rest.
+ *
+ * Output = P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(root)))  where root
+ * is the Merkle root over 2^%%DEPTH%% leaf records:
+ *      leaf  = SHA256(owner_key(32) || amount_be8)        spent leaf = 32 zero bytes
+ *      node  = SHA256-compression(IV, left || right)      (fixed depth, no padding)
+ *
+ * One owner exits: the witness gives OWNER, AMOUNT and the Merkle path
+ * [(sibling, is_right); %%DEPTH%%] from the leaf up. The program
+ *   1. folds the path twice at once: from the leaf (old root) and from the
+ *      spent marker (new root), same siblings;
+ *   2. checks the spent output commits to the old root (tappath(0));
+ *   3. checks OWNER's signature over sig_all_hash, so the owner decides every
+ *      other output, including where their own money goes;
+ *   4. requires the output at the SAME index to pay this same program with the
+ *      NEW root, in the same asset, for exactly input_amount - AMOUNT
+ *      (no remainder output is required when that is zero).
+ */
+fn node(l: u256, r: u256) -> u256 {
+    jet::sha_256_block(jet::sha_256_iv(), l, r)
+}
+
+fn step(elt: (u256, bool), acc: (u256, u256)) -> (u256, u256) {
+    let (sib, is_right): (u256, bool) = elt;
+    let (a, b): (u256, u256) = acc;
+    match is_right {
+        true => (node(sib, a), node(sib, b)),
+        false => (node(a, sib), node(b, sib)),
+    }
+}
+
+fn tapdata(root: u256) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn spk_hash(root: u256) -> u256 {
+    let tr: u256 = jet::build_tapbranch(jet::tapleaf_hash(), tapdata(root));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), tr);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn amount_digest(a: Asset1, v: Amount1) -> u256 {
+    jet::sha_256_ctx_8_finalize(jet::asset_amount_hash(jet::sha_256_ctx_8_init(), a, v))
+}
+
+fn check_remainder(new_root: u256, asset: Asset1, rem: u64) {
+    let i: u32 = jet::current_index();
+    assert!(jet::eq_256(spk_hash(new_root), unwrap(jet::output_script_hash(i))));
+    let (oa, ov): (Asset1, Amount1) = unwrap(jet::output_amount(i));
+    let want: Amount1 = Right(rem);
+    assert!(jet::eq_256(amount_digest(asset, want), amount_digest(oa, ov)));
+}
+
+fn main() {
+    let owner: Pubkey = witness::OWNER;
+    let amount: u64 = witness::AMOUNT;
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, amount);
+    let leaf: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    let spent: u256 = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    let (old_root, new_root): (u256, u256) = array_fold::<step, %%DEPTH%%>(witness::PATH, (leaf, spent));
+    assert!(jet::eq_256(tapdata(old_root), unwrap(jet::tappath(0))));
+    jet::bip_0340_verify((owner, jet::sig_all_hash()), witness::SIG);
+    let (ia, iv): (Asset1, Amount1) = jet::current_amount();
+    let in_amt: u64 = unwrap_right::<(u1, u256)>(iv);
+    assert!(jet::le_64(amount, in_amt));
+    let (borrow, rem): (bool, u64) = jet::subtract_64(in_amt, amount);
+    match jet::eq_64(rem, 0) {
+        true => (),
+        false => check_remainder(new_root, ia, rem),
+    }
+}

@@ -1,0 +1,22 @@
+/* S1 ceiling: the loop of loop_verify.simf plus a witness array that is read
+ * (folded into a SHA256 context), so that it survives pruning and its bytes buy
+ * execution budget without an annex. */
+fn body(acc: (), ctx: (), i: u8) -> Either<(), ()> {
+%%BODY%%
+    Right(())
+}
+
+fn absorb(elt: u256, ctx: Ctx8) -> Ctx8 {
+    jet::sha_256_ctx_8_add_32(ctx, elt)
+}
+
+fn main() {
+    let out: Either<(), ()> = for_while::<body>((), ());
+    match out {
+        Left(a: ()) => (),
+        Right(b: ()) => (),
+    };
+    let ctx: Ctx8 = array_fold::<absorb, %%PAD%%>(witness::PAD, jet::sha_256_ctx_8_init());
+    let h: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    assert!(jet::eq_256(h, h));
+}

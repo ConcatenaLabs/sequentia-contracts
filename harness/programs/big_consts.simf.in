@@ -1,0 +1,5 @@
+/* S1 ceiling: a size-heavy, cost-light program: %%N%% distinct 256-bit
+ * equality assertions. Nothing is shared, so the encoding grows linearly. */
+fn main() {
+%%BODY%%
+}
