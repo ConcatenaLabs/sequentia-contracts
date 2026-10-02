@@ -1,0 +1,6 @@
+/* A relative lock taken from a dependency that uses the broken lock jet. */
+use vendor::locks::wait_blocks;
+
+fn main() {
+    wait_blocks(10);
+}

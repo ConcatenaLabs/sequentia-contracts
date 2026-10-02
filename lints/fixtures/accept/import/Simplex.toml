@@ -1,0 +1,4 @@
+# A Simplex project whose program imports a clean dependency: the lint
+# compiles it with the dependency map and passes it.
+[dependencies]
+vendor = { path = "vendor" }

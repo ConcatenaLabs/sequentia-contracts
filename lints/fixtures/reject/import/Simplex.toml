@@ -1,0 +1,4 @@
+# A Simplex project whose programs reach banned jets only through an import.
+# Each entry file names no banned jet; the dependency does.
+[dependencies]
+vendor = { path = "vendor" }

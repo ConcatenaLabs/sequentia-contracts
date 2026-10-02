@@ -1,0 +1,3 @@
+pub fn native_asset() -> u256 {
+    jet::lbtc_asset()
+}

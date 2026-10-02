@@ -18,12 +18,29 @@
 //! 2. When the source compiles under the pinned compiler, a walk over every
 //!    jet node of the compiled program. This catches the jet whatever it was
 //!    called in the source, because it inspects the jet itself.
+//!
+//! The second layer is the one that cannot be fooled, so a program the lint
+//! could not compile has not passed it: [`Report::compiled`] says whether the
+//! layer ran, and `seqc lint` fails when it did not unless the caller asked
+//! for the source scan alone.
+//!
+//! A program that imports other files with `use` compiles only against the
+//! dependency map it is built with. [`lint_with_deps`] compiles it the way
+//! Simplex builds it (the same map, every unstable feature enabled), and scans
+//! the flattened program Simplex embeds and compiles at run time.
 
 use simplicityhl::simplicity::dag::{DagLike, InternalSharing};
 use simplicityhl::simplicity::jet::Elements;
 use simplicityhl::simplicity::node::Inner;
 
 use std::fmt;
+use std::path::Path;
+use std::sync::Arc;
+
+use simplicityhl::ast::ElementsJetHinter;
+use simplicityhl::resolution::DependencyMap;
+use simplicityhl::source::{CanonPath, CanonSourceFile};
+use simplicityhl::{TemplateProgram, UnstableFeatures};
 
 /// A jet the lints refuse, with the reason given to the author.
 pub struct BannedJet {
@@ -78,6 +95,9 @@ pub const BANNED_JETS: &[BannedJet] = &[
 pub enum Layer {
     /// The identifier appears in the source text.
     Source,
+    /// The identifier appears in the flattened program: the entry file with
+    /// every file it imports resolved into it.
+    Flattened,
     /// The jet appears in the compiled program.
     Compiled,
 }
@@ -99,6 +119,11 @@ impl fmt::Display for Finding {
             (Layer::Source, Some(line)) => {
                 write!(f, "line {line}: `{}` {}", self.name, self.reason)
             }
+            (Layer::Flattened, Some(line)) => write!(
+                f,
+                "flattened program, line {line}: `{}` {}",
+                self.name, self.reason
+            ),
             _ => write!(
                 f,
                 "compiled program uses jet `{}`: {}",
@@ -117,11 +142,23 @@ pub struct Report {
     pub compiled: bool,
     /// Why the source did not compile, when it did not.
     pub compile_error: Option<String>,
+    /// The commitment root of the compiled program, as lowercase hex, when
+    /// it compiled (with every parameter at zero).
+    pub cmr: Option<String>,
 }
 
 impl Report {
+    /// No banned jet was found by the layers that ran.
     pub fn is_clean(&self) -> bool {
         self.findings.is_empty()
+    }
+
+    /// The program passed the lint: no finding, and the compiled layer ran.
+    /// With `source_only`, a source that does not compile passes on the
+    /// source scan alone; only fragments that are not programs (helpers,
+    /// templates with placeholders) should be linted that way.
+    pub fn passed(&self, source_only: bool) -> bool {
+        self.is_clean() && (self.compiled || source_only)
     }
 }
 
@@ -138,12 +175,94 @@ pub fn lint_source(source: &str) -> Report {
             match template.instantiate(args, false) {
                 Ok(program) => {
                     report.compiled = true;
+                    report.cmr = Some(crate::cmr_hex(&program));
                     report.findings.extend(scan_compiled(&program.commit()));
                 }
                 Err(e) => report.compile_error = Some(e),
             }
         }
         Err(e) => report.compile_error = Some(e),
+    }
+    report
+}
+
+/// Lint one program the way Simplex builds it.
+///
+/// `entry` is compiled with `deps` and every unstable feature enabled, as
+/// Simplex's build does, and flattened into the single source Simplex embeds
+/// and compiles at run time. The source layer scans the entry file and the
+/// flattened text; the compiled layer scans the program compiled from the
+/// flattened text. The compiled layer counts as run only when that program
+/// has the same commitment root as the one compiled from the dependency map,
+/// so the scanned program is the one that will be deployed.
+pub fn lint_with_deps(entry: &Path, deps: &DependencyMap) -> Report {
+    let mut report = Report::default();
+    let text = match std::fs::read_to_string(entry) {
+        Ok(t) => t,
+        Err(e) => {
+            report.compile_error = Some(format!("{}: {e}", entry.display()));
+            return report;
+        }
+    };
+    report.findings = scan_source(&text);
+    let canon = match CanonPath::canonicalize(entry) {
+        Ok(c) => c,
+        Err(e) => {
+            report.compile_error = Some(format!("{}: {e}", entry.display()));
+            return report;
+        }
+    };
+    let file = CanonSourceFile::new(canon, Arc::from(text.as_str()));
+    let features = UnstableFeatures::all();
+
+    let flattened = match TemplateProgram::flatten(file.clone(), deps, &features) {
+        Ok(f) => f,
+        Err(d) => {
+            report.compile_error = Some(d.to_string());
+            return report;
+        }
+    };
+    for mut f in scan_source(&flattened) {
+        f.layer = Layer::Flattened;
+        report.findings.push(f);
+    }
+
+    let built = TemplateProgram::new_with_dep(file, deps, &features, Box::new(ElementsJetHinter))
+        .map_err(|d| d.to_string())
+        .and_then(|t| t.instantiate(crate::zero_arguments(&t), false));
+    let deployed = TemplateProgram::new_with_unstable(
+        flattened.as_str(),
+        &features,
+        Box::new(ElementsJetHinter),
+    )
+    .map_err(|d| d.to_string())
+    .and_then(|t| t.instantiate(crate::zero_arguments(&t), false));
+    match (built, deployed) {
+        (Ok(built), Ok(deployed)) => {
+            let (a, b) = (crate::cmr_hex(&built), crate::cmr_hex(&deployed));
+            if a != b {
+                report.compile_error = Some(format!(
+                    "the program compiled from the dependency map (root {a}) differs from \
+                     the flattened program (root {b})"
+                ));
+                return report;
+            }
+            report.compiled = true;
+            report.cmr = Some(b);
+            report.findings.extend(scan_compiled(&deployed.commit()));
+            // The jets are the same in both when the roots are; scan both anyway,
+            // so a difference in how either is built cannot hide one.
+            for f in scan_compiled(&built.commit()) {
+                if !report
+                    .findings
+                    .iter()
+                    .any(|g| g.layer == Layer::Compiled && g.name == f.name)
+                {
+                    report.findings.push(f);
+                }
+            }
+        }
+        (Err(e), _) | (_, Err(e)) => report.compile_error = Some(e),
     }
     report
 }

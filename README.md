@@ -16,7 +16,7 @@ tests.
 | Path | What |
 |---|---|
 | `crates/sequentia-contracts/` | The Rust crate. It pins SimplicityHL exactly (see `Cargo.toml`) and re-exports it, together with `simplicity` and `elements`, so no other repository names the compiler itself. It holds the lints and the `seqc` command line |
-| `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`) |
+| `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`), each with a Simplex project that imports a dependency |
 | `parity/` | The parity gate between the pinned compiler's C library and the node's |
 | `helpers/` | Shared SimplicityHL helpers, included as source: output reader, wide arithmetic, state, relative lock, Merkle fold, fee cap |
 | `templates/` | Contract templates: each a program, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
@@ -109,16 +109,44 @@ refuse any program that uses them:
   least 2 and reads `jet::parse_sequence(jet::current_sequence())`;
   `lints/fixtures/accept/safe_distance.simf` is the pattern.
 
-Each program is checked twice: the source, with comments removed, for any
-spelling of these jets; and, when it compiles, the compiled program for the jets
-themselves, which catches a use however the source names it.
+Each program is checked in two layers: the source, with comments removed, for
+any spelling of these jets; and the compiled program for the jets themselves,
+which catches a use however the source names it or wherever it comes from. The
+compiled layer is the one that cannot be fooled, so a program passes only when
+it compiles: `seqc lint` fails on a source it cannot compile, and says why.
 
 ```sh
 cargo run --bin seqc -- lint path/to/program.simf
 ```
 
+A program that imports other files with `use` compiles only against the
+dependencies it is built with. Lint it as Simplex builds it, with the same
+dependency map and every unstable compiler feature enabled; the lint then scans
+the flattened program, the single source Simplex embeds and compiles at run
+time, and the program compiled from it:
+
+```sh
+seqc lint --project path/to/simplex-project          # every program of a Simplex project
+seqc lint --dep vendor=path/to/vendor/simf program.simf   # one program, dependencies by hand
+```
+
+`--project` reads the project's `Simplex.toml`: its source directory, and its
+dependencies by path or by git (installed by `simplex install` under `deps/`),
+followed transitively. It lints every `.simf` file under the source directory
+that declares `fn main`. The library form is `lint::lint_with_deps`, for a
+build that already holds the dependency map.
+
+A fragment that is not a program on its own, such as a helper or a template
+with placeholders, cannot compile alone; `--source-only` accepts it on the
+source scan, and is meant for those alone.
+
 `cargo test` lints every `.simf` and `.simf.in` file in the repository outside
-`lints/fixtures/reject/`, so a program using a banned jet fails the build.
+`lints/fixtures/reject/`: every program must compile and pass both layers, the
+helpers and templates must pass the source scan, and every Simplex project
+under `lints/fixtures/accept/` must pass as Simplex builds it. Every reject
+fixture, including the project in `lints/fixtures/reject/import/` whose
+programs reach `lbtc_asset` and a broken lock jet only through a dependency,
+must fail. So a program using a banned jet fails the build.
 
 ## Parity gate
 

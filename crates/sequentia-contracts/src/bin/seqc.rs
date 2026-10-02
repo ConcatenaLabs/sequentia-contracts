@@ -1,7 +1,15 @@
 //! `seqc`: the command line of the Sequentia contracts toolchain.
 //!
 //!     seqc version                 print the pinned SimplicityHL version
-//!     seqc lint <file>...          lint SimplicityHL sources; exit 1 on any finding
+//!     seqc lint <file>...          lint SimplicityHL sources; exit 1 on any finding,
+//!                                  and on a source that does not compile
+//!         --source-only            accept a source that does not compile on the
+//!                                  source scan alone (helpers, templates)
+//!         --dep <name>=<dir>       compile with this dependency, as Simplex does
+//!         --root <dir>             the package root the dependencies hang from
+//!                                  (default: the file's directory)
+//!         --project <dir>          lint every program of a Simplex project, with
+//!                                  the dependency map its Simplex.toml gives
 //!     seqc run                     one JSON request on stdin, one JSON reply on stdout
 //!     seqc expand <file>           print a source with its helper includes resolved
 //!     seqc descriptor seal <dir>   fill in the source hash, root and template hash
@@ -51,38 +59,166 @@ use serde_json::{json, Map, Value};
 
 fn usage() -> ExitCode {
     eprintln!(
-        "usage: seqc version | seqc lint <file>... | seqc run < request.json | seqc expand <file>\n       \
+        "usage: seqc version | seqc lint [options] <file>... | seqc run < request.json | seqc expand <file>\n       \
          seqc descriptor (seal | check | vectors) <template dir>..."
     );
     ExitCode::from(2)
 }
 
-fn cmd_lint(paths: &[String]) -> ExitCode {
-    if paths.is_empty() {
-        return usage();
+/// Print a lint report for one program; true when it passed.
+fn print_report(path: &str, report: &lint::Report, source_only: bool) -> bool {
+    if !report.is_clean() {
+        for f in &report.findings {
+            println!("{path}: {f}");
+        }
+        if let Some(cmr) = &report.cmr {
+            println!("{path}: refused (compiled root {cmr})");
+        }
+        return false;
     }
+    if report.compiled {
+        println!(
+            "{path}: ok (source and compiled program, root {})",
+            report.cmr.as_deref().unwrap_or("?")
+        );
+        return true;
+    }
+    let why = report.compile_error.as_deref().unwrap_or("unknown error");
+    if source_only {
+        println!(
+            "{path}: ok (source only, as --source-only asks; it does not compile: {})",
+            why.lines().next().unwrap_or("")
+        );
+        true
+    } else {
+        println!(
+            "{path}: FAILED: it does not compile, so the compiled layer did not run, and a jet \
+             reached through an import or a renaming would go unseen.\n{why}\n\
+             Lint a program that imports with `use` as it is built (--project <dir> or \
+             --dep <name>=<dir>); lint a fragment that is not a program with --source-only."
+        );
+        false
+    }
+}
+
+const LINT_USAGE: &str = "usage: seqc lint [--source-only] <file>...\n       \
+     seqc lint [--source-only] [--root <dir>] --dep <name>=<dir> [--dep ...] <file>...\n       \
+     seqc lint [--source-only] --project <dir>";
+
+fn cmd_lint(args: &[String]) -> ExitCode {
+    use sequentia_contracts::simplicityhl::resolution::DependencyMapBuilder;
+    use sequentia_contracts::simplicityhl::source::CanonPath;
+
+    let mut source_only = false;
+    let mut project: Option<String> = None;
+    let mut root: Option<String> = None;
+    let mut deps: Vec<(String, String)> = Vec::new();
+    let mut paths: Vec<String> = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--source-only" => source_only = true,
+            "--project" | "--root" | "--dep" => {
+                let Some(v) = it.next() else {
+                    eprintln!("{LINT_USAGE}");
+                    return ExitCode::from(2);
+                };
+                match a.as_str() {
+                    "--project" => project = Some(v.clone()),
+                    "--root" => root = Some(v.clone()),
+                    _ => match v.split_once('=') {
+                        Some((n, d)) => deps.push((n.to_string(), d.to_string())),
+                        None => {
+                            eprintln!("--dep wants <name>=<dir>, got {v}");
+                            return ExitCode::from(2);
+                        }
+                    },
+                }
+            }
+            s if s.starts_with("--") => {
+                eprintln!("unknown option {s}\n{LINT_USAGE}");
+                return ExitCode::from(2);
+            }
+            _ => paths.push(a.clone()),
+        }
+    }
+
     let mut failed = false;
-    for path in paths {
-        let source = match std::fs::read_to_string(path) {
-            Ok(s) => s,
+    if let Some(dir) = project {
+        if !paths.is_empty() || !deps.is_empty() || root.is_some() {
+            eprintln!("--project takes no files, --dep or --root\n{LINT_USAGE}");
+            return ExitCode::from(2);
+        }
+        let p = match sequentia_contracts::simplex::project(std::path::Path::new(&dir)) {
+            Ok(p) => p,
             Err(e) => {
-                eprintln!("{path}: {e}");
-                failed = true;
-                continue;
+                println!("{dir}: FAILED: {e}");
+                return ExitCode::FAILURE;
             }
         };
-        let report = lint::lint_source(&source);
-        if report.is_clean() {
-            let how = if report.compiled {
-                "source and compiled program"
-            } else {
-                "source only (does not compile)"
+        if p.entries.is_empty() {
+            println!(
+                "{dir}: FAILED: no program (a .simf file declaring fn main) under {}",
+                p.src_dir.display()
+            );
+            return ExitCode::FAILURE;
+        }
+        for entry in &p.entries {
+            let report = lint::lint_with_deps(entry, &p.deps);
+            failed |= !print_report(&entry.display().to_string(), &report, source_only);
+        }
+    } else if paths.is_empty() {
+        eprintln!("{LINT_USAGE}");
+        return ExitCode::from(2);
+    } else if !deps.is_empty() || root.is_some() {
+        for path in &paths {
+            let root_dir = match &root {
+                Some(r) => std::path::PathBuf::from(r),
+                None => std::path::Path::new(path)
+                    .parent()
+                    .map(|p| {
+                        if p.as_os_str().is_empty() {
+                            std::path::Path::new(".")
+                        } else {
+                            p
+                        }
+                    })
+                    .unwrap_or(std::path::Path::new("."))
+                    .to_path_buf(),
             };
-            println!("{path}: ok ({how})");
-        } else {
-            failed = true;
-            for f in &report.findings {
-                println!("{path}: {f}");
+            let map = (|| -> Result<_, String> {
+                let root = CanonPath::canonicalize(&root_dir)
+                    .map_err(|e| format!("{}: {e}", root_dir.display()))?;
+                let mut b = DependencyMapBuilder::new();
+                for (name, dir) in &deps {
+                    let target = CanonPath::canonicalize(std::path::Path::new(dir))
+                        .map_err(|e| format!("{dir}: {e}"))?;
+                    b.add_dependency(root.clone(), name.clone(), target);
+                }
+                b.build(root).map_err(|e| e.to_string())
+            })();
+            match map {
+                Ok(map) => {
+                    let report = lint::lint_with_deps(std::path::Path::new(path), &map);
+                    failed |= !print_report(path, &report, source_only);
+                }
+                Err(e) => {
+                    println!("{path}: FAILED: {e}");
+                    failed = true;
+                }
+            }
+        }
+    } else {
+        for path in &paths {
+            match std::fs::read_to_string(path) {
+                Ok(source) => {
+                    let report = lint::lint_source(&source);
+                    failed |= !print_report(path, &report, source_only);
+                }
+                Err(e) => {
+                    eprintln!("{path}: {e}");
+                    failed = true;
+                }
             }
         }
     }
