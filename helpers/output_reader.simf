@@ -1,0 +1,43 @@
+/* Output reader.
+ *
+ * The asset, amount and script of an output, refusing an output that does not
+ * exist or whose asset or amount is confidential: a covenant can only police
+ * what it can read. Asset ids are in internal byte order, the reverse of the
+ * hex an RPC prints. Include with `// include output_reader`.
+ */
+
+/* (asset id, amount, SHA256 of the scriptPubKey) of output i. */
+fn out_explicit(i: u32) -> (u256, u64, u256) {
+    let (asset, amount): (Asset1, Amount1) = unwrap(jet::output_amount(i));
+    let id: u256 = match asset {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    let value: u64 = match amount {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    (id, value, unwrap(jet::output_script_hash(i)))
+}
+
+/* Output i pays exactly `amount` of `asset` to the script whose hash is `script_hash`. */
+fn out_require(i: u32, asset: u256, amount: u64, script_hash: u256) {
+    let (id, value, script): (u256, u64, u256) = out_explicit(i);
+    assert!(jet::eq_256(id, asset));
+    assert!(jet::eq_64(value, amount));
+    assert!(jet::eq_256(script, script_hash));
+}
+
+/* (asset id, amount) of the input being spent, refusing a confidential one. */
+fn in_explicit_current() -> (u256, u64) {
+    let (asset, amount): (Asset1, Amount1) = jet::current_amount();
+    let id: u256 = match asset {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    let value: u64 = match amount {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    (id, value)
+}

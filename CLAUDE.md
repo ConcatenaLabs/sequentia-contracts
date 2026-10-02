@@ -39,6 +39,10 @@ obvious from the code. Node and consensus conventions live in the
   new template (a new directory, or a new `version`), then `seqc descriptor seal`
   it and regenerate its vectors. Never edit a vector by hand: regenerate it with
   `seqc descriptor vectors` and check that the mirrors still agree.
+- **Helpers are part of every program that includes them.** Changing a helper
+  changes the commitment root of every program that includes it. Add a new
+  function rather than change one a published template uses, rerun `h1`, and
+  update `docs/helpers.md` with what it measures.
 - **The mirrors must stay compiler-free.** Python, JavaScript and Go derive an
   address with the standard library only, so any service can recognise a
   contract. Do not add a dependency to them.

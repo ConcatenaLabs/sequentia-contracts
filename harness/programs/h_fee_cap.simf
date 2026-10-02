@@ -1,0 +1,6 @@
+/* Helper test: fee cap. The transaction may pay at most CAP of ASSET in fees. */
+// include fee_cap
+
+fn main() {
+    fee_cap_require(param::ASSET, param::CAP);
+}

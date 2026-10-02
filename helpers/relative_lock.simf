@@ -1,0 +1,30 @@
+/* Relative lock, in the safe form.
+ *
+ * Reads the sequence of the input being spent. The four relative-timelock jets
+ * read the largest lock over every input instead, so a spender defeats them by
+ * adding an old coin of their own; the lints refuse them. BIP68 makes
+ * consensus enforce an input's own sequence only when the transaction version
+ * is at least 2 and the sequence's disable bit is clear, so these check
+ * exactly that, then compare the lock with the minimum.
+ * Include with `// include relative_lock`.
+ */
+
+/* This input has waited at least `blocks` blocks since its coin confirmed. */
+fn rel_lock_blocks(blocks: u16) {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(distance: u16) => distance,
+        Right(duration: u16) => panic!(),
+    };
+    assert!(jet::le_16(blocks, d));
+}
+
+/* This input has waited at least `units` units of 512 seconds of median time. */
+fn rel_lock_time(units: u16) {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(distance: u16) => panic!(),
+        Right(duration: u16) => duration,
+    };
+    assert!(jet::le_16(units, d));
+}

@@ -126,7 +126,7 @@ template is printable ASCII, so every language's encoder agrees.
 | `layout` | `fixed-root` |
 | `internal_key` | The x-only internal key, hex. `50929b74…3ac0`, BIP341's point with no known discrete logarithm, gives no key path |
 | `program.source` | The source file, relative to the descriptor |
-| `program.source_sha256` | SHA-256 of the source file's bytes |
+| `program.source_sha256` | SHA-256 of the source with its helper includes resolved, exactly the text compiled (`seqc expand` prints it), so a verifier needs that text alone |
 | `program.compiler` | `{"name": "simplicityhl", "version": "<the pinned version>"}` |
 | `program.cmr` | The commitment root the source compiles to, hex |
 | `program.witness` | Each witness value: `name`, `type`, and `source`, which is `param:<NAME>`, `signature:sig_all_hash:<NAME>` (a BIP340 signature by that parameter's key over `jet::sig_all_hash()`), or `spender` |

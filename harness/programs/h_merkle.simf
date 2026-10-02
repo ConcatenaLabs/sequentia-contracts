@@ -1,0 +1,8 @@
+/* Helper test: Merkle fold. The spender shows a 32-byte member of the set
+ * whose 8-level Merkle root is ROOT. */
+// include merkle
+
+fn main() {
+    let leaf: u256 = merkle_leaf(witness::MEMBER);
+    assert!(jet::eq_256(merkle_root_8(leaf, witness::PROOF), param::ROOT));
+}

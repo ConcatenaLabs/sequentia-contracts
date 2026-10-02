@@ -1,0 +1,12 @@
+/* Fee cap.
+ *
+ * A keyless path can pay its own fee from the asset it holds, in any asset the
+ * network accepts, so the template must bound what the spender can burn as fee.
+ * jet::total_fee(asset) is the sum of the transaction's explicit fee outputs in
+ * that asset. Include with `// include fee_cap`.
+ */
+
+/* The transaction pays at most `cap` of `asset` in fees. */
+fn fee_cap_require(asset: u256, cap: u64) {
+    assert!(jet::le_64(jet::total_fee(asset), cap));
+}

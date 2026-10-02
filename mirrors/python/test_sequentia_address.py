@@ -16,8 +16,10 @@ class Vectors(unittest.TestCase):
         dirs = sorted(glob.glob(os.path.join(ROOT, "templates", "*", "descriptor.json")))
         self.assertTrue(dirs)
         for path in dirs:
-            d = json.load(open(path))
-            v = json.load(open(os.path.join(os.path.dirname(path), "vectors.json")))
+            with open(path) as f:
+                d = json.load(f)
+            with open(os.path.join(os.path.dirname(path), "vectors.json")) as f:
+                v = json.load(f)
             self.assertEqual(sa.template_hash(d["template"]), d["template_hash"], path)
             self.assertEqual(v["template_hash"], d["template_hash"], path)
             self.assertEqual(v["cmr"], d["template"]["program"]["cmr"], path)

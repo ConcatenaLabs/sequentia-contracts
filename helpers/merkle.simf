@@ -1,0 +1,42 @@
+/* Merkle fold of a fixed depth.
+ *
+ * A leaf is SHA256(0x00 || data) and an inner node SHA256(0x01 || left || right):
+ * the distinct prefixes keep a leaf from passing for a node. A proof is one
+ * (sibling, sibling_is_left) pair per level, leaf first. The depth is the
+ * array's length, fixed by the template; array_fold unrolls it, so a proof
+ * costs the same at every position. Include with `// include merkle`.
+ */
+
+fn merkle_leaf(data: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x00);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, data);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn merkle_node(left: u256, right: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x01);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, left);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, right);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* One level: hash the running node with its sibling, on the sibling's side. */
+fn merkle_step(step: (u256, bool), node: u256) -> u256 {
+    let (sibling, sibling_is_left): (u256, bool) = step;
+    match sibling_is_left {
+        true => merkle_node(sibling, node),
+        false => merkle_node(node, sibling),
+    }
+}
+
+/* The root over a leaf hash and an 8-level proof. */
+fn merkle_root_8(leaf: u256, proof: [(u256, bool); 8]) -> u256 {
+    array_fold::<merkle_step, 8>(proof, leaf)
+}
+
+/* The root over a leaf hash and a 16-level proof. */
+fn merkle_root_16(leaf: u256, proof: [(u256, bool); 16]) -> u256 {
+    array_fold::<merkle_step, 16>(proof, leaf)
+}
