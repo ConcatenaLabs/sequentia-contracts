@@ -81,5 +81,7 @@ jobs:
         run: git -C node log -1 --format='node %H %cs'
       - name: Fetch the pinned crates
         run: cargo fetch --locked
-      - name: Compare the C sources
+      - name: Compare the C sources and the Rust jet table
         run: python3 parity/parity_gate.py --node node/src/simplicity
+      - name: The jet-table comparison fails on any difference
+        run: python3 parity/test_parity_gate.py node/src/simplicity -v

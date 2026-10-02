@@ -15,7 +15,7 @@ obvious from the code. Node and consensus conventions live in the
   recompile every program to compare its root before merging.
 - **The parity gate guards consensus behaviour.** Never add an allow-list entry
   for a difference in a jet, a cost, the decoder, type inference or the budget
-  check. Such a difference means programs built here can be refused on the chain.
+  check. The Rust jet table (names, costs, roots) has no allow-list at all. Such a difference means programs built here can be refused on the chain.
   An entry carries both content hashes; update them only after reading the diff.
 - **The lints are not optional.** Do not add a program that uses `lbtc_asset` or
   a relative-timelock jet under any spelling. The only programs that do are the

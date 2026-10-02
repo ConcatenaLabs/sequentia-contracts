@@ -17,7 +17,7 @@ tests.
 |---|---|
 | `crates/sequentia-contracts/` | The Rust crate. It pins SimplicityHL exactly (see `Cargo.toml`) and re-exports it, together with `simplicity` and `elements`, so no other repository names the compiler itself. It holds the lints and the `seqc` command line |
 | `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`), each with a Simplex project that imports a dependency |
-| `parity/` | The parity gate between the pinned compiler's C library and the node's |
+| `parity/` | The parity gate between the Simplicity libraries a project builds with (the C library and the Rust jet table) and the node's |
 | `helpers/` | Shared SimplicityHL helpers, included as source: output reader, wide arithmetic, state, relative lock, Merkle fold, fee cap |
 | `templates/` | Contract templates: each a program, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
 | `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler |
@@ -159,19 +159,51 @@ must fail. So a program using a banned jet fails the build.
 
 ```sh
 python3 parity/parity_gate.py --node /path/to/Sequentia/src/simplicity
+python3 parity/parity_gate.py --node ... --manifest-path /path/to/project/Cargo.toml
 ```
 
-It locates the `simplicity-sys` sources that `Cargo.lock` resolves, normalises
-the crate's versioned symbol prefix, and compares every file with the node's
-`src/simplicity`. It fails on a file present on one side only, or on any
-difference not listed in `parity/allowlist.txt`. Each allow-list entry pins the
-content hash of both sides and says why the difference is harmless, so a later
-change to either side fails the gate again until it is reviewed.
+It locates the Simplicity crates that a project's `Cargo.lock` resolves (this
+repository's by default, any Rust project's with `--manifest-path`) and compares
+them with the node's `src/simplicity` in two ways:
+
+- **The C library.** Every file of `simplicity-sys`'s bundled C sources, after
+  normalising the crate's versioned symbol prefix, against the node's copy. It
+  fails on a file present on one side only, or on any difference not listed in
+  `parity/allowlist.txt`. Each allow-list entry pins the content hash of both
+  sides and says why the difference is harmless, so a later change to either
+  side fails the gate again until it is reviewed.
+- **The Rust jet table.** `simplicity-lang` keeps its own table of the Elements
+  jets, and that table, not the C library, is what costs a program and sizes the
+  padding that buys its budget. The gate compares it with the node's
+  `elements/primitiveJetNode.inc`: the same jet names, the same cost and the same
+  commitment root for each. Any difference fails; none can be allow-listed.
+  `parity/test_parity_gate.py` shows that a changed cost, a changed root, and a
+  missing or renamed jet each fail it.
 
 Run it whenever the pinned compiler changes and whenever the node updates its
 Simplicity subtree. In CI it compares against the tip of the node's default
 branch: the workflow checks out only `src/simplicity` from the public
 `ConcatenaLabs/Sequentia` repository.
+
+Another Rust project that builds Simplicity programs gates its own lock file
+the same way. Its CI checks out this repository and the node's
+`src/simplicity`, fetches its crates, and runs the gate on its own manifest:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: actions/checkout@v4
+  with: { repository: ConcatenaLabs/sequentia-contracts, path: contracts }
+- uses: actions/checkout@v4
+  with:
+    repository: ConcatenaLabs/Sequentia
+    path: node
+    sparse-checkout: src/simplicity
+- run: cargo fetch --locked
+- run: python3 contracts/parity/parity_gate.py --node node/src/simplicity --manifest-path Cargo.toml
+```
+
+The gate needs exactly one `simplicity-sys` and one `simplicity-lang` in the
+lock file, and Python 3 with nothing beyond its standard library.
 
 ## Regtest harness
 
