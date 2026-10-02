@@ -10,6 +10,7 @@
 
 pub mod descriptor;
 pub mod lint;
+pub mod simplex;
 
 use std::collections::HashMap;
 use std::sync::Arc;

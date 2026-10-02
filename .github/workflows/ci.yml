@@ -16,8 +16,27 @@ jobs:
         run: cargo test --locked
       - name: Lint every SimplicityHL program outside the reject fixtures
         run: |
-          files=$(git ls-files '*.simf' '*.simf.in' | grep -v '^lints/fixtures/reject/')
-          cargo run --locked --quiet --bin seqc -- lint $files
+          cargo build --locked --quiet --bin seqc
+          seqc=target/debug/seqc
+          # Programs: both layers, so each must compile.
+          $seqc lint $(git ls-files '*.simf' | grep -v -e '^lints/fixtures/' -e '^helpers/') \
+            lints/fixtures/accept/*.simf
+          # Simplex projects: compiled with their dependency map.
+          $seqc lint --project lints/fixtures/accept/import
+          # Fragments that are not programs alone: helpers and templates.
+          $seqc lint --source-only helpers/*.simf $(git ls-files '*.simf.in')
+      - name: The reject fixtures fail the lint
+        run: |
+          seqc=target/debug/seqc
+          for f in lints/fixtures/reject/*.simf; do
+            if $seqc lint "$f"; then echo "$f passed the lint"; exit 1; fi
+          done
+          if $seqc lint --project lints/fixtures/reject/import; then
+            echo "the import fixture passed the lint"; exit 1
+          fi
+          if $seqc lint lints/fixtures/reject/import/simf/native_asset.simf; then
+            echo "a program the lint cannot compile passed it"; exit 1
+          fi
 
   mirrors:
     name: Address mirrors (Python, JavaScript, Go) against the golden vectors

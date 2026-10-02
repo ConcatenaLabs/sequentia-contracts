@@ -1,0 +1,9 @@
+/* This input has waited at least n blocks: its own sequence, BIP68 enforced. */
+pub fn wait_blocks(n: u16) {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(blocks: u16) => blocks,
+        Right(units: u16) => panic!(),
+    };
+    assert!(jet::le_16(n, d));
+}

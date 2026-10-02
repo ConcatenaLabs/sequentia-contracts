@@ -1,5 +1,7 @@
 //! The lints refuse every banned-jet fixture, pass the safe ones, and pass
-//! every other SimplicityHL program in the repository.
+//! every other SimplicityHL program in the repository. A program passes only
+//! when it compiled, so that the compiled layer ran; helpers and templates
+//! with placeholders, which are not programs, pass on the source scan alone.
 
 use std::path::{Path, PathBuf};
 
@@ -39,7 +41,7 @@ fn every_reject_fixture_fails_the_lint() {
     assert!(files.len() >= 7, "fixtures missing: {files:?}");
     for path in files {
         let report = lint_source(&read(&path));
-        assert!(!report.is_clean(), "{} passed the lint", path.display());
+        assert!(!report.passed(false), "{} passed the lint", path.display());
         for f in &report.findings {
             println!("{}: {f}", path.file_name().unwrap().to_string_lossy());
         }
@@ -101,6 +103,22 @@ fn source_layer_catches_what_the_compiler_cannot_see() {
     assert!(!r.findings.is_empty());
 }
 
+/// A fragment that is not a program on its own: a helper, spliced in by
+/// `// include`, or a template whose placeholders the harness fills in.
+fn is_fragment(root: &Path, path: &Path) -> bool {
+    path.starts_with(root.join("helpers")) || path.to_string_lossy().ends_with(".simf.in")
+}
+
+/// The Simplex project a file belongs to, if any.
+fn simplex_project(root: &Path, path: &Path) -> Option<PathBuf> {
+    path.ancestors()
+        .skip(1)
+        .take_while(|d| d.starts_with(root) && *d != root)
+        .filter(|d| d.join("Simplex.toml").exists())
+        .last()
+        .map(Path::to_path_buf)
+}
+
 #[test]
 fn every_other_program_in_the_repository_passes_the_lint() {
     let root = repo_root();
@@ -108,12 +126,21 @@ fn every_other_program_in_the_repository_passes_the_lint() {
     let mut files = Vec::new();
     simf_files(&root, &mut files);
     let mut checked = 0;
+    let mut compiled = 0;
+    let mut projects = std::collections::BTreeSet::new();
     for path in files.into_iter().filter(|p| !p.starts_with(&reject)) {
+        if let Some(project) = simplex_project(&root, &path) {
+            projects.insert(project);
+            continue;
+        }
+        let fragment = is_fragment(&root, &path);
         let report = lint_source(&read(&path));
         assert!(
-            report.is_clean(),
-            "{}:\n{}",
+            report.passed(fragment),
+            "{}: compiled={} {:?}\n{}",
             path.display(),
+            report.compiled,
+            report.compile_error,
             report
                 .findings
                 .iter()
@@ -122,6 +149,23 @@ fn every_other_program_in_the_repository_passes_the_lint() {
                 .join("\n")
         );
         checked += 1;
+        compiled += report.compiled as usize;
     }
-    assert!(checked >= 2);
+    for project in &projects {
+        let p = sequentia_contracts::simplex::project(project).unwrap();
+        assert!(!p.entries.is_empty(), "{}", project.display());
+        for entry in &p.entries {
+            let report = sequentia_contracts::lint::lint_with_deps(entry, &p.deps);
+            assert!(
+                report.passed(false),
+                "{}: {:?} {:?}",
+                entry.display(),
+                report.compile_error,
+                report.findings
+            );
+            checked += 1;
+            compiled += 1;
+        }
+    }
+    assert!(checked >= 2 && compiled >= 2);
 }

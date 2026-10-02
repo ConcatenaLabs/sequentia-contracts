@@ -21,7 +21,10 @@ obvious from the code. Node and consensus conventions live in the
   a relative-timelock jet under any spelling. The only programs that do are the
   reject fixtures in `lints/fixtures/reject/`, which exist to prove the lints and
   the on-chain bypass. For a relative lock, use the pattern in
-  `lints/fixtures/accept/safe_distance.simf`.
+  `lints/fixtures/accept/safe_distance.simf`. A program passes only when it
+  compiles, so that the compiled layer runs: `--source-only` is for helpers and
+  templates alone, and a program with imports is linted as Simplex builds it
+  (`seqc lint --project` or `--dep`).
 - **A negative test proves nothing until it is refused in a block.** The node's
   mempool runs Simplicity as policy on every chain, even where consensus has not
   activated it, so a mempool rejection can hide a consensus flaw. Force every

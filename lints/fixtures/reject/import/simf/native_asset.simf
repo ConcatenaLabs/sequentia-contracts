@@ -1,0 +1,12 @@
+/* Reads "the native asset" through a dependency. The dependency returns
+ * jet::lbtc_asset(), Liquid's L-BTC id, which names no asset on Sequentia. */
+use vendor::assets::native_asset;
+
+fn main() {
+    let (asset, amount): (Asset1, Amount1) = jet::current_amount();
+    let id: u256 = match asset {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    assert!(jet::eq_256(id, native_asset()));
+}

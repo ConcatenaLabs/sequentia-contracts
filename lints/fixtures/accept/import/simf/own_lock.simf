@@ -1,0 +1,6 @@
+/* The safe relative lock, taken from a dependency. */
+use vendor::locks::wait_blocks;
+
+fn main() {
+    wait_blocks(10);
+}
