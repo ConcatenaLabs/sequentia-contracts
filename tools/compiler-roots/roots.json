@@ -1,0 +1,542 @@
+{
+ "swk_commit": "87a9f5e7f",
+ "openamp_commit": "a4a84c422",
+ "compilers": {
+  "pinned": "0.7.2",
+  "v0_4_1": "0.4.1"
+ },
+ "programs": [
+  {
+   "id": "swk/p2pk",
+   "program": "SWK `p2pk.simf`",
+   "debug_symbols": false,
+   "args_from": "`TEST_X_ONLY_PUBLIC_KEY` of `lwk_bindings/tests/bindings/simplicity_p2pk.py`, compiled as `lwk_simplicity::scripts::load_program` does, without debug symbols",
+   "args": {
+    "PUBLIC_KEY": {
+     "value": "0x8a65c55726dc32b59b649ad0187eb44490de681bb02601b8d3f58c8b9fff9083",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "1b8b0834914675a1566132c81c2708fc614fab5cc38f17bf51643cc6c05d2d6f",
+    "program_bytes": 44
+   },
+   "pinned": {
+    "cmr": "1b8b0834914675a1566132c81c2708fc614fab5cc38f17bf51643cc6c05d2d6f",
+    "lint": [],
+    "program_bytes": 44
+   },
+   "recorded_cmr": null,
+   "recorded_in": null,
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": null,
+   "matches_recorded_pinned": null
+  },
+  {
+   "id": "swk/p2pk+debug",
+   "program": "SWK `p2pk.simf`, with debug symbols",
+   "debug_symbols": true,
+   "args_from": "the same key, compiled with debug symbols as that test does (`load_with_debug_symbols(..., True)`)",
+   "args": {
+    "PUBLIC_KEY": {
+     "value": "0x8a65c55726dc32b59b649ad0187eb44490de681bb02601b8d3f58c8b9fff9083",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "b685a4424842507d7d747e6611a740d8c421038e9744e75d423d0e2e9f164d02",
+    "program_bytes": 118
+   },
+   "pinned": {
+    "cmr": "b685a4424842507d7d747e6611a740d8c421038e9744e75d423d0e2e9f164d02",
+    "lint": [],
+    "program_bytes": 118
+   },
+   "recorded_cmr": "b685a4424842507d7d747e6611a740d8c421038e9744e75d423d0e2e9f164d02",
+   "recorded_in": "`TEST_CMR` in `lwk_bindings/tests/bindings/simplicity_p2pk.py`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "swk/options",
+   "program": "SWK `options.simf`",
+   "debug_symbols": false,
+   "args_from": "fixed values chosen here: the only test that compiles it (`lwk_bindings/tests/bindings/simplicity_options_regtest.py`) derives its arguments from outpoints of a live regtest chain, so no fixed instance is recorded",
+   "args": {
+    "COLLATERAL_ASSET_ID": {
+     "value": "0x1111111111111111111111111111111111111111111111111111111111111111",
+     "type": "u256"
+    },
+    "SETTLEMENT_ASSET_ID": {
+     "value": "0x2222222222222222222222222222222222222222222222222222222222222222",
+     "type": "u256"
+    },
+    "OPTION_TOKEN_ASSET": {
+     "value": "0x3333333333333333333333333333333333333333333333333333333333333333",
+     "type": "u256"
+    },
+    "OPTION_REISSUANCE_TOKEN_ASSET": {
+     "value": "0x4444444444444444444444444444444444444444444444444444444444444444",
+     "type": "u256"
+    },
+    "GRANTOR_TOKEN_ASSET": {
+     "value": "0x5555555555555555555555555555555555555555555555555555555555555555",
+     "type": "u256"
+    },
+    "GRANTOR_REISSUANCE_TOKEN_ASSET": {
+     "value": "0x6666666666666666666666666666666666666666666666666666666666666666",
+     "type": "u256"
+    },
+    "COLLATERAL_PER_CONTRACT": {
+     "value": "1000",
+     "type": "u64"
+    },
+    "SETTLEMENT_PER_CONTRACT": {
+     "value": "2000",
+     "type": "u64"
+    },
+    "START_TIME": {
+     "value": "1700000000",
+     "type": "u32"
+    },
+    "EXPIRY_TIME": {
+     "value": "1800000000",
+     "type": "u32"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "dbb3def70d6097450d6a22f497d610cb7685ca8984822c94c6bbb081e760e02c",
+    "program_bytes": 2120
+   },
+   "pinned": {
+    "cmr": "dbb3def70d6097450d6a22f497d610cb7685ca8984822c94c6bbb081e760e02c",
+    "lint": [],
+    "program_bytes": 2120
+   },
+   "recorded_cmr": null,
+   "recorded_in": null,
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": null,
+   "matches_recorded_pinned": null
+  },
+  {
+   "id": "swk/seqob_fill",
+   "program": "SWK `seqob_fill.simf`",
+   "debug_symbols": false,
+   "args_from": "`build_args(asset_b(), &maker_script())` of `lwk_simplicity/tests/seqob_covenant.rs`, whose `taproot_substrate_cmr_and_address` prints the root and asserts nothing. Run with `cargo test -p lwk_simplicity --test seqob_covenant taproot_substrate -- --nocapture` under 0.4.1, it printed `a2deeda091ebe1d9424b75bc2b679dffc268fd2c44f5fdb8206f17de926413bc`",
+   "args": {
+    "ASSET_B": {
+     "value": "0x1111111111111111111111111111111111111111111111111111111111111111",
+     "type": "u256"
+    },
+    "REQUIRED_B": {
+     "value": "1000",
+     "type": "u64"
+    },
+    "MAKER_SPK_HASH": {
+     "value": "0xc01d1f0115c40d7eaa669f3ada155728f5481c8eb5d4c715f5a9a27fd568e80c",
+     "type": "u256"
+    },
+    "MAKER_PUBKEY": {
+     "value": "0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "a2deeda091ebe1d9424b75bc2b679dffc268fd2c44f5fdb8206f17de926413bc",
+    "program_bytes": 344
+   },
+   "pinned": {
+    "cmr": "a2deeda091ebe1d9424b75bc2b679dffc268fd2c44f5fdb8206f17de926413bc",
+    "lint": [],
+    "program_bytes": 344
+   },
+   "recorded_cmr": null,
+   "recorded_in": null,
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": null,
+   "matches_recorded_pinned": null
+  },
+  {
+   "id": "swk/seqob_partial",
+   "program": "SWK `seqob_partial.simf`",
+   "debug_symbols": false,
+   "args_from": "`build_args()` of `lwk_simplicity/tests/seqob_partial.rs`",
+   "args": {
+    "ASSET_A": {
+     "value": "0x0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+     "type": "u256"
+    },
+    "ASSET_B": {
+     "value": "0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+     "type": "u256"
+    },
+    "RATE_NUM": {
+     "value": "3",
+     "type": "u64"
+    },
+    "RATE_DEN": {
+     "value": "2",
+     "type": "u64"
+    },
+    "MAKER_SPK_HASH": {
+     "value": "0xc01d1f0115c40d7eaa669f3ada155728f5481c8eb5d4c715f5a9a27fd568e80c",
+     "type": "u256"
+    },
+    "MIN_LOT": {
+     "value": "10",
+     "type": "u64"
+    },
+    "MAKER_PUBKEY": {
+     "value": "0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "e38380dc70ea5bf321ae059d0948804f9554d040103f7075d956727529851850",
+    "program_bytes": 696
+   },
+   "pinned": {
+    "cmr": "e38380dc70ea5bf321ae059d0948804f9554d040103f7075d956727529851850",
+    "lint": [],
+    "program_bytes": 696
+   },
+   "recorded_cmr": null,
+   "recorded_in": null,
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": null,
+   "matches_recorded_pinned": null
+  },
+  {
+   "id": "swk/seqob_xchain_seqleg",
+   "program": "SWK `seqob_xchain_seqleg.simf`",
+   "debug_symbols": false,
+   "args_from": "`build_args()` of `lwk_simplicity/tests/seqob_xchain_seqleg.rs`",
+   "args": {
+    "HASHLOCK": {
+     "value": "0x66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+     "type": "u256"
+    },
+    "ASSET_A": {
+     "value": "0x0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+     "type": "u256"
+    },
+    "AMOUNT_A": {
+     "value": "1000",
+     "type": "u64"
+    },
+    "CLAIMANT_SPK_HASH": {
+     "value": "0xc01d1f0115c40d7eaa669f3ada155728f5481c8eb5d4c715f5a9a27fd568e80c",
+     "type": "u256"
+    },
+    "FUNDER_PUBKEY": {
+     "value": "0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "02d62bc1ebb5393e1fdfe6c1511751becc804ece52605f948a1cd9cda066868c",
+    "program_bytes": 414
+   },
+   "pinned": {
+    "cmr": "02d62bc1ebb5393e1fdfe6c1511751becc804ece52605f948a1cd9cda066868c",
+    "lint": [],
+    "program_bytes": 414
+   },
+   "recorded_cmr": null,
+   "recorded_in": null,
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": null,
+   "matches_recorded_pinned": null
+  },
+  {
+   "id": "opendamp/user",
+   "program": "OpenDAMP `user.simf` (U)",
+   "debug_symbols": false,
+   "args_from": "the asset, verifier asset and verifier amount of `opendamp/vectors/addresses.json`, as `compile_user` passes them",
+   "args": {
+    "ASSET_A": {
+     "value": "0xc44f3d7034c6da114f2ec7d984181312b5c374fa5fb728ef02cb060d4c28a8da",
+     "type": "u256"
+    },
+    "ASSET_V": {
+     "value": "0x982d7c1d1e45c758debd5fc990622a26e902857ec0bb3656bece25fcd97cb956",
+     "type": "u256"
+    },
+    "AMOUNT_Q": {
+     "value": "100000",
+     "type": "u64"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "92b619160ddbd03ce838da912494d8025f319d7556afd58482b35870ef0f9816",
+    "program_bytes": 478
+   },
+   "pinned": {
+    "cmr": "92b619160ddbd03ce838da912494d8025f319d7556afd58482b35870ef0f9816",
+    "lint": [],
+    "program_bytes": 478
+   },
+   "recorded_cmr": "92b619160ddbd03ce838da912494d8025f319d7556afd58482b35870ef0f9816",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.u_cmr`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "opendamp/issuer",
+   "program": "OpenDAMP `issuer.simf` (G)",
+   "debug_symbols": false,
+   "args_from": "`issuer_key` of `opendamp/vectors/addresses.json`",
+   "args": {
+    "ISSUER_KEY": {
+     "value": "0x56b328b30c8bf5839e24058747879408bdb36241dc9c2e7c619faa12b2920967",
+     "type": "Pubkey"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "53c55e01d58ffeea3983e4c13781009217ae524fbcfb684727bed6e767795816",
+    "program_bytes": 44
+   },
+   "pinned": {
+    "cmr": "53c55e01d58ffeea3983e4c13781009217ae524fbcfb684727bed6e767795816",
+    "lint": [],
+    "program_bytes": 44
+   },
+   "recorded_cmr": "53c55e01d58ffeea3983e4c13781009217ae524fbcfb684727bed6e767795816",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.g_cmr`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "opendamp/verifier/p3x5",
+   "program": "OpenDAMP `verifier.simf.in` (P), shape p3x5, canonical",
+   "debug_symbols": false,
+   "args_from": "the policy of `opendamp/vectors/addresses.json` (whitelist and blacklist roots, transfer limit, pi) and U's root under the same compiler; the template rendered as `render_verifier` does",
+   "args": {
+    "ASSET_A": {
+     "value": "0xc44f3d7034c6da114f2ec7d984181312b5c374fa5fb728ef02cb060d4c28a8da",
+     "type": "u256"
+    },
+    "ASSET_V": {
+     "value": "0x982d7c1d1e45c758debd5fc990622a26e902857ec0bb3656bece25fcd97cb956",
+     "type": "u256"
+    },
+    "AMOUNT_Q": {
+     "value": "100000",
+     "type": "u64"
+    },
+    "U_CMR": {
+     "value": "@cmr:opendamp/user",
+     "type": "u256"
+    },
+    "WL_ROOT": {
+     "value": "0xd08dec64016ebf7a5a0bd764f817877b2f68730c15d8c3bd33ffa4a0c3e5cc02",
+     "type": "u256"
+    },
+    "BL_ROOT": {
+     "value": "0x25e74bdf16e25709031f41b2d2a51ff865800b53e3787fca9cfb75edc07e11cb",
+     "type": "u256"
+    },
+    "LIMIT": {
+     "value": "300000000",
+     "type": "u64"
+    },
+    "PI": {
+     "value": "0x02052c7954275a39506c1e54371dcb85421174bfb879621120015e16662fd2f7",
+     "type": "u256"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "6f2d628ad96aab2df082938c6ee08db76aa92beb2fb17d4571135acf60e464bd",
+    "program_bytes": 1955
+   },
+   "pinned": {
+    "cmr": "6f2d628ad96aab2df082938c6ee08db76aa92beb2fb17d4571135acf60e464bd",
+    "lint": [],
+    "program_bytes": 1955
+   },
+   "recorded_cmr": "6f2d628ad96aab2df082938c6ee08db76aa92beb2fb17d4571135acf60e464bd",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.verifier_shapes`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "opendamp/verifier/p3x4",
+   "program": "OpenDAMP `verifier.simf.in` (P), shape p3x4",
+   "debug_symbols": false,
+   "args_from": "the policy of `opendamp/vectors/addresses.json` (whitelist and blacklist roots, transfer limit, pi) and U's root under the same compiler; the template rendered as `render_verifier` does",
+   "args": {
+    "ASSET_A": {
+     "value": "0xc44f3d7034c6da114f2ec7d984181312b5c374fa5fb728ef02cb060d4c28a8da",
+     "type": "u256"
+    },
+    "ASSET_V": {
+     "value": "0x982d7c1d1e45c758debd5fc990622a26e902857ec0bb3656bece25fcd97cb956",
+     "type": "u256"
+    },
+    "AMOUNT_Q": {
+     "value": "100000",
+     "type": "u64"
+    },
+    "U_CMR": {
+     "value": "@cmr:opendamp/user",
+     "type": "u256"
+    },
+    "WL_ROOT": {
+     "value": "0xd08dec64016ebf7a5a0bd764f817877b2f68730c15d8c3bd33ffa4a0c3e5cc02",
+     "type": "u256"
+    },
+    "BL_ROOT": {
+     "value": "0x25e74bdf16e25709031f41b2d2a51ff865800b53e3787fca9cfb75edc07e11cb",
+     "type": "u256"
+    },
+    "LIMIT": {
+     "value": "300000000",
+     "type": "u64"
+    },
+    "PI": {
+     "value": "0x02052c7954275a39506c1e54371dcb85421174bfb879621120015e16662fd2f7",
+     "type": "u256"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "a945cc6483c42db7286fa2f10ecd8736f8593251827a8efe57abc4f8c8c7250b",
+    "program_bytes": 1934
+   },
+   "pinned": {
+    "cmr": "a945cc6483c42db7286fa2f10ecd8736f8593251827a8efe57abc4f8c8c7250b",
+    "lint": [],
+    "program_bytes": 1934
+   },
+   "recorded_cmr": "a945cc6483c42db7286fa2f10ecd8736f8593251827a8efe57abc4f8c8c7250b",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.verifier_shapes`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "opendamp/verifier/p4x6",
+   "program": "OpenDAMP `verifier.simf.in` (P), shape p4x6",
+   "debug_symbols": false,
+   "args_from": "the policy of `opendamp/vectors/addresses.json` (whitelist and blacklist roots, transfer limit, pi) and U's root under the same compiler; the template rendered as `render_verifier` does",
+   "args": {
+    "ASSET_A": {
+     "value": "0xc44f3d7034c6da114f2ec7d984181312b5c374fa5fb728ef02cb060d4c28a8da",
+     "type": "u256"
+    },
+    "ASSET_V": {
+     "value": "0x982d7c1d1e45c758debd5fc990622a26e902857ec0bb3656bece25fcd97cb956",
+     "type": "u256"
+    },
+    "AMOUNT_Q": {
+     "value": "100000",
+     "type": "u64"
+    },
+    "U_CMR": {
+     "value": "@cmr:opendamp/user",
+     "type": "u256"
+    },
+    "WL_ROOT": {
+     "value": "0xd08dec64016ebf7a5a0bd764f817877b2f68730c15d8c3bd33ffa4a0c3e5cc02",
+     "type": "u256"
+    },
+    "BL_ROOT": {
+     "value": "0x25e74bdf16e25709031f41b2d2a51ff865800b53e3787fca9cfb75edc07e11cb",
+     "type": "u256"
+    },
+    "LIMIT": {
+     "value": "300000000",
+     "type": "u64"
+    },
+    "PI": {
+     "value": "0x02052c7954275a39506c1e54371dcb85421174bfb879621120015e16662fd2f7",
+     "type": "u256"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "7de27f30d95647cd6c7ea1951a85795ce3af07a1881343aecbd9c228ccf2d08d",
+    "program_bytes": 2001
+   },
+   "pinned": {
+    "cmr": "7de27f30d95647cd6c7ea1951a85795ce3af07a1881343aecbd9c228ccf2d08d",
+    "lint": [],
+    "program_bytes": 2001
+   },
+   "recorded_cmr": "7de27f30d95647cd6c7ea1951a85795ce3af07a1881343aecbd9c228ccf2d08d",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.verifier_shapes`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  },
+  {
+   "id": "opendamp/verifier/p5x7",
+   "program": "OpenDAMP `verifier.simf.in` (P), shape p5x7",
+   "debug_symbols": false,
+   "args_from": "the policy of `opendamp/vectors/addresses.json` (whitelist and blacklist roots, transfer limit, pi) and U's root under the same compiler; the template rendered as `render_verifier` does",
+   "args": {
+    "ASSET_A": {
+     "value": "0xc44f3d7034c6da114f2ec7d984181312b5c374fa5fb728ef02cb060d4c28a8da",
+     "type": "u256"
+    },
+    "ASSET_V": {
+     "value": "0x982d7c1d1e45c758debd5fc990622a26e902857ec0bb3656bece25fcd97cb956",
+     "type": "u256"
+    },
+    "AMOUNT_Q": {
+     "value": "100000",
+     "type": "u64"
+    },
+    "U_CMR": {
+     "value": "@cmr:opendamp/user",
+     "type": "u256"
+    },
+    "WL_ROOT": {
+     "value": "0xd08dec64016ebf7a5a0bd764f817877b2f68730c15d8c3bd33ffa4a0c3e5cc02",
+     "type": "u256"
+    },
+    "BL_ROOT": {
+     "value": "0x25e74bdf16e25709031f41b2d2a51ff865800b53e3787fca9cfb75edc07e11cb",
+     "type": "u256"
+    },
+    "LIMIT": {
+     "value": "300000000",
+     "type": "u64"
+    },
+    "PI": {
+     "value": "0x02052c7954275a39506c1e54371dcb85421174bfb879621120015e16662fd2f7",
+     "type": "u256"
+    }
+   },
+   "v0_4_1": {
+    "cmr": "c925d1819adb369ff8ad6a50b57dc220f1c2db1e08512b26032032bbab399452",
+    "program_bytes": 2049
+   },
+   "pinned": {
+    "cmr": "c925d1819adb369ff8ad6a50b57dc220f1c2db1e08512b26032032bbab399452",
+    "lint": [],
+    "program_bytes": 2049
+   },
+   "recorded_cmr": "c925d1819adb369ff8ad6a50b57dc220f1c2db1e08512b26032032bbab399452",
+   "recorded_in": "`opendamp/vectors/addresses.json` `programs.verifier_shapes`",
+   "compiled_unchanged": true,
+   "root_unchanged": true,
+   "matches_recorded_0_4_1": true,
+   "matches_recorded_pinned": true
+  }
+ ]
+}
