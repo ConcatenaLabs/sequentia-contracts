@@ -1,0 +1,5 @@
+/* Refused by the source layer: the pre-0.6.0 spelling of the transaction-wide
+ * relative-time maximum. */
+fn main() {
+    assert!(jet::eq_16(jet::tx_lock_duration(), 0));
+}

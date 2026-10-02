@@ -1,0 +1,8 @@
+/* Refused: lbtc_asset returns Liquid's L-BTC asset id, a constant that names no
+ * asset on Sequentia. This program means "the output pays the native coin" and
+ * would accept nothing that exists here. */
+fn main() {
+    let (asset, amount): (Asset1, Amount1) = unwrap(jet::output_amount(0));
+    let id: u256 = unwrap_right::<(u1, u256)>(asset);
+    assert!(jet::eq_256(id, jet::lbtc_asset()));
+}

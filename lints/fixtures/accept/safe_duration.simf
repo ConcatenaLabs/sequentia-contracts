@@ -1,0 +1,9 @@
+/* The same as safe_distance.simf for a relative TIME lock (units of 512 seconds). */
+fn main() {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(blocks: u16) => panic!(),
+        Right(units: u16) => units,
+    };
+    assert!(jet::le_16(param::N, d));
+}

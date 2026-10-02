@@ -1,0 +1,10 @@
+/* Refused by the source layer: the banned jet sits in a function that main
+ * never calls, so the compiled program does not contain it, but the source
+ * still names it and a later edit could call it. */
+fn fee_asset() -> u256 {
+    jet::lbtc_asset()
+}
+
+fn main() {
+    assert!(jet::le_32(2, jet::version()));
+}

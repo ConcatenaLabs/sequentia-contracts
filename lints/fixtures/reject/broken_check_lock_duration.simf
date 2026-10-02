@@ -1,0 +1,5 @@
+/* Refused: the relative-time jet (units of 512 seconds), with the same defect
+ * as the height form. The regtest harness runs it only to prove the bypass. */
+fn main() {
+    jet::broken_do_not_use_check_lock_duration(param::N)
+}
