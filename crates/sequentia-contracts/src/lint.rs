@@ -127,8 +127,9 @@ impl Report {
 
 /// Lint a SimplicityHL source with both layers.
 pub fn lint_source(source: &str) -> Report {
+    let expanded = crate::expand(source).unwrap_or_else(|_| source.to_string());
     let mut report = Report {
-        findings: scan_source(source),
+        findings: scan_source(&expanded),
         ..Report::default()
     };
     match crate::template(source) {

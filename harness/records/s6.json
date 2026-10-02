@@ -1,7 +1,7 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
  },
  "source/lock_distance": "/* Refused: the relative-height jet, used the way its name suggests. It reads\n * the largest relative lock over EVERY input, so a spender adds an old coin of\n * their own and spends this output at once. The regtest harness runs it only\n * to prove that bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_distance(param::N)\n}\n",
  "source/lock_duration": "/* Refused: the relative-time jet (units of 512 seconds), with the same defect\n * as the height form. The regtest harness runs it only to prove the bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_duration(param::N)\n}\n",
@@ -166,7 +166,7 @@
   "nin": 1,
   "nout": 2,
   "nVersion": 2,
-  "nLockTime": 1790968381,
+  "nLockTime": 1790975330,
   "nSequence": [
    "0xfffffffe"
   ],
@@ -177,7 +177,7 @@
    "dist": 0,
    "dur": 0,
    "height": 0,
-   "time": 1790968381,
+   "time": 1790975330,
    "final": 0
   }
  },
@@ -289,9 +289,9 @@
   "expected": "accepted",
   "testmempoolaccept": true,
   "reject-reason": null,
-  "size": 571,
+  "size": 570,
   "vsize": 345,
-  "weight": 1378,
+  "weight": 1377,
   "nin": 2,
   "nout": 3,
   "nVersion": 2,
@@ -343,7 +343,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-02T23:53:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T01:48:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
   "seconds": 0.01
  },
@@ -370,7 +370,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-02T23:53:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+    "(mocktime: 2026-10-03T01:48:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
    ],
    "seconds": 0.01
   }
@@ -403,9 +403,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
-  "seconds": 0.01
+  "seconds": 0.02
  },
  "safe_distance/other_input_carries_the_distance": {
   "expected": "refused",
@@ -430,9 +430,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
-   "seconds": 0.01
+   "seconds": 0.02
   }
  },
  "safe_distance/own_seq_10_too_early/block": {
@@ -441,9 +441,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.01
+  "seconds": 0.02
  },
  "safe_distance/own_seq_10_too_early": {
   "expected": "refused",
@@ -467,9 +467,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
    ],
-   "seconds": 0.01
+   "seconds": 0.02
   }
  },
  "safe_distance/version_1/block": {
@@ -478,7 +478,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -504,7 +504,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -515,7 +515,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -542,7 +542,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -553,7 +553,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -580,7 +580,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -591,7 +591,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -618,7 +618,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -647,7 +647,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:23:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T04:18:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -673,7 +673,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:23:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T04:18:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -684,7 +684,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:23:02Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T04:18:51Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
   "seconds": 0.01
  },
@@ -710,7 +710,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:23:02Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T04:18:51Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
    "seconds": 0.01
   }
@@ -756,7 +756,7 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:53:02Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T04:48:51Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
   "seconds": 0.01
  },
@@ -783,7 +783,7 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T02:53:02Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+    "(mocktime: 2026-10-03T04:48:51Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
    ],
    "seconds": 0.01
   }
@@ -813,9 +813,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T03:23:02Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T05:18:51Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
-  "seconds": 0.01
+  "seconds": 0.07
  },
  "safe_duration/other_input_carries_the_duration": {
   "expected": "refused",
@@ -840,9 +840,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T03:23:02Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T05:18:51Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
-   "seconds": 0.01
+   "seconds": 0.07
   }
  },
  "safe_duration/own_seq_time2_too_early/block": {
@@ -851,9 +851,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T03:23:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T05:18:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.01
+  "seconds": 0.09
  },
  "safe_duration/own_seq_time2_too_early": {
   "expected": "refused",
@@ -877,9 +877,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T03:23:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+    "(mocktime: 2026-10-03T05:18:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
    ],
-   "seconds": 0.01
+   "seconds": 0.09
   }
  },
  "duration/own_seq_time1_after_wait/block": {
@@ -888,9 +888,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
-  "seconds": 0.01
+  "seconds": 0.07
  },
  "duration/own_seq_time1_after_wait": {
   "expected": "refused",
@@ -915,9 +915,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
-   "seconds": 0.01
+   "seconds": 0.07
   }
  },
  "duration/own_seq_is_a_BLOCK_lock_of_2/block": {
@@ -926,9 +926,9 @@
   "mined": false,
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ],
-  "seconds": 0.01
+  "seconds": 0.04
  },
  "duration/own_seq_is_a_BLOCK_lock_of_2": {
   "expected": "refused",
@@ -953,9 +953,9 @@
    "mined": false,
    "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
    "block-log": [
-    "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+    "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
    ],
-   "seconds": 0.01
+   "seconds": 0.04
   }
  },
  "duration/own_seq_time2_after_wait": {

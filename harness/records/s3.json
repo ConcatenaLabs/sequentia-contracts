@@ -1,7 +1,7 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "474b87749d38b12ff3ffdd1aadadd050aacae149fc3b5e2a6ab445c39aabb4ad": 100000000,
+  "8eda48b6be63ab17d738b5bbaaecf8617d413248862121f324c1cdb8c0983d50": 100000000,
   "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
  },
  "source/loop": "/* S3: rebindable two-party transfer, bounded loop, M = 4.\n *\n * Both keys sign  msg = SHA256( TAG(8) || SALT(32) || m(1) || output_hash(0) || ... || output_hash(m-1) )\n * where output_hash(j) is the jet's hash of output j (asset, amount, nonce, script, range proof).\n * Nothing about the input outpoint, the other inputs, outputs >= m, lock time\n * or sequence is covered, so the same two signatures spend ANY coin that\n * carries this program (same keys, same salt).\n * Witness: M (u8, 1..4), SIG_A, SIG_S. */\nfn add_out(ctx: Ctx8, i: u32) -> Ctx8 {\n    jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(i)))\n}\n\nfn main() {\n    let m: u8 = witness::M;\n    assert!(jet::lt_8(0, m));\n    assert!(jet::lt_8(m, 5));\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, param::TAG);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, param::SALT);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, m);\n    let ctx: Ctx8 = add_out(ctx, 0);\n    let ctx: Ctx8 = match jet::lt_8(1, m) { true => add_out(ctx, 1), false => ctx, };\n    let ctx: Ctx8 = match jet::lt_8(2, m) { true => add_out(ctx, 2), false => ctx, };\n    let ctx: Ctx8 = match jet::lt_8(3, m) { true => add_out(ctx, 3), false => ctx, };\n\n    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);\n    jet::bip_0340_verify((param::A, msg), witness::SIG_A);\n    jet::bip_0340_verify((param::S, msg), witness::SIG_S);\n}\n",
@@ -9,15 +9,15 @@
  "source/fixed_m2": "/* S3: rebindable two-party transfer, fixed m = 2 (one program per m).\n * msg = SHA256( TAG(8) || SALT(32) || m(1) || output_hash(0) || ... || output_hash(m-1) )\n * No branches, so nothing to prune. Witness: SIG_A, SIG_S. */\nfn add_out(ctx: Ctx8, i: u32) -> Ctx8 {\n    jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(i)))\n}\n\nfn main() {\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, param::TAG);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, param::SALT);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 2);\n    let ctx: Ctx8 = add_out(ctx, 0);\n    let ctx: Ctx8 = add_out(ctx, 1);\n\n    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);\n    jet::bip_0340_verify((param::A, msg), witness::SIG_A);\n    jet::bip_0340_verify((param::S, msg), witness::SIG_S);\n}\n",
  "source/fixed_m2_bind": "/* S3: rebindable two-party transfer, fixed m = 2 (one program per m).\n * msg = SHA256( TAG(8) || SALT(32) || m(1) || output_hash(0) || ... || output_hash(m-1) || 0x01 || asset || 0x01 || amount_be8 of the spent coin )\n * No branches, so nothing to prune. Witness: SIG_A, SIG_S. */\nfn add_out(ctx: Ctx8, i: u32) -> Ctx8 {\n    jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(i)))\n}\n\nfn main() {\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, param::TAG);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, param::SALT);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 2);\n    let ctx: Ctx8 = add_out(ctx, 0);\n    let ctx: Ctx8 = add_out(ctx, 1);\n    let (a, v): (Asset1, Amount1) = jet::current_amount();\n    let ctx: Ctx8 = jet::asset_amount_hash(ctx, a, v);\n    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);\n    jet::bip_0340_verify((param::A, msg), witness::SIG_A);\n    jet::bip_0340_verify((param::S, msg), witness::SIG_S);\n}\n",
  "loop_m1/program": {
-  "cmr": "c056868b68a991282d5fca0e95f1dab6ad835a944ccff31b84db5ca1319feccb",
+  "cmr": "da6989ac1d624bce9c214d22bfad95af38806a4574a715ace35411cc4ffeee02",
   "commit_program_bytes": 384,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120642b75b966fa0e7b7ece5dc912d24c267e9b0a185ea8bdf1efe7fa1ccbbf3f9d",
+  "scriptPubKey": "51204b89f71e2f7ee0141e0efa774a658a94e7dc8818ad327b3bbca78186a3633a71",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x3f03626911b420e538848bb0370ff07935f04b3f3d7522ab10794a89e488e7fa",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x2d2c388e276a8fb945239d6ec8d3580209d765b19b6eb6b44469c4001edcf935",
    "TAG": "0x4172636152626431"
   }
  },
@@ -27,7 +27,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_output0_other_script": {
@@ -36,7 +36,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_output0_other_asset": {
@@ -45,7 +45,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_sigs_for_other_salt": {
@@ -54,7 +54,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_sig_A_by_stranger": {
@@ -63,7 +63,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_sig_S_by_stranger": {
@@ -72,7 +72,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_sigs_swapped": {
@@ -81,7 +81,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/neg_sig_all_hash_signatures": {
@@ -90,7 +90,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m1/spend_coin1": {
@@ -105,7 +105,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "4481cea84da935cdf275d934148592f96921d76056755bda3fe7a92e3cdb1762",
+  "txid": "f0263856cb618ce16292cc9ccaa83d586b13866a71119b5fdc23a7fe4a787d30",
   "confirmed": true,
   "block_height": 107,
   "program_bytes": 447,
@@ -114,8 +114,8 @@
   "budget_wu": 2770,
   "cost_bound_milli_wu": 242055,
   "cost_bound_wu": 243,
-  "program_hex": "e671d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b49f81b13488da10729c4245d81b87f83c9af8259f9eba9155883ca544f24473fd02058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a0506e3d3993609a1dae464cb758f02a696132b29bf28a03c6d5d84895c266a7b07dc479900300c42669b002041f70a00e4aa0506e459ccc51665312cfbf164805f0b7dbe0bc4f629c5ccdd16a731d2a81e7d463ad82a16180621334d801820fb8500728d02837264e659e87e49485d953de893685e62b9129833f63d9a31567999ad1123755060f87b0c0310999b93fab10420509b4cf20eec0445a2d0f258bc0d3a70f58a7787f284ef6a012c7839e2bf12ff3503c020dc7a287146c6022d2d737d4f34c0839e1c394e6c33f6ac286aa4ad06454f37d94990aa85e91972ad20d413438a00cc4de7e624102d402838281c2c0e2a038e40e4481ca203958072d80e6042e61806e1731a0380039990",
-  "witness_hex": "0103ff727af9725ba4d9fb9de58a8513a16e6999c02219922d3fdf360177d6be2156131c81e3497eba806a778a8b7fe8c21077b056ab9c89105e89e78506079acbd711e9f5de27765a418d0c2ff6bcac58809d9d043115732911c657ec4b7f9f5414587c4a89035d1fcab4fcb15178bc1c2603b59cdd6e4d93466fb7f7075ca231",
+  "program_hex": "e671d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b496961c4713b547dca291ceb76469ac0104ebb2d8cdb75b5a2234e2000f6e7c9a82058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a0506e3d3993609a1dae464cb758f02a696132b29bf28a03c6d5d84895c266a7b07dc479900300c42669b002041f70a00e4aa0506e459ccc51665312cfbf164805f0b7dbe0bc4f629c5ccdd16a731d2a81e7d463ad82a16180621334d801820fb8500728d02837264e659e87e49485d953de893685e62b9129833f63d9a31567999ad1123755060f87b0c0310999b93fab10420509b4b717937117af24ab57586cd6a0893e3c491a788f3e1b53b1c5cbe26dea316203820dc7a287146c6022d371fbc0ab817c6a32fffe2c83ce7058e39350dc835c306d5e24ddbdb3b9a386f00d413438a00cc4de7e624102d402838281c2c0e2a038e40e4481ca203958072d80e6042e61806e1731a0380039990",
+  "witness_hex": "01d831fbdc3b384dbaee4a77c98fe77ec705619f0a2045a0b0f1a9d81b7a91cd1e93f70671de99880d8f41fbd99d6a00830874b56aa2be39dfa3e2f6298ef63f694d36f4a033d3b17b0140f1c9827ba3775fa6b8c0e089a0bcc268cbb1dbbcc8f138b41d6d47c37b45ded7026e6ad3b17fcbbd3dad381fa168516c34b5e682cd02",
   "witness_input0_bytes": 680
  },
  "loop_m1/spend_coin2_same_witness": {
@@ -130,13 +130,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "64a16e943a825877d268f1a7707803145aa5c9849900ae76eecfef1b40a98ae5",
+  "txid": "30bb45406b40f8716670aa279904d1a406c90a71b85e8254edb9801e585fd61d",
   "confirmed": true,
   "block_height": 110,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "2b6acdb931b8098ca31a79904fb74a647c5c799fed0dae9b5cb0b1cff9b0209a:0",
-  "coin2": "44b15e5153a7b6c8f9b0ef93fc046c7b4ddfefa88b7afbb9da4ab46011eaef45:2",
+  "coin1": "dd0ec1165701b8d5c3126ec98ea2f352d925fa88540261e2869d483ccdfef98c:2",
+  "coin2": "3e4432125a5a152537b0b23d603789fdb80218007a8fad97f01dc9620ff1c5b9:0",
   "witness_input0_bytes": 680
  },
  "loop_m1/spend_coin3_other_amount_ACCEPTED": {
@@ -151,7 +151,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00005600"
   },
-  "txid": "1af15d90f330b9161253203d01e3c8e883f989cdfda2b31d9e9488eb33138d0e",
+  "txid": "194f0d8fb2c2056e571d152124e6a30a36c50dad2054c9990464ddb29a2bb358",
   "confirmed": true,
   "block_height": 114,
   "witness_input0_bytes": 680
@@ -168,21 +168,21 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "03ad652228f748fd28580e565203bb67489dcaa4b0000fd08fa0f9f36829caad",
+  "txid": "c4403817c4637223c97462ede8ccc5b5e3dc16047f5bc1b72722998cfc0866fa",
   "confirmed": true,
   "block_height": 115,
   "witness_input0_bytes": 680
  },
  "loop_m2/program": {
-  "cmr": "2a53c35dca538c6b6846047533b3ac0ec7a7e2ebc851da4e8e660de274e76f2f",
+  "cmr": "2760d273c430f543be98042e531c3bc450dfa9d6a4bdb24c62e3eadd71782d5c",
   "commit_program_bytes": 384,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51209fe3b8b88ab010d0a63a8124518cf562deafe6327b34e5bbcb1d9d0108656b47",
+  "scriptPubKey": "5120ec09722f1a6767b5732fb28adf1d8bbe53d9bb04b0d19be2180cb3391ac2ab04",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0xc3384d4f2c09f6da74950b1146587cf56a67d03aa05dbcd4b822c08f4d7243a3",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x518572bd9862aaf9e18591684eba73a47d307fb5a3ffaaba7e614bbc86c0ef59",
    "TAG": "0x4172636152626431"
   }
  },
@@ -201,7 +201,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m2/neg_output0_other_asset": {
@@ -210,7 +210,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m2/neg_outputs_swapped": {
@@ -228,7 +228,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m2/neg_sig_A_by_stranger": {
@@ -246,7 +246,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m2/neg_sigs_swapped": {
@@ -264,7 +264,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_m2/spend_coin1": {
@@ -279,7 +279,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "a0c3464572ddb90092d008be699c5cda2f9dd9c7e155b5d051fa5c46ed0bff27",
+  "txid": "0a9643efa611062e13163d3c33dabe560f3a99ef064ea7484200629a393dc68b",
   "confirmed": true,
   "block_height": 118,
   "program_bytes": 459,
@@ -288,8 +288,8 @@
   "budget_wu": 2818,
   "cost_bound_milli_wu": 251901,
   "cost_bound_wu": 252,
-  "program_hex": "e685d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4e19c26a79604fb6d3a4a8588a32c3e7ab533e81d502ede6a5c116047a6b921d182058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e6628b3298967df8b2402f85bedf05e27b14e2e66e8b5398e9540f3ea31d6c150b0c031099a6c00c107dc28039508141b93c732cf43f24a42eca9ef449b42f315c894c19fb1ecd18ab3cccd68891baa8307c3d8601884ccdca4d588210284da67907760222d168792c5e069d387ac53bc3f94277b500963c1cf15f897f9a81e0106e410a1c51b1808b4b5cdf53cd3020e7870e539b0cfdab0a1aa92b419153cdf652642aa17a465cab483504d0e280331379f98e040b500a0e0a070b038a80e390391c0729c0e5881cbb039860b98b01b85cc900e000e6780",
-  "witness_hex": "025e84e01d12573ed8af1343c7371d36841fb4109d1e44c7908903847d60b824ea3fad288371e649c9c2d7e70790bf5d4fb38eb6678a8cc1dd974995155917f4f21b23fa69b6479ec4f9f8881c84b5f85b16bbc8038860b3c7dc0c134629b66512e92269b7d32d0d4b5565fff28d2a90fd4ab51d34cdaed2015c3fae8aec3ec95f",
+  "program_hex": "e685d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4a8c2b95ecc31557cf0c2c8b4275d39d23e983fdad1ffd55d3f30a5de436077ac82058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e6628b3298967df8b2402f85bedf05e27b14e2e66e8b5398e9540f3ea31d6c150b0c031099a6c00c107dc28039508141b93c732cf43f24a42eca9ef449b42f315c894c19fb1ecd18ab3cccd68891baa8307c3d8601884ccdca4d588210284da5b8bc9b88bd79255abac366b50449f1e248d3c479f0da9d8e2e5f136f518b101c106e410a1c51b1808b4dc7ef02ae05f1a8cbfff8b20f39c1638e4d43720d70c1b5789376f6cee68e1bc03504d0e280331379f98e040b500a0e0a070b038a80e390391c0729c0e5881cbb039860b98b01b85cc900e000e6780",
+  "witness_hex": "02e968430b18c0ffaf9a32f10fc5f2dd0077b7d39ab312e711975e0bc25f0f929a28507065cf4e58e989789176420f00c9ac6c4297227fac76e5edb8bd770a67dcfe66f07b9420163a984fd0a03ac74ecc8fd4a0ff69b0c85c924fe0598a55fc2e166199182ea603281b9938d6e756c04916490d88b39acacecb19a34e862ad8ed",
   "witness_input0_bytes": 692
  },
  "loop_m2/spend_coin2_same_witness": {
@@ -304,13 +304,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "6c1bb030fdb7f1fefcea4600bba4ad585fa6eaa4054a30550b1fc866f4b22256",
+  "txid": "cec5111ede2d095e6353a68c42e0cda9e79d02340f00ccd927b8342d944354f3",
   "confirmed": true,
   "block_height": 121,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "2a7455f084e0b3fd360c3cb95dc22c65e71f953e52dd69d9d96a8178381e6850:2",
-  "coin2": "09f1474160ff392da5b3f11a1b8ecdc79a32341aa2f09ee590039cb13e9612b8:1",
+  "coin1": "3f7d62e7bda25b7e10224a1597e5d05eaf513d86b53a62d8e251fab87743cec5:1",
+  "coin2": "c8111ec3aa77277dfbc114d9835fc528a7c9cb17195d4723d3f34e29f221bff1:2",
   "witness_input0_bytes": 692
  },
  "loop_m2/spend_coin3_other_amount_ACCEPTED": {
@@ -325,7 +325,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00005600"
   },
-  "txid": "3488e38676529b90823f344195aa4070cb84ad091b6115f9b729219bd445ceda",
+  "txid": "f781d50a09bdc4cce1ca38982645a0481b2c9811a4b5cdaa60a113cceb763af5",
   "confirmed": true,
   "block_height": 125,
   "witness_input0_bytes": 692
@@ -342,21 +342,21 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "92d33add979f96ea41c7a28afcf2fe3db89ef3eaf365705f6242765f23063875",
+  "txid": "e186c6494a62ee217e25dc1f3afc87bdd1e301e1e16942db95b4e1b00236902c",
   "confirmed": true,
   "block_height": 126,
   "witness_input0_bytes": 692
  },
  "loop_bind_m1/program": {
-  "cmr": "39be14917c4b426e10578c8e8b03d66018ca9ea20243f0670d1311fb45266e17",
+  "cmr": "d525ec9a526aac80cacef6b8696445c653b0782c904bc5a9dcab3a822cbe290f",
   "commit_program_bytes": 411,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "512053a76b2b0cbc8decfec271a04dc2a45e4af2925023a9e71c986905df3c4c1af2",
+  "scriptPubKey": "5120a14eeaabe0c00c890cd8ca7d2f4b4f5a439a39f8871071fdf59f780bfa106e8c",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0xc57e2f70dbff79ea9a56e9b01b0ce4cfd56d02c87a6a5be5d2b2fc542293c7d2",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0xb1da33f9a1d11ff9f1f14db73cd8cb9701fa18791a98497de776e970b4513d62",
    "TAG": "0x4172636152626431"
   }
  },
@@ -366,7 +366,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_output0_other_script": {
@@ -375,7 +375,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_output0_other_asset": {
@@ -384,7 +384,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_sigs_for_other_salt": {
@@ -393,7 +393,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_sig_A_by_stranger": {
@@ -402,7 +402,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_sig_S_by_stranger": {
@@ -411,7 +411,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_sigs_swapped": {
@@ -420,7 +420,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_sig_all_hash_signatures": {
@@ -429,7 +429,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/spend_coin1": {
@@ -444,7 +444,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "c58aa155b1dfa6a6d662e2e6c6f92b0c3f50d7501c90236f30082fb7724ce026",
+  "txid": "0c4e2dbf9a521bdc6361f6015ac74812678da7eba1f0086ebf7fe8a603c0128d",
   "confirmed": true,
   "block_height": 129,
   "program_bytes": 474,
@@ -453,8 +453,8 @@
   "budget_wu": 2878,
   "cost_bound_milli_wu": 279142,
   "cost_bound_wu": 280,
-  "program_hex": "e6c5d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4e2bf17b86dffbcf54d2b74d80d867267eab681643d352df2e9597e2a1149e3e902058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a0506e3d3993609a1dae464cb758f02a696132b29bf28a03c6d5d84895c266a7b07dc479900300c42669b002041f70a00e4aa0506e459ccc51665312cfbf164805f0b7dbe0bc4f629c5ccdd16a731d2a81e7d463ad82a16180621334d801820fb8500728d02837264e659e87e49485d953de893685e62b9129833f63d9a31567999ad1123755060f87b0c031099a7e1c0c108141b948720c3107182c02d0ee1c0840a0dcb2d588210284da67907760222d168792c5e069d387ac53bc3f94277b500963c1cf15f897f9a81e0106e480a1c51b1808b4b5cdf53cd3020e7870e539b0cfdab0a1aa92b419153cdf652642aa17a465cab483504d0e280331379f99c040b500a0e0a070b038a80e30038fc0e4701c9e0396e07302073160732c1733603800b9a201c081cd700",
-  "witness_hex": "01a1aed85df9395cc3a8860a8fb685378f0ac121edfad04b00312ec0ecabdd5714ad913bc1a35b448fed349bcb07d607e8e333b2f4c773d1d4f9aeb2d8e9cd32fcc7f23572b0bdf5732c214835395b0f2d8c9be02dd1609618ac156deb21fd402d933dfd30289d5d394b84584751b14576f5169139c2ffabb1231e4f921817c643",
+  "program_hex": "e6c5d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4d8ed19fcd0e88ffcf8f8a6db9e6c65cb80fd0c3c8d4c24bef3bb74b85a289eb102058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a0506e3d3993609a1dae464cb758f02a696132b29bf28a03c6d5d84895c266a7b07dc479900300c42669b002041f70a00e4aa0506e459ccc51665312cfbf164805f0b7dbe0bc4f629c5ccdd16a731d2a81e7d463ad82a16180621334d801820fb8500728d02837264e659e87e49485d953de893685e62b9129833f63d9a31567999ad1123755060f87b0c031099a7e1c0c108141b948720c3107182c02d0ee1c0840a0dcb2d588210284da5b8bc9b88bd79255abac366b50449f1e248d3c479f0da9d8e2e5f136f518b101c106e480a1c51b1808b4dc7ef02ae05f1a8cbfff8b20f39c1638e4d43720d70c1b5789376f6cee68e1bc03504d0e280331379f99c040b500a0e0a070b038a80e30038fc0e4701c9e0396e07302073160732c1733603800b9a201c081cd700",
+  "witness_hex": "01e6065943b92454e3115be36ce04596fc3ff1413e15eb035717db2b0425aae5755b9593f1f3b980d07afeda5e411ee2669850c64863a6ebcfa653687330e240f63f59a629a32956998dc753d5acde3f4e257e5ab87d019a72a1c6a6fea155fc1bc618952b98f5f402308c356e90b0087db34715945c2883f9e312e77af7c8cdf1",
   "witness_input0_bytes": 707
  },
  "loop_bind_m1/spend_coin2_same_witness": {
@@ -469,13 +469,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "d0b32fde73d15446e540e68ce9a4957900c792ffa452e59ca618dbb189c2ace7",
+  "txid": "be7305527804b7024642c76a40aec980aae970dccf705c2a7a8e18d2b87c5a44",
   "confirmed": true,
   "block_height": 132,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "348927363b12812fd8d165ace054f08bc9b36530220a39d6a3f93b916bf1495a:2",
-  "coin2": "d8d904f9cdce99ffbd3634fee04c78c2d4c98da6aebf3f62521df78e733275bf:2",
+  "coin1": "63d3ff187b366f4d0d44ee38cf0aaae3da05cec6a624c58c31a30f7c140b2016:0",
+  "coin2": "460b496bfdb9efe2d093992ada16bf51f166a84186b86618f23bcbbde4a1c0fc:1",
   "witness_input0_bytes": 707
  },
  "loop_bind_m1/neg_coin_with_other_amount": {
@@ -484,7 +484,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m1/neg_coin_with_other_asset": {
@@ -493,19 +493,19 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/program": {
-  "cmr": "c40f4365fb36e468741bb2fc73ca8e28db030562ccb5dd6ae13f91180c90ad95",
+  "cmr": "0b30277deed6dec2e5cfaac0e65d0f5aea4460f1c1203b80e553638a3ddc56d6",
   "commit_program_bytes": 411,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51207ac3c7196d3d2bbd939c1929f843b1537a0cb56a8b21628d8b0a9df3e60ce538",
+  "scriptPubKey": "512015d9192c349a141ff0d1e8aa2e54bbd75390248bbef438feffde3c7b234882f5",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x4bc3dafcf3b538d82bafa6e940f416f44b6a58752903d5a7a33c1af02aeb9d19",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0xb714a71caedd3678fc263b706209dd4724d926ff1db748853b11b6537938f223",
    "TAG": "0x4172636152626431"
   }
  },
@@ -515,7 +515,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/neg_output0_other_script": {
@@ -542,7 +542,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/neg_sigs_for_other_salt": {
@@ -560,7 +560,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/neg_sig_S_by_stranger": {
@@ -578,7 +578,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/neg_sig_all_hash_signatures": {
@@ -587,7 +587,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/spend_coin1": {
@@ -602,7 +602,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "4381aacab4fce88f50d2ea16b8975eb0dfc78201d671351597e64d14a30c735d",
+  "txid": "2627274b91e0bff61ce4700f5e5457eb04ee4e7c023d30c36c33f91927460b4a",
   "confirmed": true,
   "block_height": 138,
   "program_bytes": 485,
@@ -611,8 +611,8 @@
   "budget_wu": 2922,
   "cost_bound_milli_wu": 288988,
   "cost_bound_wu": 289,
-  "program_hex": "e6d9d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4a5e1ed7e79da9c6c15d7d374a07a0b7a25b52c3a9481ead3d19e0d781575ce8c82058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e6628b3298967df8b2402f85bedf05e27b14e2e66e8b5398e9540f3ea31d6c150b0c031099a6c00c107dc28039508141b93c732cf43f24a42eca9ef449b42f315c894c19fb1ecd18ab3cccd68891baa8307c3d8601884cd3f0e060840a0dca9390618838c160168770e0420506e5beac41081426d33c83bb011168b43c962f034e9c3d629de1fca13bda804b1e0e78afc4bfcd40f0083725450e28d8c045a5ae6fa9e6981073c38729cd867ed5850d5495a0c8a9e6fb29321550bd232e55a41a826871401989bcfcd08205a8050705038581c54071801c7e072380e5181cbc03986039900399b0b9a001c005cd380e040e6cc",
-  "witness_hex": "02ae61147166fecdeb39f77213daed01df11e24ff178b7496dc777c6c93388324dbf1edf4a755ac8c3bfcee54f2cd886aade41980ab64797e066c6df2bd4ede9058a9f297283e7207f2a56dcceddcd3857bc438b1b1e8d4bfb12519ee43d30b526b2fa36835bddf9aa5cb24410b696f28c1e02806806ef0c57743e68ea5b3fa5ea",
+  "program_hex": "e6d9d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4db8a538e576e9b3c7e131db83104eea3926c937f8edba4429d88db29bc9c791182058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e6628b3298967df8b2402f85bedf05e27b14e2e66e8b5398e9540f3ea31d6c150b0c031099a6c00c107dc28039508141b93c732cf43f24a42eca9ef449b42f315c894c19fb1ecd18ab3cccd68891baa8307c3d8601884cd3f0e060840a0dca9390618838c160168770e0420506e5beac41081426d2dc5e4dc45ebc92ad5d61b35a8224f8f12469e23cf86d4ec7172f89b7a8c5880e083725450e28d8c045a6e3f7815702f8d465fffc59079ce0b1c726a1b906b860dabc49bb7b6773470de01a826871401989bcfcd08205a8050705038581c54071801c7e072380e5181cbc03986039900399b0b9a001c005cd380e040e6cc",
+  "witness_hex": "02efe18a3a1cb049eb0e0631b79de1c01b3b0bcf4414039bf9888fc803078c41bbad0120f2785823c86859363311e2c233ca65bd5253b932e28843176f62527dc55b305085ce528714508e0598ab1c68ba903a547eb3ce2a8d4c5cf00336d6f06e979e54703f297fcdd81a8dcd47284a56008ef9442b46afa1ab8d0ded1da49fd7",
   "witness_input0_bytes": 718
  },
  "loop_bind_m2/spend_coin2_same_witness": {
@@ -627,13 +627,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "864a1b1241777e1ba4b63afb94fb4c4d4e82773fae9689acb107036c1596fe59",
+  "txid": "18c93898fce88d43ecdfc8a739ee3f01f792d84d6223f62e0af6b083b3974150",
   "confirmed": true,
   "block_height": 141,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "04e85c87c5bbf72204aa7745391417742b2c05e506d97579a985e66601b9ccf1:1",
-  "coin2": "a88de0f46255d941afee0b92260e732e31bfa7bd54d922b107d66c6c9a6d3a62:1",
+  "coin1": "c858119e717f7aa6533f00a3da9dcbca500bbc78de75b42e4f94f8552ba7d8bc:0",
+  "coin2": "e2b80c9a7edfe82149ef7841f2be3f857fcae4e6c2e07ea89e27b47c5d1f5583:2",
   "witness_input0_bytes": 718
  },
  "loop_bind_m2/neg_coin_with_other_amount": {
@@ -642,7 +642,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "loop_bind_m2/neg_coin_with_other_asset": {
@@ -655,15 +655,15 @@
   ]
  },
  "fixed_m1/program": {
-  "cmr": "badc46b525f2625d9ac83b5b0fec91907747bc09830264b78c724cc4494efd61",
+  "cmr": "7138ca7c8f74a44cf2d58b6b3a3189f58c255d8a2157e8a3e85315e1f50948b9",
   "commit_program_bytes": 254,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120911e85b5cd5372d498da5d619ee3c8298b77be77d214c33487d1e94fcd460027",
+  "scriptPubKey": "5120ca562ee75435f131e3da3fe4763439faaf5a75475aa00cf85b88f932ec157456",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x362fb3c75bba374de100cea1785c1821e1ecaf79d2ef17b3346f0251af77de4f",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0xfbb5380ce8b0f9cfad17eff90fd94c4044b74fc62204c67478ec8e88ef473a6a",
    "TAG": "0x4172636152626431"
   }
  },
@@ -673,7 +673,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_output0_other_script": {
@@ -682,7 +682,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_output0_other_asset": {
@@ -691,7 +691,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_sigs_for_other_salt": {
@@ -700,7 +700,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_sig_A_by_stranger": {
@@ -709,7 +709,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_sig_S_by_stranger": {
@@ -718,7 +718,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_sigs_swapped": {
@@ -727,7 +727,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/neg_sig_all_hash_signatures": {
@@ -736,7 +736,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m1/spend_coin1": {
@@ -751,7 +751,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "4af219c0624586284a7cb51475bd1383489474dfd83a26548069283450c45c65",
+  "txid": "0987671b91fdb4cec35e4ec46ab951cf01566e3c7aa648285d0cc4859cef9e91",
   "confirmed": true,
   "block_height": 147,
   "program_bytes": 254,
@@ -760,8 +760,8 @@
   "budget_wu": 1994,
   "cost_bound_milli_wu": 160713,
   "cost_bound_wu": 161,
-  "program_hex": "e4c275640840a10626cd05c98d85498990c4102c1aae00840a0da9369362fb3c75bba374de100cea1785c1821e1ecaf79d2ef17b3346f0251af77de4f040b06ab902102837034d80082058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a6ac41081426d33c83bb011168b43c962f034e9c3d629de1fca13bda804b1e0e78afc4bfcd40f00837021438a363011696b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb956906a09a1c5006626f3f22c102d402838281c2c0e34038f80e4401c930",
-  "witness_hex": "dbc64b4f08109e116d4c8407846c30e1fd1c3da4afffc97bf0268b7d6a81c2e4636fc30b45951b62ac29fa756680c5ff011d60ed478933e41e58d36890c6ef710a0b876191214eab9b805012985b7408e29f1deb1b4266b5c7b7d0181a3bbdd7d4f66703f4ba09013204e2dc447c1571ef15dc603917023d17156f5f50b8f819",
+  "program_hex": "e4c275640840a10626cd05c98d85498990c4102c1aae00840a0da9369fbb5380ce8b0f9cfad17eff90fd94c4044b74fc62204c67478ec8e88ef473a6a040b06ab902102837034d80082058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a6ac41081426d2dc5e4dc45ebc92ad5d61b35a8224f8f12469e23cf86d4ec7172f89b7a8c5880e0837021438a36301169b8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c37806a09a1c5006626f3f22c102d402838281c2c0e34038f80e4401c930",
+  "witness_hex": "a2fd2620b2208e15802798a40a6761eef98688e93e4982fd1593fd742fcfb85f06830c1cbad16eed96cfaf52360fdd0c2682e6e14dba3f292f0d9925b1dcad9b8e2c2f5bad9b04a87703f5fbadf95bc93263d92897ad554cf31cdbdcd63edcc9dd309b90b53ca68850d28ccddcd643c4ec1161ed23dacf187154db7ef3773ce3",
   "witness_input0_bytes": 486
  },
  "fixed_m1/spend_coin2_same_witness": {
@@ -776,13 +776,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "08fcfc66211974fd8b19c2e7d76388ebdbcfec62ee34c2940a03f12644e79f22",
+  "txid": "658e706fb9c5df6b89b5685a54bf76bf28b6cb6e6194dca8a709bc08c65b2686",
   "confirmed": true,
   "block_height": 150,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "f1c460980e366f6ae7e2fff971540e88558b70937c1ed44e3a2c1d74d845ecc6:2",
-  "coin2": "aff9dcfde0a43a0a1d7fef15385fe910b546853f41dd9d139099e9b8236f118b:1",
+  "coin1": "db35965d53595b9d0bd32fc6e99401e3d8cdb9c801c1431165dcf1957780ddeb:1",
+  "coin2": "e794bf815e0149054fe2f5bda9c7bf63e7f07df9396e487ecab65d8039639e01:1",
   "witness_input0_bytes": 486
  },
  "fixed_m1/spend_coin3_other_amount_ACCEPTED": {
@@ -797,7 +797,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00005600"
   },
-  "txid": "a08885b1ae7fc4e94115e38f3558bdb7edeac30261a530eacd2f7325e2679f69",
+  "txid": "9d542a7e4d50ee8c176d594dd901289c48a0a65150a2b5af4a07958c102de2d6",
   "confirmed": true,
   "block_height": 154,
   "witness_input0_bytes": 486
@@ -814,21 +814,21 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "fec53d44815fdad1f7bcf502380e7569c64a362000a4b046ff5064d99028d5cf",
+  "txid": "3db56e9e10874841e18aee714cc030e36d32ea062ccc157daeeecc7767bb7db5",
   "confirmed": true,
   "block_height": 155,
   "witness_input0_bytes": 486
  },
  "fixed_m2/program": {
-  "cmr": "cf693856704ea65b59a2ff8a61c2cb8779ff75c8d7c48b1b856d1734e221d20c",
+  "cmr": "dbec46ed3363eadfc69230313ddddbf6c46fb8b637c2a3b48f32f48e32cea901",
   "commit_program_bytes": 270,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120105a7bed6140283fb5e6fd2a9f1e34449d34b186b8764b1ee53e42671c8d6df8",
+  "scriptPubKey": "512081e406ffc6caf598d17ea7ab2847c7fda2160e8d1220dd6db629151225b857c7",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x379f0931374c60a7b12f0ba261bfff64aa037eb087d43659c48cb196b7537d26",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x100a45f1aa0cd7ca7eda7a82b4b60157180344969e82a978a0fe162e739432c9",
    "TAG": "0x4172636152626431"
   }
  },
@@ -847,7 +847,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m2/neg_output0_other_asset": {
@@ -856,7 +856,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m2/neg_outputs_swapped": {
@@ -874,7 +874,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m2/neg_sig_A_by_stranger": {
@@ -892,7 +892,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m2/neg_sigs_swapped": {
@@ -910,7 +910,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_m2/spend_coin1": {
@@ -925,7 +925,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "fb3587d0567bd8b3729de22251685a8ead9fd900b5ee4753b632d3251cb75918",
+  "txid": "2f8a208ff2bd1911d96303627c0f92c2ce67a97c64dd826bac13774bfc175bae",
   "confirmed": true,
   "block_height": 158,
   "program_bytes": 270,
@@ -934,8 +934,8 @@
   "budget_wu": 2058,
   "cost_bound_milli_wu": 182679,
   "cost_bound_wu": 183,
-  "program_hex": "e50a75640840a10626cd05c98d85498990c4102c1aae00840a0da9369379f0931374c60a7b12f0ba261bfff64aa037eb087d43659c48cb196b7537d26040b06ab902102837034d80102058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc79ab10420509b4cf20eec0445a2d0f258bc0d3a70f58a7787f284ef6a012c7839e2bf12ff3503c020dc2850e28d8c045a5ae6fa9e6981073c38729cd867ed5850d5495a0c8a9e6fb29321550bd232e55a41a826871401989bcfc93040b500a0e0a070b038900e3d0390e072440e4e0",
-  "witness_hex": "74ad83b97d46ec752c2709156571638dab7141efd0dffee6b8c9872b5ed7c36e84ce3e0bda767394bef578bdd2e28fd858494694af4ffb5b5d4ccdb2f7b6d8724d9af05274757038b773e3b92a17341a712c5ca9911f7ccfeb827407af8a4a767406f0a6fbd9a661fc0b56fa3021febc133da339336955713adb5e95ab48d31f",
+  "program_hex": "e50a75640840a10626cd05c98d85498990c4102c1aae00840a0da9369100a45f1aa0cd7ca7eda7a82b4b60157180344969e82a978a0fe162e739432c9040b06ab902102837034d80102058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc79ab10420509b4b717937117af24ab57586cd6a0893e3c491a788f3e1b53b1c5cbe26dea316203820dc2850e28d8c045a6e3f7815702f8d465fffc59079ce0b1c726a1b906b860dabc49bb7b6773470de01a826871401989bcfc93040b500a0e0a070b038900e3d0390e072440e4e0",
+  "witness_hex": "85c92cdc6183fbeccb76852872b4cb19477b0e5da0c18b4f9317f4777c564221a66254c65977f42194ac79635bc929dd57cd3c9b9f7acf7d65beee74f67dc4d674538a681b852d3d8421daafed1e1f19c3101f9c689a99ee9a50f26df3cdbaf65fbb05ba2506902de3f8b61a40454a4a5dfc3fb82727279600f0402eac0eb1b4",
   "witness_input0_bytes": 502
  },
  "fixed_m2/spend_coin2_same_witness": {
@@ -950,13 +950,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "aed033d331b6c429669d0a18e05dccfabb0991c896183713f124db18f1f797be",
+  "txid": "ee31b57278408f6ddb9caea056128cc83a9281ac8de7bcf08936cc7f28973a76",
   "confirmed": true,
   "block_height": 161,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "50746b911b3011f31d11a7b55a127d3158707990d1ef6d4ca6aa9834bb2074ba:2",
-  "coin2": "3f6096fbb7af6356981a2a4d011ca2ca6c251aa1c2af3cf019c69a6d4e4a0fe1:1",
+  "coin1": "d0980d31fb4d77992eefe8b4995e7227dcce4820cc6898849ff27312c0fea39e:1",
+  "coin2": "4549b59e601fed776e5b47b28d34cc1d5964fc60982225e684d57c9361a490a0:0",
   "witness_input0_bytes": 502
  },
  "fixed_m2/spend_coin3_other_amount_ACCEPTED": {
@@ -971,7 +971,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00005600"
   },
-  "txid": "d0662fb1cf0b9ece17b772e670cdb9cdf795ac661187cf17288cfa41f2574fa3",
+  "txid": "1404cd98439f3ffd61528eb3eecbd3f9cfc561d82237b9e0187a9ec1e27addb3",
   "confirmed": true,
   "block_height": 165,
   "witness_input0_bytes": 502
@@ -988,21 +988,21 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "fbcd60cc7bc9d2e334b80fe45c3b8e1a0ccb01e3a9081d4786a4130d907e6318",
+  "txid": "25058691c1fb1624906ae665e2a716ed00186ba2506c456d7194f25572bd80dd",
   "confirmed": true,
   "block_height": 166,
   "witness_input0_bytes": 502
  },
  "fixed_bind_m1/program": {
-  "cmr": "b4cd143e5d801998904fbdd07c48ced7833096e30609413c749a55324013766e",
+  "cmr": "895084dfc5bfc80ee7c6126cabf180565ed8bba70f42e4105ce0cbe2043afb07",
   "commit_program_bytes": 280,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51201c5aec94b7670f8627c2bee47056c2bf4aee54e77dbc33e6ba093df19d5f259c",
+  "scriptPubKey": "5120bcaa71629a5ba7b1afecd6ae625b13a2ea4fe8d3828188654fb7c625af583e9b",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x8c73916ce6e2aa76c35ea0aeb75b60789804cdd06ce8813fd8f8fc5e590e50a4",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x73324591f6f76b45562adb2d52f59550a7d9d2ce2beea49c60fee1cf22e9c62f",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1012,7 +1012,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_output0_other_script": {
@@ -1021,7 +1021,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_output0_other_asset": {
@@ -1030,7 +1030,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_sigs_for_other_salt": {
@@ -1039,7 +1039,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_sig_A_by_stranger": {
@@ -1048,7 +1048,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_sig_S_by_stranger": {
@@ -1057,7 +1057,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_sigs_swapped": {
@@ -1066,7 +1066,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_sig_all_hash_signatures": {
@@ -1075,7 +1075,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/spend_coin1": {
@@ -1090,7 +1090,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "6aee87ebf965b80bcc72ee998122f49a1f32c6a0b7bc486f40e99ebd66356794",
+  "txid": "bc7104626cf4a023c6a208caf5f050a58fa0799f24af3d32aa574af4e7a3a358",
   "confirmed": true,
   "block_height": 169,
   "program_bytes": 280,
@@ -1099,8 +1099,8 @@
   "budget_wu": 2098,
   "cost_bound_milli_wu": 187808,
   "cost_bound_wu": 188,
-  "program_hex": "e56a75640840a10626cd05c98d85498990c4102c1aae00840a0da93698c73916ce6e2aa76c35ea0aeb75b60789804cdd06ce8813fd8f8fc5e590e50a4040b06ab902102837034d80082058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284fc381821028371c9c830c41c60b00b43b870210283721f5620840a13699e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078041b89450e28d8c045a5ae6fa9e6981073c38729cd867ed5850d5495a0c8a9e6fb29321550bd232e55a41a826871401989bcfc9e040b500a0e0a070b038a80e30039120724c0e4e81ca80",
-  "witness_hex": "710dbafc60a8ecff730c288647b1433b8f3ff573fffc08574096f4bd9e64d88a174050f152ba650011bbb8768cf2cd69b402a83c92f9ba97ba9144a43b66f11b41f05d2aa97f6ff7ea28dd530536530ab4c1fba0e1a76144c73cf8b043521a0d2e2755911a155eed5e413c64824488a36eeb1c225460123932cbdad3f3edadda",
+  "program_hex": "e56a75640840a10626cd05c98d85498990c4102c1aae00840a0da936973324591f6f76b45562adb2d52f59550a7d9d2ce2beea49c60fee1cf22e9c62f040b06ab902102837034d80082058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284fc381821028371c9c830c41c60b00b43b870210283721f5620840a13696e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407041b89450e28d8c045a6e3f7815702f8d465fffc59079ce0b1c726a1b906b860dabc49bb7b6773470de01a826871401989bcfc9e040b500a0e0a070b038a80e30039120724c0e4e81ca80",
+  "witness_hex": "b7fdc640e2b6e8b48a83c9976a60930d76227dacda1aba4863711a5d677af32009bcef466ff58d84f478beb1c02320acc037e491d2051375ee8e9ec2f5b087076e67bdf76add1be4707aa36de89312474dbdb2a28f958f5c481b325917dc8de664e9b636499954061db41a8bd4c7f8e9eea1cdf617a80dc9fe77f89a4b967a9c",
   "witness_input0_bytes": 512
  },
  "fixed_bind_m1/spend_coin2_same_witness": {
@@ -1115,13 +1115,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "97c7b69dcb78972dbb5200e4d086e497e9dd436cb6a494317e8137ce35c1eab7",
+  "txid": "d2a7a82b3467fe67b0f28494e1a0fd6a6a1cc0437975586beb7c1f88c7eca623",
   "confirmed": true,
   "block_height": 172,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "ef3e9901dcabe12ac152560c708782b2d55e22a1512d4a8b639291b40a511675:0",
-  "coin2": "afc1062f976a7f887cc603e1f173a8191d0c48277b69c99a2f166924beb4bea5:0",
+  "coin1": "3b6e7d3f66a2c44d9a7093f57cd9986386ea57963f7a90d4ba53631a1f3f6dfb:0",
+  "coin2": "56a16d6eee408dac7a6de0e8ac8ea56fd2b2aa8c43c537ec6a8a7d010bb5c255:1",
   "witness_input0_bytes": 512
  },
  "fixed_bind_m1/neg_coin_with_other_amount": {
@@ -1130,7 +1130,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m1/neg_coin_with_other_asset": {
@@ -1139,19 +1139,19 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/program": {
-  "cmr": "bbe2827a511b404933c05aa6c807c23d1bd345779b69a665ca5a434280dbe566",
+  "cmr": "482f5c8baf8f3078b3283f3ad991f8b2f369f0b76f437a70985489316f43b4b0",
   "commit_program_bytes": 296,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "512010f16d88c9c57bcbab7f4e78cadcdbe92fa022d670186829041f7b255736d38e",
+  "scriptPubKey": "51208a4a1fb9aa7e4b0b3e28a4f6ef99c424719c0b6db52cab524bc064c444862e92",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x9c9cfdf68f98f322bcc9c1aab6b1d99a618525212e70e4117f2c9750660aea2c",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x52cf2d83d4fa5a3733186a6d2d8498e1019ebec2d9486ad70b071be5efef50e7",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1161,7 +1161,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/neg_output0_other_script": {
@@ -1188,7 +1188,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/neg_sigs_for_other_salt": {
@@ -1206,7 +1206,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/neg_sig_S_by_stranger": {
@@ -1224,7 +1224,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/neg_sig_all_hash_signatures": {
@@ -1233,7 +1233,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/spend_coin1": {
@@ -1248,7 +1248,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "cda646201977ac3429f80fb855ad58a54ea07c1e26a560e94f6a9808904d670f",
+  "txid": "b68078a15811f244dd2fbac3632343362358f7f0cf2e5d65a13a87f4340f3fc9",
   "confirmed": true,
   "block_height": 178,
   "program_bytes": 296,
@@ -1257,8 +1257,8 @@
   "budget_wu": 2162,
   "cost_bound_milli_wu": 213094,
   "cost_bound_wu": 214,
-  "program_hex": "e5b275640840a10626cd05c98d85498990c4102c1aae00840a0da93699c9cfdf68f98f322bcc9c1aab6b1d99a618525212e70e4117f2c9750660aea2c040b06ab902102837034d80102058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a13f0e060840a0dc81390618838c160168770e0420506e47eac41081426d33c83bb011168b43c962f034e9c3d629de1fca13bda804b1e0e78afc4bfcd40f00837168a1c51b1808b4b5cdf53cd3020e7870e539b0cfdab0a1aa92b419153cdf652642aa17a465cab483504d0e280331379f94c0816a0141c140e16071501c60071c81c9203938072980e588",
-  "witness_hex": "50d08e92b9b0ad880fe1a7b920434b5a11cf15cfc5eb684ba604ee1d1dc5facecc1fb573e71b44d1c6a52c1965bae26be51d662e20a5787951179f489f564e50016a415f2e09b381b1153ee23ecb9360651937002659d60fa9b46160b4e777df5cc801a4a4cd576af305d2f7c34a3096ccbe92e62c4ee24509066ca1c3032205",
+  "program_hex": "e5b275640840a10626cd05c98d85498990c4102c1aae00840a0da936952cf2d83d4fa5a3733186a6d2d8498e1019ebec2d9486ad70b071be5efef50e7040b06ab902102837034d80102058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a13f0e060840a0dc81390618838c160168770e0420506e47eac41081426d2dc5e4dc45ebc92ad5d61b35a8224f8f12469e23cf86d4ec7172f89b7a8c5880e0837168a1c51b1808b4dc7ef02ae05f1a8cbfff8b20f39c1638e4d43720d70c1b5789376f6cee68e1bc03504d0e280331379f94c0816a0141c140e16071501c60071c81c9203938072980e588",
+  "witness_hex": "920dae98c8177dd5ba7113fbb1670eea4fc85d5c6f88efc60c97128bcc0ff3294e4b1bbe8fee83746bb4c97ab51b21ab6ee619ff36a06565fbf3ce3154fe7c8529f535a09235831a4d0dfa3ccf20b62ecf4c6a87b851ccec0f9d818b547d29f6fc1cad2c915ee1d948298597c8aae3b1136f9f9607d21b3794b46357ae65a7b2",
   "witness_input0_bytes": 528
  },
  "fixed_bind_m2/spend_coin2_same_witness": {
@@ -1273,13 +1273,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "4c44d4a37de8f57416da33aaa0aced0d1dbf146afd63fa71cc686e8f850dfd8c",
+  "txid": "fd57876143eaebf5d72c4eab3635deb2ae71e26b524f5a4ec4986856cc3ac5f5",
   "confirmed": true,
   "block_height": 181,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "92132b4a66003310a33a8bcf62a0420e61ea51c618fd2c59513f727cbbe33fe6:0",
-  "coin2": "ba04bacf4196617d4216ad767fa81f5673f928cda7b1477178ba327451b84cdc:0",
+  "coin1": "2a85f0d21fc854907ea4e8b5a4d739e22d73c03e89819e8eef286a887f1d64ec:0",
+  "coin2": "6a6be7a32dfceaf3eee9819310a0da7356d321a763300bdd93269cae61a53354:0",
   "witness_input0_bytes": 528
  },
  "fixed_bind_m2/neg_coin_with_other_amount": {
@@ -1288,7 +1288,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "fixed_bind_m2/neg_coin_with_other_asset": {
@@ -1301,15 +1301,15 @@
   ]
  },
  "loop_m3/program": {
-  "cmr": "c57bfe33ab13a8ba205a9b93756862640ab920c4223fc53411714395350440ab",
+  "cmr": "e6d94307b8243ec5b03b435e787730646a0289248486e55c464cf56f54dd2c7d",
   "commit_program_bytes": 384,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51203ca9904af245ec947c345808f6b7b1510b0e00859a74d73fcc3d92cdb1e45359",
+  "scriptPubKey": "5120ada01f3f6db5cec079f12da9b7bddcd1797ef32c191c0229c4ff13b41257c205",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0xb9e897e69a63482171b5a723fe638ee306ffbb5ebe20e48b23da98ede2a642f9",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0xc3572c7157486c2fd34dd2c5f4eb4c8c815fc0d0704d34ecbace9b6998534d0e",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1325,7 +1325,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "e418084302fe926d10b1315dadaa0bf1298ab5f47d676ea904f7e0e32b3878ac",
+  "txid": "342f330c83e9b2502ade8027e2756ea5e86ee56155fe43cf7c1fdf12a9c8261a",
   "confirmed": true,
   "block_height": 186,
   "program_bytes": 439,
@@ -1334,8 +1334,8 @@
   "budget_wu": 2738,
   "cost_bound_milli_wu": 261747,
   "cost_bound_wu": 262,
-  "program_hex": "e695d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4dcf44bf34d31a410b8dad391ff31c771837fddaf5f10724591ed4c76f153217c82058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e4d9000000010205800e260f0a03484d69b003041f810a00e5620506e511ccb3d0fc9290bb2a7bd126d0bcc572253067ec7b3462acf3335a2246eaa0c1f0f618062133372a35620840a13699e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078041b90c287146c6022d2d737d4f34c0839e1c394e6c33f6ac286aa4ad06454f37d94990aa85e91972ad20d413438a00cc4de7e648102d402838281c2c0e2a038f40e4901cab0396a072fc0e6282e63c06e1732c0380039a200",
-  "witness_hex": "037d623008c89ab8f701b7ba3ebbfeb2a5955c80000808075697b1d0c688efbb7c924f72c0c492bac68bc9410c46629a55acf79c9418433c1ddc6bf4f72d87b407d314964067108550277338e3185351b901a2f0b3526f57f0d546d460caab9c34e09115bba1725b998612d78a055ae3e268dee32a4c9f7e9f6792e9ad5d702cde",
+  "program_hex": "e695d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4e1ab9638aba43617e9a6e962fa75a64640afe06838269a765d674db4cc29a68702058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e4d9000000010205800e260f0a03484d69b003041f810a00e5620506e511ccb3d0fc9290bb2a7bd126d0bcc572253067ec7b3462acf3335a2246eaa0c1f0f618062133372a35620840a13696e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407041b90c287146c6022d371fbc0ab817c6a32fffe2c83ce7058e39350dc835c306d5e24ddbdb3b9a386f00d413438a00cc4de7e648102d402838281c2c0e2a038f40e4901cab0396a072fc0e6282e63c06e1732c0380039a200",
+  "witness_hex": "037f0924501b10342befa80572c665d268cfb058d06b665b55b43141300f2986991ee2934be398e9acbac650adcf09ee9d96cf9b9da900da3a5d2d946c88d4992d700a54384967d54e60231f6958b4bd51defef372ae156742584ae5fb8bb1561d906fd26b66263844c59ca50907d9d6568e531ef0f4d1917ca932dcfabeec3a73",
   "witness_input0_bytes": 672
  },
  "loop_m3/spend_coin2_same_witness": {
@@ -1350,25 +1350,25 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "d32c3b5c396fdb5d4a13fffe853fe9915974312e86610d6b0f51c2d6d2a6f402",
+  "txid": "2526c8027d74e6bf0e5fe7151625a2e4f0f023f263c81cb1ef20a9d4eccc6154",
   "confirmed": true,
   "block_height": 189,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "c7837ee18c2ab5f02b3c97e32e87419a334764b14341767daa7882bac23d525c:1",
-  "coin2": "c341ecc3e7c56ba8d90a70638a9429f76e5fd80a1ee2e0eea678974a7320f1ad:2",
+  "coin1": "1cb23e7a25ee85ecb2fe2c15c13adfe1c3a667e4f0ff632cfee53ebb50fe6ba1:2",
+  "coin2": "f8d9c147dcb464fa455d633ee6f82aa28b9cad57e30d4451a5af92f76692d6e4:0",
   "witness_input0_bytes": 672
  },
  "fixed_m3/program": {
-  "cmr": "216e3ae9eb588678081c72143b7ea1d1e88bf700fc73fce75dca3ff3cb968a47",
+  "cmr": "15e52978548cf07cda169283111320e0d982f7f2cef28f1adc51ac167ffeb13e",
   "commit_program_bytes": 287,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51204681949bdf6d6a7d7556539953a70310f52b0a6bb6df1489800435107d2c11d7",
+  "scriptPubKey": "5120f3c21ed31a9efb59382a5006ab1c3eb8a2d9d19764e9eb3c26533abef4a54b38",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x09fbb827de38228cf1751809627a9f354ca2c99c7505332293b1cc111a6ed3bf",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x742bd82c1c6f73702a33497f05725c1efec79b262241497a14f1f17730471f6b",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1384,7 +1384,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "1422a1a16d462e671a4a2d7b322f41da64d5f7aadead44942ed323ab047ca339",
+  "txid": "df2dc318a7932e4500e60ac5640bcb35064def7b73288d4064bc31f560d7247d",
   "confirmed": true,
   "block_height": 191,
   "program_bytes": 287,
@@ -1393,8 +1393,8 @@
   "budget_wu": 2126,
   "cost_bound_milli_wu": 206305,
   "cost_bound_wu": 207,
-  "program_hex": "e55275640840a10626cd05c98d85498990c4102c1aae00840a0da936909fbb827de38228cf1751809627a9f354ca2c99c7505332293b1cc111a6ed3bf040b06ab902102837034d80182058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc789b200000002040b001c05028372135620840a13699e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078041b88850e28d8c045a5ae6fa9e6981073c38729cd867ed5850d5495a0c8a9e6fb29321550bd232e55a41a826871401989bcfc9b040b500a0e0a070b038900e2d0390c072400e4d01ca50",
-  "witness_hex": "f92fbfe276e89f7d1a815fcf09a51448ccd202356257e24f721d6ce7a7b4abc2460364b7be93379d49c99ef5b7cfa995f3217c3e5830e435dbf56c7e9724de0a2206a8be55d60d756108af35117b87de521af44c4632e689bbca2d7f715e6a4c27818e033df90edcaed18390a7c46887fe730002f7954b6f48bf014e0a4bb25b",
+  "program_hex": "e55275640840a10626cd05c98d85498990c4102c1aae00840a0da9369742bd82c1c6f73702a33497f05725c1efec79b262241497a14f1f17730471f6b040b06ab902102837034d80182058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc789b200000002040b001c05028372135620840a13696e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407041b88850e28d8c045a6e3f7815702f8d465fffc59079ce0b1c726a1b906b860dabc49bb7b6773470de01a826871401989bcfc9b040b500a0e0a070b038900e2d0390c072400e4d01ca50",
+  "witness_hex": "2fd8c21d4f2508f4e46132d8c823ba75566c8cd46b02d9353f4e4fac4886a9675071366b6cb16eb98ef1684aa4764555b8f0ae6f1ce80e5dfcd370819def0fa492105aa72bf16bd023f9b8148ec9092531146db84a47a9aba5a422bc7d5568529cd680016270a2deda1905e47f59a81995d72f4e0e1c1a8e1800667ef65c1ff9",
   "witness_input0_bytes": 519
  },
  "fixed_m3/spend_coin2_same_witness": {
@@ -1409,25 +1409,25 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "0b2d08161189908510217ec1bb82e219931718eb7211ce1b645b98f7113db270",
+  "txid": "d3cbdd5249c65d8a5594e60c7cefa5bec98208c104e612ed0075c4bf60200fea",
   "confirmed": true,
   "block_height": 194,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "3e1c4d8a500837b3d986c66f7998f872ecdcf63bdeb79a8e4f10f4b3e1445418:1",
-  "coin2": "642eabfd999cbb12696d7e2a34465575e42b380dde9f5b2ed5a8a2d8c25f6ce1:2",
+  "coin1": "f049ee00fe399163e4c27d1a30307fdd82e01832d15cc2adfccf69102d7a55e0:2",
+  "coin2": "df7bb393ef93c753fe1f8912ba9d94cf7d44ba0e938abffde53e683d60c29ce4:0",
   "witness_input0_bytes": 519
  },
  "loop_m4/program": {
-  "cmr": "ba609ed082c587adb2cce903e3b9831fc1a0005b5130d28c85b468ac4d398f82",
+  "cmr": "02ed4f5ba31ea4042a50793d2478cc8f3ac42251dfe5156372bacdd1e0981c4a",
   "commit_program_bytes": 384,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120fa199de4d8ac9f4ec410c75f30f8087da73a45d94362b5a44637116296614aef",
+  "scriptPubKey": "5120e3d32e883ef90f4ebc13b7f29f907e0dd5d2bca9648ae997fcbe17b67244f0ba",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0x58c3d1c053466d8b8eecbe2bde4b2a3101ba47df42e47742f5b8d9276ac1641e",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0xd20fe30ab55b268d48c6f2eee8fb13dbd4dcd1d811c63d6d4332f947ca5fb5b6",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1443,7 +1443,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "839a490cb1920cfe9d9630300b0c2c99664b3e219fa0983958743f566dd60513",
+  "txid": "d5dbc14fd00de44db72e6229774a0e1d8cf692dba1bc457de174a4d6b67d06f4",
   "confirmed": true,
   "block_height": 196,
   "program_bytes": 418,
@@ -1452,8 +1452,8 @@
   "budget_wu": 2654,
   "cost_bound_milli_wu": 271593,
   "cost_bound_wu": 272,
-  "program_hex": "e6a5d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4ac61e8e029a336c5c7765f15ef25951880dd23efa1723ba17adc6c93b560b20f02058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e4d9000000010205800e260f0a03484d69b003041f810a00e5620506e511c9b200000003040b001c701e2c03484d66e566ac41081426d33c83bb011168b43c962f034e9c3d629de1fca13bda804b1e0e78afc4bfcd40f0083722850e28d8c045a5ae6fa9e6981073c38729cd867ed5850d5495a0c8a9e6fb29321550bd232e55a41a826871401989bcfccb0205a8050705038581c5c072040e4b01caf03972073060731c173260370b99a01c001cd30",
-  "witness_hex": "045a65611251f49318750dc152e09e95a94f234cb0c451d9cbcaed0493c9b1dfd7284401f413e803f4b40447f5209460744882231362e502d66362d605594c648f7e36b77a571f231a67fc1677131c1db2c28e5345f4108b049bc4aee0b522621aedc4b1acf7d17e549868ab6365b81453ffe9a0a7d56d03e6bd9c50c7436de887",
+  "program_hex": "e6a5d0284d800021060ab4e03411804580283585a0066065ab20700205083136682e4c6c2a4c4c86208160d5700420506d49b4e907f1855aad9346a4637977747d89edea6e68ec08e31eb6a1997ca3e52fdadb02058355c8108141b819f88ce3858355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b80710838090284d800820fc4270a80e43a050dd9ebf6dcad5fd010cabe8f72c19329f4bbe27156d00edba2e01b0d42e43f4b686e3e393640000000208160038207401a826c4d801020fc0c500726902837240e4d9000000010205800e260f0a03484d69b003041f810a00e5620506e511c9b200000003040b001c701e2c03484d66e566ac41081426d2dc5e4dc45ebc92ad5d61b35a8224f8f12469e23cf86d4ec7172f89b7a8c5880e083722850e28d8c045a6e3f7815702f8d465fffc59079ce0b1c726a1b906b860dabc49bb7b6773470de01a826871401989bcfccb0205a8050705038581c5c072040e4b01caf03972073060731c173260370b99a01c001cd30",
+  "witness_hex": "04c5f2a79bcdc610476c823ab9af3775f97591e27e8a4eebbe86e0ab525f9b9e80da880e682ec411b1960b01b6f2d67d6981fd4cf8ab7c11d6ff33215c358cb98abc646fedf5401dfafba20e0eff3bf71f74a652c77af4c310b4523852adf9e80f5417b2790c356270773ac9d9d7ec3d99428326012fe3657126cdc1436e9efc63",
   "witness_input0_bytes": 651
  },
  "loop_m4/spend_coin2_same_witness": {
@@ -1468,25 +1468,25 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "b440483c7c31c3a13ecc560445a48f44fc5e7233eeb55d6ba7bb40e47a546c06",
+  "txid": "264e6bd7650a60f39ea1ae120f6bf2918de9076d89fbf49bdeff602fb4699a65",
   "confirmed": true,
   "block_height": 199,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "b1cdc0a974adf3c4da1ebe1a581ce196b911f103022cbdae46f5b3a0cdadd5c6:0",
-  "coin2": "f3f8df7c2c13415e1c44cf9e32fa27e4981fb1b4345e203ca1581960290cf28f:1",
+  "coin1": "62f7d00ac97f7767120cb1659122321d70cc8dbf061b0461113f48c0253bb0a5:1",
+  "coin2": "91cda9a0a5b05072510342b7b703b70eb9eb4988dba97d49b1f4eb97c1339d45:0",
   "witness_input0_bytes": 651
  },
  "fixed_m4/program": {
-  "cmr": "35eee24d895f821a1be084c6185a346a649af50bd462bb953dec9dde8339b93c",
+  "cmr": "5c289bfb13c94ca424948acfe3d64a6a22e5a9826824c79254a49c7e4a680efa",
   "commit_program_bytes": 304,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120470dd2eec49e96c5d9e4edddd3e68b61dbd44997b962ba863ba270dc41d36171",
+  "scriptPubKey": "5120ce6d10ceafab93053516813ff6b1e133d892528e5567753b5e45587e1d9c4696",
   "control_block_bytes": 65,
   "args": {
-   "A": "0x9e41dd8088b45a1e4b1781a74e1eb14ef0fe509ded40258f073c57e25fe6a078",
-   "S": "0x6b9bea79a6041cf0e1ca73619fb56143552568322a79beca4c85542f48cb9569",
-   "SALT": "0xddb02e9ffd43b6a5375ec25f675d5215eba4879bc4167cfbf545648f9e3776c4",
+   "A": "0x6e2f26e22f5e4956aeb0d9ad41127c789234f11e7c36a7638b97c4dbd462c407",
+   "S": "0xb8fde055c0be35197fff1641e7382c71c9a86e41ae1836af126eded9dcd1c378",
+   "SALT": "0x37b9ce173853506d53a5dddd3e7db6b166908ce97e8b09af690bfe9b06526b40",
    "TAG": "0x4172636152626431"
   }
  },
@@ -1502,7 +1502,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000600"
   },
-  "txid": "238e352ca1692611f66671ae34c7f25959eb5be5c9038f13c844a715a5310467",
+  "txid": "46f70d21c5466fd74d96f5aeae1317d050897235fa7d1a3da145d8ced55f2d59",
   "confirmed": true,
   "block_height": 201,
   "program_bytes": 304,
@@ -1511,8 +1511,8 @@
   "budget_wu": 2194,
   "cost_bound_milli_wu": 231591,
   "cost_bound_wu": 232,
-  "program_hex": "e59a75640840a10626cd05c98d85498990c4102c1aae00840a0da9369ddb02e9ffd43b6a5375ec25f675d5215eba4879bc4167cfbf545648f9e3776c4040b06ab902102837034d80202058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc789b200000002040b001c050283721136400000006081600384a0506e466ac41081426d33c83bb011168b43c962f034e9c3d629de1fca13bda804b1e0e78afc4bfcd40f00837150a1c51b1808b4b5cdf53cd3020e7870e539b0cfdab0a1aa92b419153cdf652642aa17a465cab483504d0e280331379f9460816a0141c140e16071201c5a071b01c8f039320728c0e5700",
-  "witness_hex": "5d49cd90e48ff57d95220cd3d40d77cad06871d6435a9893673c8fe679bbc423089644c3ca2b19d4106a3f58c12a325578c3021c43d144fc61daa2d8dfc3dbe93fe87d4223503d2742c84602f3e136764c3abe0b714e58de3146c4aac72a7140dc1987a8f94b48fada5bbccdc19dccdb0920458794a63bcdee1babf5cc08a510",
+  "program_hex": "e59a75640840a10626cd05c98d85498990c4102c1aae00840a0da936937b9ce173853506d53a5dddd3e7db6b166908ce97e8b09af690bfe9b06526b40040b06ab902102837034d80202058355021028370c4d900000000020580dc4283bb4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485b8071083809028371a26c800000004102c006940a0dc789b200000002040b001c050283721136400000006081600384a0506e466ac41081426d2dc5e4dc45ebc92ad5d61b35a8224f8f12469e23cf86d4ec7172f89b7a8c5880e0837150a1c51b1808b4dc7ef02ae05f1a8cbfff8b20f39c1638e4d43720d70c1b5789376f6cee68e1bc03504d0e280331379f9460816a0141c140e16071201c5a071b01c8f039320728c0e5700",
+  "witness_hex": "aab58843ff19ef71e706b2c05dcc5672a32bdd74668f89dae4e98de03a2f3a2b1910f7beaa622e5232877852d337971f47ee9f1d2725630f72fb1fe5213898fc04ba3e3b8cb8aef667b2bfdb6c88b50ff7dc3b13254a42d070ed5bb9899fcdd24035fcacd1c0b7fff8e34891dfd390503e2df25ab57d8c41ec2e2761a3cca626",
   "witness_input0_bytes": 536
  },
  "fixed_m4/spend_coin2_same_witness": {
@@ -1527,13 +1527,13 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "3773d58fdbb8d166a4ec4291f96185d35b7dc5f414314ca9a1e40e187bf0d975",
+  "txid": "55cac42d3f23ccaf0c319dfa9efaf78d5895eef73dcee3247d9e9b0eae062340",
   "confirmed": true,
   "block_height": 204,
   "same_witness_bytes_as_coin1": true,
   "same_program_bytes": true,
-  "coin1": "7ef3c7daa53594b366262d62b172179f924e24ad7b7a059c3176336aae9e8535:1",
-  "coin2": "e23117c2d5145bc2e30c520196f71a9b07cf4fc863781fd76758d81a6927c590:0",
+  "coin1": "299248c02d82d638d7dd3d39ee111b2647eb1e74bd1443767cae79e198e1fb85:0",
+  "coin2": "7a98b1f51ed67d935d8fe9dd1955b34bb297771c7e35bf73757d63f3e04592ae:0",
   "witness_input0_bytes": 536
  }
 }

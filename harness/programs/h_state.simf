@@ -1,0 +1,22 @@
+/* Helper test: state skeleton. The data leaf holds a 32-byte state whose low
+ * 64 bits count spends. A spend must re-create the coin at output 0, same asset
+ * and amount, holding the count plus one. */
+// include output_reader
+// include state
+
+fn next(state: u256) -> u256 {
+    let (hi, lo): (u128, u128) = <u256>::into(state);
+    let (lh, ll): (u64, u64) = <u128>::into(lo);
+    let (carry, ll): (bool, u64) = jet::increment_64(ll);
+    match carry {
+        true => panic!(),
+        false => <(u128, u128)>::into((hi, <(u64, u64)>::into((lh, ll)))),
+    }
+}
+
+fn main() {
+    let state: u256 = witness::STATE;
+    state_require_current(state);
+    let (asset, amount): (u256, u64) = in_explicit_current();
+    out_require(0, asset, amount, state_script_hash(next(state)));
+}

@@ -1,14 +1,14 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
  },
  "instance": {
   "template_hash": "ad33258c1eb94ba8a748cde489498fda5b80a1026839c25bca20b3d3e77367a7",
-  "PK": "2a2aaeca26addf9ed122b4a5b561aa4e21197ba19588a59f93883f482f8738ff",
-  "address": "ert1pjffqcxg5c46xcxkvf8z4zjfp0ald6kwl4anc2q6x9fpxesrzwmws8dxnp9",
-  "script_pubkey": "512092520c1914c5746c1acc49c55149217f7edd59dfaf678503462a426cc06276dd",
-  "node_decodes_address_to": "512092520c1914c5746c1acc49c55149217f7edd59dfaf678503462a426cc06276dd"
+  "PK": "bd855c02e648947a9be1678f73db681d5da2d3079332680d8ade94a9460dda9d",
+  "address": "ert1pj2phh5nmkh82jg4ukrv8praz2yn8acf4fyfz6elnmucvqv72sd9s04phyk",
+  "script_pubkey": "512092837bd27bb5cea922bcb0d8708fa251267ee13549122d67f3df30c033ca834b",
+  "node_decodes_address_to": "512092837bd27bb5cea922bcb0d8708fa251267ee13549122d67f3df30c033ca834b"
  },
  "one_key/neg_key_not_in_data_leaf": {
   "rejected": true,
@@ -16,7 +16,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "one_key/neg_signature_by_another_key": {
@@ -25,7 +25,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "one_key/spend": {
@@ -37,10 +37,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00000300",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00000300"
   },
-  "txid": "a6cc734451fe12ad8df2837c21ac30064f915a6f14bc9d292a89a45ebdb78885",
+  "txid": "2d1852787b64d9143f6d2b12908449edb0a34908c15881e82c91ff8ecec43969",
   "confirmed": true,
   "block_height": 106,
   "program_bytes": 102,
@@ -50,7 +50,7 @@
   "cost_bound_milli_wu": 71442,
   "cost_bound_wu": 72,
   "program_hex": "e35740a1062767410262830fa051aae40840a0da35620806006d038113600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85c30140cc2dacdba011804701c082e2638a36301027083f178205ac0507190",
-  "witness_hex": "2a2aaeca26addf9ed122b4a5b561aa4e21197ba19588a59f93883f482f8738ff0b27c7e2a661d7c8048754e5511fd1b330bda01f76199e535f3590482716d93dd93ae65f3bd445bfddf0a13e72a95fb43bcf7d179554a2616d7863f5dd3e4921",
+  "witness_hex": "bd855c02e648947a9be1678f73db681d5da2d3079332680d8ade94a9460dda9d922cbb464dbdb7ab4eabe6a304f429d20fcd4dc9eba7f34136c8aaceeb7fa3f56828fda03b860be4edd6067995e1db1c9f53aa34ddc783e9b6518e95d8f5c021",
   "witness_input0_bytes": 300
  }
 }

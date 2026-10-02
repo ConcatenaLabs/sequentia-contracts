@@ -1,0 +1,13 @@
+/* Helper test: wide arithmetic. Output 0 must pay floor(X * PRICE / SCALE),
+ * where X * PRICE does not fit in 64 bits; the spender supplies the quotient Q
+ * and the helper checks it. X * PRICE + BONUS must not exceed CAP (128 bits). */
+// include output_reader
+// include wide_arith
+
+fn main() {
+    let x: u64 = witness::X;
+    let pay: u64 = wide_mul_div(x, param::PRICE, param::SCALE, witness::Q);
+    let (asset, amount, script): (u256, u64, u256) = out_explicit(0);
+    assert!(jet::eq_64(amount, pay));
+    assert!(wide_le(wide_add(wide_mul(x, param::PRICE), param::BONUS), param::CAP));
+}

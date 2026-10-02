@@ -3,6 +3,7 @@
 //!     seqc version                 print the pinned SimplicityHL version
 //!     seqc lint <file>...          lint SimplicityHL sources; exit 1 on any finding
 //!     seqc run                     one JSON request on stdin, one JSON reply on stdout
+//!     seqc expand <file>           print a source with its helper includes resolved
 //!     seqc descriptor seal <dir>   fill in the source hash, root and template hash
 //!     seqc descriptor check <dir>...   validate descriptors and their golden vectors
 //!     seqc descriptor vectors <dir>    rewrite the derived fields of the golden vectors
@@ -50,7 +51,7 @@ use serde_json::{json, Map, Value};
 
 fn usage() -> ExitCode {
     eprintln!(
-        "usage: seqc version | seqc lint <file>... | seqc run < request.json\n       \
+        "usage: seqc version | seqc lint <file>... | seqc run < request.json | seqc expand <file>\n       \
          seqc descriptor (seal | check | vectors) <template dir>..."
     );
     ExitCode::from(2)
@@ -127,7 +128,7 @@ fn run(req: &Value) -> Result<Value, String> {
     let mut out = Map::new();
     out.insert("compiler_version".into(), COMPILER_VERSION.into());
 
-    let findings = lint::scan_source(source);
+    let findings = lint::scan_source(&sequentia_contracts::expand(source)?);
     let empty = json!({});
     let args: Arguments = from_json(req.get("args").unwrap_or(&empty))?;
     let program = sequentia_contracts::compile(source, args)?;
@@ -263,14 +264,15 @@ fn descriptor_one(cmd: &str, dir: &std::path::Path) -> Result<String, String> {
         "seal" => {
             let t = d.typed()?;
             let spath = dir.join(&t.program.source);
-            let source = std::fs::read(&spath).map_err(|e| format!("{}: {e}", spath.display()))?;
-            let text = String::from_utf8(source.clone()).map_err(|e| e.to_string())?;
+            let raw =
+                std::fs::read_to_string(&spath).map_err(|e| format!("{}: {e}", spath.display()))?;
+            let text = sequentia_contracts::expand(&raw)?;
             let program = sequentia_contracts::compile(&text, Default::default())?;
             let program_v = d
                 .template
                 .get_mut("program")
                 .ok_or("template has no program")?;
-            program_v["source_sha256"] = hex(sha256::Hash::hash(&source).as_ref()).into();
+            program_v["source_sha256"] = hex(sha256::Hash::hash(text.as_bytes()).as_ref()).into();
             program_v["cmr"] = sequentia_contracts::cmr_hex(&program).into();
             program_v["compiler"] = json!({"name": "simplicityhl", "version": COMPILER_VERSION});
             d.template_hash = template_hash(&d.template);
@@ -342,6 +344,19 @@ fn main() -> ExitCode {
         Some("lint") => cmd_lint(&args[1..]),
         Some("run") => cmd_run(),
         Some("descriptor") => cmd_descriptor(&args[1..]),
+        Some("expand") if args.len() == 2 => match std::fs::read_to_string(&args[1])
+            .map_err(|e| e.to_string())
+            .and_then(|s| sequentia_contracts::expand(&s))
+        {
+            Ok(text) => {
+                print!("{text}");
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("{}: {e}", args[1]);
+                ExitCode::FAILURE
+            }
+        },
         _ => usage(),
     }
 }

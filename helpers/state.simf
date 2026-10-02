@@ -1,0 +1,36 @@
+/* State skeleton: one 32-byte slot carried from spend to spend in the data leaf.
+ *
+ * The output is  P2TR(internal key, TapBranch(this program's leaf, H_TapData(state)))
+ * The spender names the current state in the witness; state_require_current
+ * checks it against the data leaf consensus has already bound to the output
+ * (jet::tappath(0)). A successor is the same program with the next state:
+ * state_require_successor checks that output i is exactly that script, built
+ * from this input's own leaf and internal key, so no constant names the
+ * program. Include with `// include state`.
+ */
+
+fn state_tapdata(state: u256) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, state);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* The data leaf of the input being spent commits to `state`. */
+fn state_require_current(state: u256) {
+    assert!(jet::eq_256(state_tapdata(state), unwrap(jet::tappath(0))));
+}
+
+/* SHA256 of the scriptPubKey of this program holding `state`. */
+fn state_script_hash(state: u256) -> u256 {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), state_tapdata(state));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Output i is this program holding `state`. */
+fn state_require_successor(i: u32, state: u256) {
+    assert!(jet::eq_256(state_script_hash(state), unwrap(jet::output_script_hash(i))));
+}

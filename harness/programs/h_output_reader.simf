@@ -1,0 +1,10 @@
+/* Helper test: output reader. A keyless covenant: the coin being spent must be
+ * ASSET, and output 0 must pay exactly AMOUNT of ASSET to the script whose hash
+ * is SPK_HASH. */
+// include output_reader
+
+fn main() {
+    let (asset, amount): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(asset, param::ASSET));
+    out_require(0, param::ASSET, param::AMOUNT, param::SPK_HASH);
+}

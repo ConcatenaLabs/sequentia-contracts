@@ -91,7 +91,7 @@ pub struct Template {
 pub struct Program {
     /// Path of the source, relative to the descriptor file.
     pub source: String,
-    /// SHA-256 of the source file's bytes, hex.
+    /// SHA-256 of the source with its helper includes resolved (`seqc expand`), hex.
     pub source_sha256: String,
     pub compiler: Compiler,
     /// The commitment Merkle root, hex.
@@ -277,16 +277,16 @@ impl Descriptor {
             ));
         }
         let source_path = self.source_path(dir, &t);
-        let source =
-            std::fs::read(&source_path).map_err(|e| format!("{}: {e}", source_path.display()))?;
-        let source_hash = hex(sha256::Hash::hash(&source).as_ref());
+        let raw = std::fs::read_to_string(&source_path)
+            .map_err(|e| format!("{}: {e}", source_path.display()))?;
+        let text = crate::expand(&raw)?;
+        let source_hash = hex(sha256::Hash::hash(text.as_bytes()).as_ref());
         if source_hash != t.program.source_sha256 {
             return Err(format!(
-                "source_sha256 is {}, the source hashes to {source_hash}",
+                "source_sha256 is {}, the source with its includes resolved hashes to {source_hash}",
                 t.program.source_sha256
             ));
         }
-        let text = String::from_utf8(source).map_err(|e| format!("source: {e}"))?;
         let program = compile(&text, simplicityhl::Arguments::default())
             .map_err(|e| format!("the source does not compile without parameters: {e}"))?;
         let cmr = cmr_hex(&program);

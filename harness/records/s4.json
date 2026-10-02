@@ -1,23 +1,23 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "d51e488d09359f35bf9ea26026d9110b897e374b67a76f458257c1ff0d16af97": 100000000,
-  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000,
+  "ca480f73e3c53e362908958a16fae1499ec235cb5a57628d842246708457cef3": 100000000
  },
  "source": "/* S4: state carried across transactions.\n *\n * The output is  P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR(this program)), H_TapData(state_be8)))\n * so the 64-bit state lives in a hidden taproot \"data leaf\" beside the program.\n * The program's own CMR is never a constant: jet::tapleaf_hash() is the leaf\n * hash consensus has already checked against the control block.\n *\n * Path EXTEND (witness PATH = Left(new_state)), signed by S over sig_all_hash:\n *   - the spent output commits to witness OLD  (tappath(0) == H_TapData(OLD))\n *   - the output at the SAME index pays this same program with data leaf\n *     new_state, and new_state > OLD\n *   - that output carries the same asset and the same amount as the input\n * Path SWEEP (PATH = Right(())), signed by S: the low 32 bits of the state are\n * an expiry height; allowed once the transaction's lock time reaches it.\n */\nfn tapdata(state: u64) -> u256 {\n    let ctx: Ctx8 = jet::tapdata_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, state);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\n/* SHA256 of the scriptPubKey OP_1 PUSH32 <key> that commits to `state`. */\nfn spk_hash(state: u64) -> u256 {\n    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), tapdata(state));\n    let key: u256 = jet::build_taptweak(jet::internal_key(), root);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\nfn amount_digest(a: Asset1, v: Amount1) -> u256 {\n    jet::sha_256_ctx_8_finalize(jet::asset_amount_hash(jet::sha_256_ctx_8_init(), a, v))\n}\n\nfn extend(old: u64, new: u64) {\n    assert!(jet::lt_64(old, new));\n    let i: u32 = jet::current_index();\n    assert!(jet::eq_256(spk_hash(new), unwrap(jet::output_script_hash(i))));\n    let (ia, iv): (Asset1, Amount1) = jet::current_amount();\n    let (oa, ov): (Asset1, Amount1) = unwrap(jet::output_amount(i));\n    assert!(jet::eq_256(amount_digest(ia, iv), amount_digest(oa, ov)));\n}\n\nfn sweep(old: u64) {\n    let (hi, expiry): (u32, u32) = <u64>::into(old);\n    jet::check_lock_height(expiry);\n}\n\nfn main() {\n    let old: u64 = witness::OLD;\n    assert!(jet::eq_256(tapdata(old), unwrap(jet::tappath(0))));\n    jet::bip_0340_verify((param::S, jet::sig_all_hash()), witness::SIG);\n    match witness::PATH {\n        Left(new: u64) => extend(old, new),\n        Right(u: ()) => sweep(old),\n    }\n}\n",
  "program": {
-  "cmr": "98e2117ea526408b6d943b0208084bfc472256ad506a8e2ddabc9138b795f3f3",
+  "cmr": "58a15e1ab72f6f0fda41416e04f2277ffee42201fc305b63f97007670a0ee9bd",
   "commit_program_bytes": 350,
   "compiler_version": "0.7.2",
   "scriptPubKey": null,
   "control_block_bytes": 65,
   "args": {
-   "S": "0xc7da3a0aada978d5b107c41298e03dfafa891ef3bf1890169f2628523781da3f"
+   "S": "0x19d133163f0649da2fdd630be33aca481c5d4c36a57fe30dc7b7ae50abdf48ca"
   },
   "state0": "0xa5c3f00d00000090",
-  "spk_state0": "51206d90d8c26b372a94223bdba274c19afa35999647b0ba0cc3f4ac108e27513ecd",
+  "spk_state0": "512008992fa68e0782e99a42f4a78f0e3f0eb7ffe4d57047e4b6edf1c471dcc22379",
   "state1": "0xa5c3f00d000000a4",
-  "spk_state1": "5120143a48588876f03a1fdcc5e2fa400ae8c660a83a22fa6bc604d0f6bc11eebaab",
+  "spk_state1": "51207aee8aa101b143c20385ff921d2ec808dd281e6145494dfb7d0041bc565dd12d",
   "data_leaf_state0": "51b53a1c077417d4931ac022b1dad31dc169acd695edf5e4f0fea38c529b6651"
  },
  "extend/witness_layout": {
@@ -30,7 +30,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_state_equal": {
@@ -39,7 +39,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_witness_claims_higher_new_than_output_commits": {
@@ -48,7 +48,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_witness_claims_lower_old": {
@@ -57,7 +57,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_amount_reduced_by_1": {
@@ -66,7 +66,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_amount_increased_by_1": {
@@ -75,7 +75,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_other_asset_same_amount": {
@@ -84,7 +84,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_different_program_same_data_leaf": {
@@ -93,7 +93,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_plain_p2tr_of_S": {
@@ -102,7 +102,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_wrong_signer": {
@@ -111,7 +111,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/neg_successor_at_other_index": {
@@ -120,7 +120,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "extend/st0_to_st1": {
@@ -135,7 +135,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "503b6962651b302446eeb29131ba46c72bd84c5a59a07bf1501343f6e416ec3e",
+  "txid": "6bbd3ff769475b4fbf901c3b33940baf859978fb5bd7f02353d21a468a4774ac",
   "confirmed": true,
   "block_height": 120,
   "program_bytes": 363,
@@ -144,8 +144,8 @@
   "budget_wu": 2242,
   "cost_bound_milli_wu": 236591,
   "cost_bound_wu": 237,
-  "program_hex": "e6e9d0284189d9d04098a0c3e8146ab8021028368d588201801b40e044d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e830340c40d216f66dd008c022d38fb474155b52f1ab620f882531c07bf5f5123de77e31202d3e4c50a46f03b47e0e08e0383054e28d8c043a0507e32371a0a0dc6c7e371469c0720401c193f0a0840a0fabb8583902072138c851dc4408139109f84041b8bc51dc460840a13ab20420506e48a6c54480102c1aac0420506e4d1b90871c2c1aae40840a0dca3039360a06d038381c340e27038bc833e1a810072545900e4a01c934fc3818210283ecf86804212284181e5501801a081420c30e41c61c2c49039042d590a3b870200e62c1a06e006da280311620397c072f52283f34e08070d038ac2e3101883956172c4068072e4cb4616440dd782dd2facb7cd84439c5d1fedbb1fac4c4d7823c416eee64ce8af818072fc2e60c06e1731c0380039b700",
-  "witness_hex": "a5c3f00d00000090324695723d6d22eb6d674956c0a0406e2911eaf5aba2c58bee1d47bc6400150fe557439a1389e62fac8c7b9568def5fe72c97ff6ad39da663f498046b0542cbe52e1f8068000005200",
+  "program_hex": "e6e9d0284189d9d04098a0c3e8146ab8021028368d588201801b40e044d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e830340c40d216f66dd008c022d233a2662c7e0c93b45fbac617c675949038ba986d4affc61b8f6f5ca157be91940e08e0383054e28d8c043a0507e32371a0a0dc6c7e371469c0720401c193f0a0840a0fabb8583902072138c851dc4408139109f84041b8bc51dc460840a13ab20420506e48a6c54480102c1aac0420506e4d1b90871c2c1aae40840a0dca3039360a06d038381c340e27038bc833e1a810072545900e4a01c934fc3818210283ecf86804212284181e5501801a081420c30e41c61c2c49039042d590a3b870200e62c1a06e006da280311620397c072f52283f34e08070d038ac2e3101883956172c4068072e4cb4616440dd782dd2facb7cd84439c5d1fedbb1fac4c4d7823c416eee64ce8af818072fc2e60c06e1731c0380039b700",
+  "witness_hex": "a5c3f00d000000905b2d4edb9008208e2a133cd161c7c72cf00c1ec37a689f36a04f25bbecdaec6fcd0430f69c7eb5dc75924ad5b5f38d4a9f274569f897f5d5d5e55185e51abf7252e1f8068000005200",
   "witness_input0_bytes": 548
  },
  "extend/st1_to_st2_at_index1": {
@@ -160,7 +160,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "2341832309c4231f039a7fab1117bbfbadfd8ddb0043e79a2d7ff765b98867bc",
+  "txid": "f8e4901d5422cd664ec3c1b032e510422dfded06918f5485b2f90c25b6beecc6",
   "confirmed": true,
   "block_height": 122,
   "program_bytes": 363,
@@ -175,7 +175,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "sweep/neg_before_expiry_nonfinal": {
@@ -191,7 +191,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "sweep/neg_wrong_signer": {
@@ -200,7 +200,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
   ]
  },
  "sweep/after_expiry": {
@@ -215,7 +215,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000400"
   },
-  "txid": "2e634603ab85c6f1e8dbf7071323ddbe5330e13e2fa87452c0177bf662d5dce2",
+  "txid": "9456a51e24160a3d68b62e5b76cbcd4db4a01c870b43df783059acdbf3407d8d",
   "confirmed": true,
   "block_height": 180,
   "program_bytes": 193,
@@ -224,8 +224,8 @@
   "budget_wu": 1522,
   "cost_bound_milli_wu": 72255,
   "cost_bound_wu": 73,
-  "program_hex": "e45ba0508313b3a081314187d028d5700420506d1ab10403003681c089b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42decdba0118045a71f68e82ab6a5e356c41f104a6380f7ebea247bcefc62405a7c98a148de0768fc1c11c07060a9c51b1808740a197e759710bf424dd1df9785b407a2e2eae4aab090db89f1a530bb6528a03f621cfc662e35e3541c6780424507e3f0403501b01dc07000b8200cc5c3c06907220",
-  "witness_hex": "a5c3f00d000000b3f1da2790321d4beb455dbdd380ec8d39a01bb6b9cc6f45f0a20e32763452061d3fab0c730a3509b8a1cdda41f4532284e8a714e5892b1b0521484291250870b980",
+  "program_hex": "e45ba0508313b3a081314187d028d5700420506d1ab10403003681c089b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42decdba0118045a46744cc58fc192768bf758c2f8ceb2920717530da95ff8c371edeb942af7d23281c11c07060a9c51b1808740a197e759710bf424dd1df9785b407a2e2eae4aab090db89f1a530bb6528a03f621cfc662e35e3541c6780424507e3f0403501b01dc07000b8200cc5c3c06907220",
+  "witness_hex": "a5c3f00d000000b3905cbf0086309417610af80e33ab6487fbd97614ada07fe9a3468e2c85c2a0833c22f35b8c174e18bb1e40c425651306d00334bbb664a32915f33618f00928e080",
   "witness_input0_bytes": 368
  }
 }

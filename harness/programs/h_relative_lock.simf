@@ -1,0 +1,7 @@
+/* Helper test: relative lock in the safe form. The coin can be spent once it
+ * has BLOCKS confirmations, by this input's own sequence. */
+// include relative_lock
+
+fn main() {
+    rel_lock_blocks(param::BLOCKS);
+}

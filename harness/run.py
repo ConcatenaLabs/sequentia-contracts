@@ -35,6 +35,7 @@ TESTS = [
     ("s6", "s6_timelocks", "Relative timelocks: the broken jets and the safe form"),
     ("s7", "s7_oracle", "Oracle-signed price and 128-bit arithmetic"),
     ("d1", "d1_descriptor", "The one-key template, addressed from its descriptor with no compiler"),
+    ("h1", "h1_helpers", "The shared helpers, each accepted and refused"),
 ]
 CEILINGS = [
     ("s1c", "s1_ceiling_annex", "Budget threshold, annex cap, program size, consensus cost cap"),
