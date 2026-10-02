@@ -18,10 +18,12 @@ tests.
 | `crates/sequentia-contracts/` | The Rust crate. It pins SimplicityHL exactly (see `Cargo.toml`) and re-exports it, together with `simplicity` and `elements`, so no other repository names the compiler itself. It holds the lints and the `seqc` command line |
 | `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`) |
 | `parity/` | The parity gate between the pinned compiler's C library and the node's |
+| `templates/` | Contract templates: each a program, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
+| `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler |
 | `harness/` | The regtest harness: a Sequentia node with Simplicity active, the tests that run programs on it, and their records |
-| `docs/` | Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
+| `docs/` | `descriptor.md` specifies contract descriptors and golden vectors. Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
 | `tools/compiler-roots/` | Compiles a set of programs under SimplicityHL 0.4.1 and the pinned compiler in one binary and compares their roots |
-| `.github/workflows/ci.yml` | Unit tests, lints and the parity gate on every pull request |
+| `.github/workflows/ci.yml` | Unit tests, lints, descriptor checks, the three address mirrors and the parity gate on every pull request |
 
 ## Using the pinned compiler
 
@@ -41,6 +43,44 @@ println!("{}", cmr_hex(&program));
 
 `sequentia_contracts::COMPILER_VERSION` names the version, and a unit test fails
 if it ever differs from the one `Cargo.toml` pins.
+
+## Contract descriptors
+
+A descriptor names a contract template so that a wallet, an operator, the
+explorer and the registry can each tell what an output is and what spending it
+does, by recomputing its script rather than parsing a program.
+[`docs/descriptor.md`](docs/descriptor.md) is the specification.
+
+Templates use the fixed-root layout: the program takes no compile-time
+parameter, so its commitment root is one constant, and the parameters sit in a
+hidden data leaf beside it. An instance's address is then one hash and one curve
+tweak away from its parameters, which is all the mirrors in `mirrors/` need:
+
+```python
+import json, sequentia_address            # mirrors/python
+d = json.load(open("templates/one_key/descriptor.json"))
+sequentia_address.derive(d, {"PK": "<32-byte x-only key, hex>"})["address"]["sequentia-testnet"]
+```
+
+```js
+import { derive } from './mirrors/js/sequentia-address.mjs';
+derive(descriptor, { PK: '<hex>' }).address['sequentia-testnet'];
+```
+
+```go
+import sequentiaaddress "github.com/ConcatenaLabs/sequentia-contracts/mirrors/go"
+derived, err := sequentiaaddress.Derive(descriptor, map[string]string{"PK": "<hex>"})
+```
+
+Each template directory holds the program, `descriptor.json` and `vectors.json`.
+The Rust crate, the three mirrors and CI all check every template's vectors, so
+the four implementations agree on every address.
+
+```sh
+cargo run --bin seqc -- descriptor seal templates/<t>      # after editing a template
+cargo run --bin seqc -- descriptor vectors templates/<t>   # after adding a vector
+cargo run --bin seqc -- descriptor check templates/<t>
+```
 
 ## Lints
 
@@ -99,7 +139,7 @@ hidden `generateblock` RPC. A rejection counts only when the block refuses it
 too, because the mempool runs Simplicity as policy even where consensus does not.
 
 ```sh
-harness/run.py                                   # S0 to S7
+harness/run.py                                   # every test but the ceilings
 harness/run.py s3 s6                             # some of them
 harness/run.py --ceilings                        # also the slow S1 ceiling runs
 harness/run.py --node-repo /path/to/Sequentia --sequentiad /path/to/sequentiad
@@ -121,6 +161,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | `s5` | One owner leaves a shared output of 16, 1,024 and about a million leaves |
 | `s6` | The broken relative-lock jets bypassed by a second, old input; the safe form refusing the bypass |
 | `s7` | An oracle-signed price checked with 128-bit products |
+| `d1` | The one-key template, paid at the address the Python mirror derives from its descriptor, and spent; another key and another key's signature refused |
 | `s1c`, `s1d` | The budget to the byte, the annex cap, program size and cost ceilings, budget bought with witness data |
 
 Each test writes `harness/records/<id>.json`: for every spend the program and

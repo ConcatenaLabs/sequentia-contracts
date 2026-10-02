@@ -3,6 +3,12 @@
 //!     seqc version                 print the pinned SimplicityHL version
 //!     seqc lint <file>...          lint SimplicityHL sources; exit 1 on any finding
 //!     seqc run                     one JSON request on stdin, one JSON reply on stdout
+//!     seqc descriptor seal <dir>   fill in the source hash, root and template hash
+//!     seqc descriptor check <dir>...   validate descriptors and their golden vectors
+//!     seqc descriptor vectors <dir>    rewrite the derived fields of the golden vectors
+//!
+//! A template directory holds `descriptor.json`, the program source it names,
+//! and `vectors.json`.
 //!
 //! `seqc run` request fields:
 //!
@@ -43,7 +49,10 @@ use sequentia_contracts::{hex, lint, COMPILER_VERSION};
 use serde_json::{json, Map, Value};
 
 fn usage() -> ExitCode {
-    eprintln!("usage: seqc version | seqc lint <file>... | seqc run < request.json");
+    eprintln!(
+        "usage: seqc version | seqc lint <file>... | seqc run < request.json\n       \
+         seqc descriptor (seal | check | vectors) <template dir>..."
+    );
     ExitCode::from(2)
 }
 
@@ -238,6 +247,91 @@ fn cmd_run() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+fn write_json(path: &std::path::Path, value: &impl serde::Serialize) -> Result<(), String> {
+    let text = serde_json::to_string_pretty(value).map_err(|e| e.to_string())? + "\n";
+    std::fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))
+}
+
+fn descriptor_one(cmd: &str, dir: &std::path::Path) -> Result<String, String> {
+    use sequentia_contracts::descriptor::{template_hash, Descriptor, Vectors};
+    use sequentia_contracts::simplicityhl::elements::hashes::{sha256, Hash};
+
+    let dpath = dir.join("descriptor.json");
+    let vpath = dir.join("vectors.json");
+    let mut d = Descriptor::load(&dpath)?;
+    match cmd {
+        "seal" => {
+            let t = d.typed()?;
+            let spath = dir.join(&t.program.source);
+            let source = std::fs::read(&spath).map_err(|e| format!("{}: {e}", spath.display()))?;
+            let text = String::from_utf8(source.clone()).map_err(|e| e.to_string())?;
+            let program = sequentia_contracts::compile(&text, Default::default())?;
+            let program_v = d
+                .template
+                .get_mut("program")
+                .ok_or("template has no program")?;
+            program_v["source_sha256"] = hex(sha256::Hash::hash(&source).as_ref()).into();
+            program_v["cmr"] = sequentia_contracts::cmr_hex(&program).into();
+            program_v["compiler"] = json!({"name": "simplicityhl", "version": COMPILER_VERSION});
+            d.template_hash = template_hash(&d.template);
+            d.validate(dir)?;
+            write_json(&dpath, &d)?;
+            Ok(format!("sealed, template_hash {}", d.template_hash))
+        }
+        "check" => {
+            d.validate(dir)?;
+            let v = Vectors::load(&vpath)?;
+            let regenerated = v.regenerate(&d)?;
+            if regenerated != v {
+                return Err(format!(
+                    "{} differs from what the descriptor derives",
+                    vpath.display()
+                ));
+            }
+            Ok(format!(
+                "ok: {} address vectors, template_hash {}",
+                v.addresses.len(),
+                d.template_hash
+            ))
+        }
+        "vectors" => {
+            d.validate(dir)?;
+            let v = Vectors::load(&vpath)?;
+            let regenerated = v.regenerate(&d)?;
+            write_json(&vpath, &regenerated)?;
+            Ok(format!(
+                "wrote {} address vectors",
+                regenerated.addresses.len()
+            ))
+        }
+        _ => Err(format!("unknown descriptor command {cmd}")),
+    }
+}
+
+fn cmd_descriptor(args: &[String]) -> ExitCode {
+    let Some((cmd, dirs)) = args.split_first() else {
+        return usage();
+    };
+    if dirs.is_empty() {
+        return usage();
+    }
+    let mut failed = false;
+    for dir in dirs {
+        match descriptor_one(cmd, std::path::Path::new(dir)) {
+            Ok(msg) => println!("{dir}: {msg}"),
+            Err(e) => {
+                println!("{dir}: {e}");
+                failed = true;
+            }
+        }
+    }
+    if failed {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -247,6 +341,7 @@ fn main() -> ExitCode {
         }
         Some("lint") => cmd_lint(&args[1..]),
         Some("run") => cmd_run(),
+        Some("descriptor") => cmd_descriptor(&args[1..]),
         _ => usage(),
     }
 }
