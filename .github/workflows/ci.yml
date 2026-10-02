@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-lint:
+    name: Unit tests and lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Unit tests, lint fixtures, and the lint over every program
+        run: cargo test --locked
+      - name: Lint every SimplicityHL program outside the reject fixtures
+        run: |
+          files=$(git ls-files '*.simf' '*.simf.in' | grep -v '^lints/fixtures/reject/')
+          cargo run --locked --quiet --bin seqc -- lint $files
+
+  parity:
+    name: Parity gate against the node's Simplicity library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The node repository is public. Only its src/simplicity directory is
+      # fetched, from the tip of its default branch, so a subtree update in the
+      # node that diverges from the pinned compiler fails this job.
+      - uses: actions/checkout@v4
+        with:
+          repository: ConcatenaLabs/Sequentia
+          ref: master
+          path: node
+          sparse-checkout: src/simplicity
+          sparse-checkout-cone-mode: true
+      - name: Record the node commit compared
+        run: git -C node log -1 --format='node %H %cs'
+      - name: Fetch the pinned crates
+        run: cargo fetch --locked
+      - name: Compare the C sources
+        run: python3 parity/parity_gate.py --node node/src/simplicity

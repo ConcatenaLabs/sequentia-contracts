@@ -1,0 +1,7 @@
+/* Refused: the relative-height jet, used the way its name suggests. It reads
+ * the largest relative lock over EVERY input, so a spender adds an old coin of
+ * their own and spends this output at once. The regtest harness runs it only
+ * to prove that bypass. */
+fn main() {
+    jet::broken_do_not_use_check_lock_distance(param::N)
+}

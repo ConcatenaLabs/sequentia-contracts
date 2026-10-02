@@ -1,0 +1,12 @@
+/* A relative-height lock that binds THIS input. BIP68 makes consensus
+ * enforce an input's own nSequence only when the transaction version is >= 2
+ * and bit 31 of that nSequence is clear, so the program checks exactly that:
+ * version >= 2, own sequence parses as a block distance, distance >= N. */
+fn main() {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(blocks: u16) => blocks,
+        Right(units: u16) => panic!(),
+    };
+    assert!(jet::le_16(param::N, d));
+}

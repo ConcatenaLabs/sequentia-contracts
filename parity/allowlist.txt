@@ -1,0 +1,15 @@
+# Files allowed to differ between the pinned compiler's simplicity-sys C sources
+# and the node's src/simplicity, after the symbol prefix is normalised.
+#
+# Each entry pins the SHA-256 of the normalised simplicity-sys file and of the
+# node file. If either side changes, the entry stops matching and the gate fails
+# until the new difference is reviewed and the hashes are updated
+# (parity_gate.py --show-hashes prints them).
+#
+# path  sha256(simplicity-sys, normalised)  sha256(node)
+
+# The Rust crate routes the library's malloc, calloc and free to Rust's
+# allocator (simplicity-sys/depend/simplicity_alloc.h.patch). The node keeps
+# the C library's defaults. Allocation only: no jet, cost, encoding or budget
+# rule is involved.
+simplicity_alloc.h 724d79e6f1388be7909846c2d05374af8e4b7e214f8429f176ef785fa9c324cd 1b4a47928dd20f9e69ab3a27932342069e183a113878130df3963f9938539c29

@@ -1,0 +1,13 @@
+/* Refused: reads tx_lock_distance and tx_lock_duration, the transaction-wide
+ * maxima behind the broken lock jets. The regtest harness runs it to measure
+ * what each lock-related jet returns: the program is accepted only if every
+ * witness value equals what the jet returned. */
+fn main() {
+    assert!(jet::eq_16(jet::broken_do_not_use_tx_lock_distance(), witness::DIST));
+    assert!(jet::eq_16(jet::broken_do_not_use_tx_lock_duration(), witness::DUR));
+    assert!(jet::eq_32(jet::tx_lock_height(), witness::HEIGHT));
+    assert!(jet::eq_32(jet::tx_lock_time(), witness::TIME));
+    assert!(jet::eq_32(jet::current_sequence(), witness::SEQ));
+    assert!(jet::eq_32(jet::version(), witness::VERSION));
+    assert!(jet::eq_1(<bool>::into(jet::tx_is_final()), witness::FINAL));
+}
