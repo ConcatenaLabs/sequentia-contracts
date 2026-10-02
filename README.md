@@ -19,7 +19,8 @@ tests.
 | `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`) |
 | `parity/` | The parity gate between the pinned compiler's C library and the node's |
 | `harness/` | The regtest harness: a Sequentia node with Simplicity active, the tests that run programs on it, and their records |
-| `docs/` | Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1 |
+| `docs/` | Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
+| `tools/compiler-roots/` | Compiles a set of programs under SimplicityHL 0.4.1 and the pinned compiler in one binary and compares their roots |
 | `.github/workflows/ci.yml` | Unit tests, lints and the parity gate on every pull request |
 
 ## Using the pinned compiler
@@ -142,6 +143,24 @@ refuse. The only exception is `s6`, which compiles the reject fixtures with
 | `reject(tx, label)` | Asserts the mempool refuses the transaction and that `generateblock` refuses it too, and records both errors |
 | `try_block`, `try_mempool` | Record what the block or the mempool says without asserting it |
 | `bit_replace`, `set_sim_wit` | Rewrite a witness at bit granularity for a negative case the compiler would not satisfy |
+
+## Comparing roots across compilers
+
+A commitment root is what an address commits to, so a compiler change must be
+shown not to move the roots of programs already in use. `tools/compiler-roots`
+links SimplicityHL 0.4.1 and the pinned compiler into one binary (each bundles
+its C library under its own symbol prefix) and compiles the same sources with
+the same arguments under both. It is its own Cargo workspace, so the second
+compiler stays out of the main lock file.
+
+```sh
+cargo build --release --manifest-path tools/compiler-roots/Cargo.toml
+tools/compiler-roots/compare.py --swk /path/to/SWK --openamp /path/to/openamp
+```
+
+It reads the programs from checkouts of `ConcatenaLabs/SWK` and
+`ConcatenaLabs/openamp` without changing them and writes
+`docs/compiler-roots.md` and `tools/compiler-roots/roots.json`.
 
 ## Building
 
