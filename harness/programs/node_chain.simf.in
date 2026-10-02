@@ -1,0 +1,10 @@
+/* S2: covenant tree node, smallest form found. As node_compact, but the r
+ * output hashes are chained through the raw SHA256 compression function, two
+ * per block, starting from the SHA256 IV. There is no length padding, which is
+ * sound here because r is fixed by the program (the chain is a fixed-arity
+ * Merkle-Damgard hash). Saves the three context jets of the streaming form. */
+fn main() {
+    let h: u256 = jet::sha_256_iv();
+%%STEPS%%
+    assert!(jet::eq_256(h, param::H));
+}

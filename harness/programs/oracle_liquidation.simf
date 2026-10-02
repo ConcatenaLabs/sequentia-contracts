@@ -1,0 +1,44 @@
+/* S7: arithmetic and an oracle.
+ *
+ * The lender may take the collateral held by this output when an oracle-signed
+ * price shows it is under-collateralised:
+ *
+ *        collateral_amount * price  <  DEBT * THRESHOLD        (128-bit products)
+ *
+ *   1. ORACLE signed  SHA256("ArcaOrc1" || asset_id(32) || price_be8 || timestamp_be4)
+ *      where asset_id is the EXPLICIT asset of the coin being spent (read from
+ *      the transaction, so a price for another asset cannot be used);
+ *   2. the statement is not older than NOT_BEFORE;
+ *   3. the inequality, with jet::multiply_64 : (u64, u64) -> u128 and a 128-bit
+ *      comparison built from 64-bit jets (there is no lt_128 jet);
+ *   4. LENDER signs the transaction (sig_all_hash).
+ */
+fn lt_128(a: u128, b: u128) -> bool {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    let hi_lt: u1 = <bool>::into(jet::lt_64(ah, bh));
+    let hi_eq: u1 = <bool>::into(jet::eq_64(ah, bh));
+    let lo_lt: u1 = <bool>::into(jet::lt_64(al, bl));
+    <u1>::into(jet::or_1(hi_lt, jet::and_1(hi_eq, lo_lt)))
+}
+
+fn main() {
+    let price: u64 = witness::PRICE;
+    let ts: u32 = witness::TIMESTAMP;
+    let (a, v): (Asset1, Amount1) = jet::current_amount();
+    let asset: u256 = unwrap_right::<(u1, u256)>(a);
+    let collateral: u64 = unwrap_right::<(u1, u256)>(v);
+
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, 0x417263614f726331);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, price);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, ts);
+    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    jet::bip_0340_verify((param::ORACLE, msg), witness::ORACLE_SIG);
+
+    assert!(jet::le_32(param::NOT_BEFORE, ts));
+    assert!(lt_128(jet::multiply_64(collateral, price), jet::multiply_64(param::DEBT, param::THRESHOLD)));
+
+    jet::bip_0340_verify((param::LENDER, jet::sig_all_hash()), witness::LENDER_SIG);
+}

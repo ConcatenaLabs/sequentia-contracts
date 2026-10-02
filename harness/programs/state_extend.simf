@@ -1,0 +1,58 @@
+/* S4: state carried across transactions.
+ *
+ * The output is  P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR(this program)), H_TapData(state_be8)))
+ * so the 64-bit state lives in a hidden taproot "data leaf" beside the program.
+ * The program's own CMR is never a constant: jet::tapleaf_hash() is the leaf
+ * hash consensus has already checked against the control block.
+ *
+ * Path EXTEND (witness PATH = Left(new_state)), signed by S over sig_all_hash:
+ *   - the spent output commits to witness OLD  (tappath(0) == H_TapData(OLD))
+ *   - the output at the SAME index pays this same program with data leaf
+ *     new_state, and new_state > OLD
+ *   - that output carries the same asset and the same amount as the input
+ * Path SWEEP (PATH = Right(())), signed by S: the low 32 bits of the state are
+ * an expiry height; allowed once the transaction's lock time reaches it.
+ */
+fn tapdata(state: u64) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, state);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256 of the scriptPubKey OP_1 PUSH32 <key> that commits to `state`. */
+fn spk_hash(state: u64) -> u256 {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), tapdata(state));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn amount_digest(a: Asset1, v: Amount1) -> u256 {
+    jet::sha_256_ctx_8_finalize(jet::asset_amount_hash(jet::sha_256_ctx_8_init(), a, v))
+}
+
+fn extend(old: u64, new: u64) {
+    assert!(jet::lt_64(old, new));
+    let i: u32 = jet::current_index();
+    assert!(jet::eq_256(spk_hash(new), unwrap(jet::output_script_hash(i))));
+    let (ia, iv): (Asset1, Amount1) = jet::current_amount();
+    let (oa, ov): (Asset1, Amount1) = unwrap(jet::output_amount(i));
+    assert!(jet::eq_256(amount_digest(ia, iv), amount_digest(oa, ov)));
+}
+
+fn sweep(old: u64) {
+    let (hi, expiry): (u32, u32) = <u64>::into(old);
+    jet::check_lock_height(expiry);
+}
+
+fn main() {
+    let old: u64 = witness::OLD;
+    assert!(jet::eq_256(tapdata(old), unwrap(jet::tappath(0))));
+    jet::bip_0340_verify((param::S, jet::sig_all_hash()), witness::SIG);
+    match witness::PATH {
+        Left(new: u64) => extend(old, new),
+        Right(u: ()) => sweep(old),
+    }
+}

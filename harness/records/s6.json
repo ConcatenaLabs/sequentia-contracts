@@ -1,0 +1,996 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+ },
+ "source/lock_distance": "/* Refused: the relative-height jet, used the way its name suggests. It reads\n * the largest relative lock over EVERY input, so a spender adds an old coin of\n * their own and spends this output at once. The regtest harness runs it only\n * to prove that bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_distance(param::N)\n}\n",
+ "source/lock_duration": "/* Refused: the relative-time jet (units of 512 seconds), with the same defect\n * as the height form. The regtest harness runs it only to prove the bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_duration(param::N)\n}\n",
+ "source/lock_probe": "/* Refused: reads tx_lock_distance and tx_lock_duration, the transaction-wide\n * maxima behind the broken lock jets. The regtest harness runs it to measure\n * what each lock-related jet returns: the program is accepted only if every\n * witness value equals what the jet returned. */\nfn main() {\n    assert!(jet::eq_16(jet::broken_do_not_use_tx_lock_distance(), witness::DIST));\n    assert!(jet::eq_16(jet::broken_do_not_use_tx_lock_duration(), witness::DUR));\n    assert!(jet::eq_32(jet::tx_lock_height(), witness::HEIGHT));\n    assert!(jet::eq_32(jet::tx_lock_time(), witness::TIME));\n    assert!(jet::eq_32(jet::current_sequence(), witness::SEQ));\n    assert!(jet::eq_32(jet::version(), witness::VERSION));\n    assert!(jet::eq_1(<bool>::into(jet::tx_is_final()), witness::FINAL));\n}\n",
+ "source/safe_distance": "/* A relative-height lock that binds THIS input. BIP68 makes consensus\n * enforce an input's own nSequence only when the transaction version is >= 2\n * and bit 31 of that nSequence is clear, so the program checks exactly that:\n * version >= 2, own sequence parses as a block distance, distance >= N. */\nfn main() {\n    assert!(jet::le_32(2, jet::version()));\n    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {\n        Left(blocks: u16) => blocks,\n        Right(units: u16) => panic!(),\n    };\n    assert!(jet::le_16(param::N, d));\n}\n",
+ "source/safe_duration": "/* The same as safe_distance.simf for a relative TIME lock (units of 512 seconds). */\nfn main() {\n    assert!(jet::le_32(2, jet::version()));\n    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {\n        Left(blocks: u16) => panic!(),\n        Right(units: u16) => units,\n    };\n    assert!(jet::le_16(param::N, d));\n}\n",
+ "program/lock_distance": {
+  "cmr": "9a20e9c1d976a2bfc04d4163420490c418ac793fc43beaeaeb0e26d06f3f3d33",
+  "commit_program_bytes": 8,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "51205e5787da18aa9f2ea26693f1bce93cf92731bf5022c334ddc62a51ed1fa9cec3",
+  "control_block_bytes": 33,
+  "args": {
+   "N": "10"
+  }
+ },
+ "program/lock_duration": {
+  "cmr": "d82a208252dfedba72280a73a28220974307cacfe418804c725f92069e24b85d",
+  "commit_program_bytes": 9,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "5120ea3e74c66854bfc57bcc7bee92123f0c3ed9506af62da148020e494433b909df",
+  "control_block_bytes": 33,
+  "args": {
+   "N": "2"
+  }
+ },
+ "program/lock_probe": {
+  "cmr": "3ab8256b7a2eb5e0a0f80d8a8bede74e555ee36bd8e9f77ca96ab03de08c9b02",
+  "commit_program_bytes": 96,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "5120b2dfcb8c24a7f8f484ae87f33fa83907232ed8c3b6a86c24311ba412f6618d45",
+  "control_block_bytes": 33,
+  "args": {}
+ },
+ "program/safe_distance": {
+  "cmr": "b1d4251dd13384d18bd8142c44c853837139761353a385f3d4eb2afe07e1926f",
+  "commit_program_bytes": 163,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "51208f1721f900e76455d7627d764ece5ed7a31fc6cbcb5674a7fc844c3a345ef537",
+  "control_block_bytes": 33,
+  "args": {
+   "N": "10"
+  }
+ },
+ "program/safe_duration": {
+  "cmr": "ecec4d49502d738c38072b34712de2fcdc1c391785d5c09ee5f6ba4cc7afc498",
+  "commit_program_bytes": 163,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "5120436a25578cab345ee469481cad20017bc0c7252d1d29097eb6f6b9093a826cfe",
+  "control_block_bytes": 33,
+  "args": {
+   "N": "2"
+  }
+ },
+ "probe/v2_seq_final": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 350,
+  "vsize": 209,
+  "weight": 836,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff"
+  ],
+  "height": 129,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 1
+  }
+ },
+ "probe/v2_seq_0": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 346,
+  "vsize": 208,
+  "weight": 832,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00000000"
+  ],
+  "height": 131,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_seq_fffffffe_locktime_h": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 354,
+  "vsize": 210,
+  "weight": 840,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 128,
+  "nSequence": [
+   "0xfffffffe"
+  ],
+  "height": 133,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 128,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_seq_final_locktime_h_IGNORED": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 350,
+  "vsize": 209,
+  "weight": 836,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 128,
+  "nSequence": [
+   "0xffffffff"
+  ],
+  "height": 135,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 1
+  }
+ },
+ "probe/v2_seq_fffffffe_locktime_mtp": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 354,
+  "vsize": 210,
+  "weight": 840,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 1790968381,
+  "nSequence": [
+   "0xfffffffe"
+  ],
+  "height": 137,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 1790968381,
+   "final": 0
+  }
+ },
+ "probe/v2_seq_1_own": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 352,
+  "vsize": 210,
+  "weight": 838,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00000001"
+  ],
+  "height": 139,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 1,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_other_input_seq_7": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 571,
+  "vsize": 345,
+  "weight": 1378,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00000007"
+  ],
+  "height": 141,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 7,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_other_inputs_seq_7_and_time_3": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 790,
+  "vsize": 480,
+  "weight": 1918,
+  "nin": 3,
+  "nout": 4,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00000007",
+   "0x00400003"
+  ],
+  "height": 143,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 7,
+   "dur": 3,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_other_input_bit31_set_ignored": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 569,
+  "vsize": 344,
+  "weight": 1376,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x80000009"
+  ],
+  "height": 145,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v2_other_input_high_bits_masked": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 571,
+  "vsize": 345,
+  "weight": 1378,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x003f0005"
+  ],
+  "height": 147,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 5,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "probe/v1_other_input_seq_7": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 569,
+  "vsize": 344,
+  "weight": 1376,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 1,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00000007"
+  ],
+  "height": 149,
+  "rust_bitmachine_executed": true,
+  "confirmed": true,
+  "jets_returned": {
+   "dist": 0,
+   "dur": 0,
+   "height": 0,
+   "time": 0,
+   "final": 0
+  }
+ },
+ "distance/own_seq_10_too_early/block": {
+  "vsize": 184,
+  "weight": 733,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-02T23:53:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+  ],
+  "seconds": 0.01
+ },
+ "distance/own_seq_10_too_early": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "non-BIP68-final",
+  "size": 247,
+  "vsize": 184,
+  "weight": 733,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 151,
+  "rust_bitmachine_executed": true,
+  "rpc-error": "non-BIP68-final (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 733,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-02T23:53:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "distance/BYPASS_note": {
+  "covenant_coin_confirmations": 1
+ },
+ "distance/BYPASS_other_input_carries_the_distance": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 466,
+  "vsize": 319,
+  "weight": 1273,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x0000000a"
+  ],
+  "height": 152,
+  "rust_bitmachine_executed": true,
+  "confirmed": true
+ },
+ "safe_distance/other_input_carries_the_distance/block": {
+  "vsize": 349,
+  "weight": 1394,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "safe_distance/other_input_carries_the_distance": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "size": 587,
+  "vsize": 349,
+  "weight": 1394,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x0000000a"
+  ],
+  "height": 155,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block": {
+   "vsize": 349,
+   "weight": 1394,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "safe_distance/own_seq_10_too_early/block": {
+  "vsize": 214,
+  "weight": 854,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+  ],
+  "seconds": 0.01
+ },
+ "safe_distance/own_seq_10_too_early": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "non-BIP68-final",
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 155,
+  "rpc-error": "non-BIP68-final (code -26)",
+  "block": {
+   "vsize": 214,
+   "weight": 854,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "safe_distance/version_1/block": {
+  "vsize": 214,
+  "weight": 854,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T00:33:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "safe_distance/version_1": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 1,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 155,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 214,
+   "weight": 854,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T00:33:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "distance/own_seq_9_after_10_blocks/block": {
+  "vsize": 184,
+  "weight": 733,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "distance/own_seq_9_after_10_blocks": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 247,
+  "vsize": 184,
+  "weight": 733,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00000009"
+  ],
+  "height": 165,
+  "rust_bitmachine_executed": false,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 733,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "distance/own_seq_10_version_1/block": {
+  "vsize": 184,
+  "weight": 733,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "distance/own_seq_10_version_1": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 247,
+  "vsize": 184,
+  "weight": 733,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 1,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 165,
+  "rust_bitmachine_executed": false,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 733,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "distance/own_seq_is_a_TIME_lock_of_10/block": {
+  "vsize": 184,
+  "weight": 733,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "distance/own_seq_is_a_TIME_lock_of_10": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 247,
+  "vsize": 184,
+  "weight": 733,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0040000a"
+  ],
+  "height": 165,
+  "rust_bitmachine_executed": false,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 733,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:13:02Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "distance/own_seq_10_after_10_blocks": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 247,
+  "vsize": 184,
+  "weight": 733,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 165,
+  "rust_bitmachine_executed": true,
+  "confirmed": true
+ },
+ "safe_distance/own_seq_is_a_TIME_lock/block": {
+  "vsize": 214,
+  "weight": 854,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:23:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "safe_distance/own_seq_is_a_TIME_lock": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0040000a"
+  ],
+  "height": 166,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block": {
+   "vsize": 214,
+   "weight": 854,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:23:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "safe_distance/own_seq_9/block": {
+  "vsize": 214,
+  "weight": 854,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:23:02Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "safe_distance/own_seq_9": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00000009"
+  ],
+  "height": 166,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 214,
+   "weight": 854,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:23:02Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "safe_distance/own_seq_10_after_10_blocks": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
+  ],
+  "height": 166,
+  "confirmed": true
+ },
+ "safe_distance/own_seq_10_with_unused_bits_set": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x003f000a"
+  ],
+  "height": 167,
+  "rust_bitmachine_executed": true,
+  "confirmed": true
+ },
+ "duration/own_seq_time2_too_early/block": {
+  "vsize": 184,
+  "weight": 734,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T02:53:02Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+  ],
+  "seconds": 0.01
+ },
+ "duration/own_seq_time2_too_early": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "non-BIP68-final",
+  "size": 248,
+  "vsize": 184,
+  "weight": 734,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00400002"
+  ],
+  "height": 169,
+  "rust_bitmachine_executed": true,
+  "rpc-error": "non-BIP68-final (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 734,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T02:53:02Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "duration/BYPASS_other_input_carries_the_duration": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 467,
+  "vsize": 319,
+  "weight": 1274,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00400002"
+  ],
+  "height": 170,
+  "rust_bitmachine_executed": true,
+  "confirmed": true
+ },
+ "safe_duration/other_input_carries_the_duration/block": {
+  "vsize": 349,
+  "weight": 1394,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T03:23:02Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "safe_duration/other_input_carries_the_duration": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "size": 587,
+  "vsize": 349,
+  "weight": 1394,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00400002"
+  ],
+  "height": 172,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block": {
+   "vsize": 349,
+   "weight": 1394,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T03:23:02Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "safe_duration/own_seq_time2_too_early/block": {
+  "vsize": 214,
+  "weight": 854,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T03:23:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+  ],
+  "seconds": 0.01
+ },
+ "safe_duration/own_seq_time2_too_early": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "non-BIP68-final",
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00400002"
+  ],
+  "height": 172,
+  "rpc-error": "non-BIP68-final (code -26)",
+  "block": {
+   "vsize": 214,
+   "weight": 854,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T03:23:02Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "duration/own_seq_time1_after_wait/block": {
+  "vsize": 184,
+  "weight": 734,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "duration/own_seq_time1_after_wait": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 248,
+  "vsize": 184,
+  "weight": 734,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00400001"
+  ],
+  "height": 180,
+  "rust_bitmachine_executed": false,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 734,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "duration/own_seq_is_a_BLOCK_lock_of_2/block": {
+  "vsize": 184,
+  "weight": 734,
+  "mined": false,
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ],
+  "seconds": 0.01
+ },
+ "duration/own_seq_is_a_BLOCK_lock_of_2": {
+  "expected": "refused",
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "size": 248,
+  "vsize": 184,
+  "weight": 734,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00000002"
+  ],
+  "height": 180,
+  "rust_bitmachine_executed": false,
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block": {
+   "vsize": 184,
+   "weight": 734,
+   "mined": false,
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "block-log": [
+    "(mocktime: 2026-10-03T04:43:02Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   ],
+   "seconds": 0.01
+  }
+ },
+ "duration/own_seq_time2_after_wait": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 248,
+  "vsize": 184,
+  "weight": 734,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00400002"
+  ],
+  "height": 180,
+  "rust_bitmachine_executed": true,
+  "confirmed": true
+ },
+ "safe_duration/own_seq_time2_after_wait": {
+  "expected": "accepted",
+  "testmempoolaccept": true,
+  "reject-reason": null,
+  "size": 368,
+  "vsize": 214,
+  "weight": 854,
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x00400002"
+  ],
+  "height": 181,
+  "confirmed": true
+ }
+}

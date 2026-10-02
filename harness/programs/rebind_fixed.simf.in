@@ -1,0 +1,18 @@
+/* S3: rebindable two-party transfer, fixed m = %%M%% (one program per m).
+ * msg = SHA256( TAG(8) || SALT(32) || m(1) || output_hash(0) || ... || output_hash(m-1) %%BINDDOC%%)
+ * No branches, so nothing to prune. Witness: SIG_A, SIG_S. */
+fn add_out(ctx: Ctx8, i: u32) -> Ctx8 {
+    jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(i)))
+}
+
+fn main() {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, param::TAG);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, param::SALT);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, %%M%%);
+%%OUTS%%
+%%BIND%%
+    let msg: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    jet::bip_0340_verify((param::A, msg), witness::SIG_A);
+    jet::bip_0340_verify((param::S, msg), witness::SIG_S);
+}

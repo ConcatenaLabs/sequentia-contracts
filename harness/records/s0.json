@@ -1,0 +1,28 @@
+{
+ "deployment_default": {
+  "simplicity_listed": false,
+  "listed": [
+   "bip34",
+   "bip65",
+   "bip66",
+   "csv",
+   "dynafed",
+   "segwit",
+   "taproot",
+   "testdummy"
+  ],
+  "simplicity": null
+ },
+ "inactive/keyless_spend_mempool": {
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Value out of range)",
+  "vsize": 182,
+  "weight": 726
+ },
+ "inactive/keyless_spend_block": {
+  "vsize": 182,
+  "weight": 726,
+  "mined": true,
+  "seconds": 0.01
+ }
+}

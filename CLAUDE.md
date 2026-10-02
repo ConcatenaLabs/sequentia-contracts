@@ -26,7 +26,7 @@ obvious from the code. Node and consensus conventions live in the
   mempool runs Simplicity as policy on every chain, even where consensus has not
   activated it, so a mempool rejection can hide a consensus flaw. Force every
   negative case into a block with the hidden `generateblock` RPC and record that
-  error.
+  error. In the harness, `reject()` does both and fails if the block accepts.
 - **Simplicity must be active from genesis on a test chain.** A custom chain has
   it off unless the node starts with `-evbparams=simplicity:-1:::`. The form
   `simplicity:0:::` only activates at height 384, and until then a `0xbe` output
@@ -38,8 +38,13 @@ obvious from the code. Node and consensus conventions live in the
 
 - `cargo test` is the gate before every pull request; the parity gate needs a
   node checkout (`python3 parity/parity_gate.py --node <Sequentia>/src/simplicity`).
+- The regtest harness needs a built node, so CI does not run it. Run
+  `harness/run.py` before merging anything that touches a program, the harness or
+  `seqc`, and commit the records it writes together with the regenerated
+  `docs/harness-sizes.md` (`harness/compare.py`).
+- Each harness test starts and stops its own node. Never leave a `sequentiad`
+  running; `harness/tmp/` holds data directories only of failed tests.
 - Pull requests go against `main`.
-- Keep CI lean: the compiler takes minutes on programs of hundreds of kilobytes.
 
 <!-- BEGIN SHARED AGENT CONVENTIONS: identical in every Sequentia repo. Change it in all of them together. -->
 ## Working with git and GitHub here

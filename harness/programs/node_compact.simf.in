@@ -1,0 +1,10 @@
+/* S2: covenant tree node, compact form. jet::output_hash(i) is the SHA256 of
+ * output i's (asset, amount, nonce, script hash, range proof hash) with their
+ * confidentiality prefixes, so one jet pins the whole output. The r output
+ * hashes are folded into one SHA256 and compared with ONE constant.
+ * No signature, no witness; outputs r.. and all inputs are unconstrained. */
+fn main() {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+%%ADDS%%
+    assert!(jet::eq_256(jet::sha_256_ctx_8_finalize(ctx), param::H));
+}

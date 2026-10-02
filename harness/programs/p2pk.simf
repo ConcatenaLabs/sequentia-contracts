@@ -1,0 +1,5 @@
+/* S1: pay to one key. The signature covers sig_all_hash, Simplicity's
+ * equivalent of SIGHASH_ALL over the whole transaction and the tap environment. */
+fn main() {
+    jet::bip_0340_verify((param::PK, jet::sig_all_hash()), witness::SIG)
+}

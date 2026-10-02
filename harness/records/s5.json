@@ -1,0 +1,428 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "5e7e6dfa721539d071cc62799091e1bf2d1fc6a031e8aef864ee12cb38256ee6": 100000000,
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+ },
+ "source/depth4": "/* S5: leave one, keep the rest.\n *\n * Output = P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(root)))  where root\n * is the Merkle root over 2^4 leaf records:\n *      leaf  = SHA256(owner_key(32) || amount_be8)        spent leaf = 32 zero bytes\n *      node  = SHA256-compression(IV, left || right)      (fixed depth, no padding)\n *\n * One owner exits: the witness gives OWNER, AMOUNT and the Merkle path\n * [(sibling, is_right); 4] from the leaf up. The program\n *   1. folds the path twice at once: from the leaf (old root) and from the\n *      spent marker (new root), same siblings;\n *   2. checks the spent output commits to the old root (tappath(0));\n *   3. checks OWNER's signature over sig_all_hash, so the owner decides every\n *      other output, including where their own money goes;\n *   4. requires the output at the SAME index to pay this same program with the\n *      NEW root, in the same asset, for exactly input_amount - AMOUNT\n *      (no remainder output is required when that is zero).\n */\nfn node(l: u256, r: u256) -> u256 {\n    jet::sha_256_block(jet::sha_256_iv(), l, r)\n}\n\nfn step(elt: (u256, bool), acc: (u256, u256)) -> (u256, u256) {\n    let (sib, is_right): (u256, bool) = elt;\n    let (a, b): (u256, u256) = acc;\n    match is_right {\n        true => (node(sib, a), node(sib, b)),\n        false => (node(a, sib), node(b, sib)),\n    }\n}\n\nfn tapdata(root: u256) -> u256 {\n    let ctx: Ctx8 = jet::tapdata_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\nfn spk_hash(root: u256) -> u256 {\n    let tr: u256 = jet::build_tapbranch(jet::tapleaf_hash(), tapdata(root));\n    let key: u256 = jet::build_taptweak(jet::internal_key(), tr);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\nfn amount_digest(a: Asset1, v: Amount1) -> u256 {\n    jet::sha_256_ctx_8_finalize(jet::asset_amount_hash(jet::sha_256_ctx_8_init(), a, v))\n}\n\nfn check_remainder(new_root: u256, asset: Asset1, rem: u64) {\n    let i: u32 = jet::current_index();\n    assert!(jet::eq_256(spk_hash(new_root), unwrap(jet::output_script_hash(i))));\n    let (oa, ov): (Asset1, Amount1) = unwrap(jet::output_amount(i));\n    let want: Amount1 = Right(rem);\n    assert!(jet::eq_256(amount_digest(asset, want), amount_digest(oa, ov)));\n}\n\nfn main() {\n    let owner: Pubkey = witness::OWNER;\n    let amount: u64 = witness::AMOUNT;\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, amount);\n    let leaf: u256 = jet::sha_256_ctx_8_finalize(ctx);\n    let spent: u256 = 0x0000000000000000000000000000000000000000000000000000000000000000;\n    let (old_root, new_root): (u256, u256) = array_fold::<step, 4>(witness::PATH, (leaf, spent));\n    assert!(jet::eq_256(tapdata(old_root), unwrap(jet::tappath(0))));\n    jet::bip_0340_verify((owner, jet::sig_all_hash()), witness::SIG);\n    let (ia, iv): (Asset1, Amount1) = jet::current_amount();\n    let in_amt: u64 = unwrap_right::<(u1, u256)>(iv);\n    assert!(jet::le_64(amount, in_amt));\n    let (borrow, rem): (bool, u64) = jet::subtract_64(in_amt, amount);\n    match jet::eq_64(rem, 0) {\n        true => (),\n        false => check_remainder(new_root, ia, rem),\n    }\n}\n",
+ "depth4/program": {
+  "cmr": "34a14fe0f230a61f1e27b6acc338ba90dcfa2b6028d16f33ff9f8350beb2b139",
+  "commit_program_bytes": 565,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "5120855770465aa5213c011b67c6ae66d4f1baf9e20a71e9a093a215fc1bc0328fba",
+  "control_block_bytes": 65,
+  "args": {},
+  "leaves": 16,
+  "live_leaves": 16,
+  "root": "31872c8df1dc870b65cc2991e2baec2b953d83d0945c32e4c8bc488b45c4f3f1",
+  "pool_amount": 1601076984
+ },
+ "depth4/neg_remainder_keeps_old_root": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_remainder_marks_other_leaf": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_remainder_short_by_1": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_claims_amount_plus_1": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_remainder_to_other_program": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_remainder_in_other_asset": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_no_remainder_output": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_signed_by_stranger": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_stranger_key_not_in_tree": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_other_owner_with_this_path": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/exit_0_leaf_5": {
+  "size": 1183,
+  "vsize": 476,
+  "weight": 1903,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "9a6f710cafd3ed38d433198979463adde17290d921c07ed6f0bcd036aa757c97",
+  "confirmed": true,
+  "block_height": 107,
+  "program_bytes": 597,
+  "witness_bytes": 233,
+  "stack_serialized_bytes": 934,
+  "budget_wu": 3786,
+  "cost_bound_milli_wu": 433300,
+  "cost_bound_wu": 434,
+  "program_hex": "e85a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3d0141c8220506e284ece8204e559b95c7e568a00e5520506e5a01c9f0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5f8281985b59b740230083f30a71c71dc07070a9c51b1808f8703070e2050838c48b01b9930f0f0281910283f32c71c71c71b99f1469c0320401c4e2c72d34640840a0fcd4989b30000000000000000040b066dc8108141b96671c71c830c38e38fc10502d24fc2821028373a07770b072ac0e75393e28ee220409cec7c20399309cce77118204e6d92073cc8141b9e54d8a8900205835580840a0dcf71b9ed38e160039ec40a0dcfb01cf08281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4031c71c520506e4a9c71c71b98414240e8251727798714770e0401d0200d03728ce3731e70a80cc5980e6a40e6a12283f41e8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741501d0600741b01d0820742681d0a60742b80",
+  "witness_hex": "f68f19aac0fd16e5a65311fcfa4e9faf0671bbfdc83ffb74135423fe11b5c0130000000005f69a9a08cca2f4b301f539484e8bec075b7306a250b9c2f744ed4243905875269a3369fafe60723d894029a054283f722250120f242da8436877ff421201b6d24d709702a015ef342ac7e3a8f1489f9a8f46639a3782479ed0fc1c2a004d037aeadb933ec95c7facc1deb4d3400dbf3fa0126da52aea7918c9e2cf72d4bc3d62d8b95a25f706bf3c2e8e757ae9d8c657e15d952d3e4e79890640baaf56860325dbc3dabf7ecab34a324e4510a9c6daefb93f20c61b21fa2154ecf8523e1defd287751580",
+  "leaf_index": 5,
+  "witness_input0_bytes": 934
+ },
+ "depth4/neg_double_exit_old_path": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/neg_double_exit_current_path": {
+  "rejected": true,
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  ]
+ },
+ "depth4/exit_1_leaf_10": {
+  "size": 1183,
+  "vsize": 476,
+  "weight": 1903,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "8b54ca45631d8373b25216bd0deeab9a486d78259e01f089852d0a1edd8e3dbb",
+  "confirmed": true,
+  "block_height": 108,
+  "program_bytes": 597,
+  "witness_bytes": 233,
+  "stack_serialized_bytes": 934,
+  "budget_wu": 3786,
+  "cost_bound_milli_wu": 433300,
+  "cost_bound_wu": 434,
+  "program_hex": "e85a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3d0141c8220506e284ece8204e559b95c7e568a00e5520506e5a01c9f0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5f8281985b59b740230083f30a71c71dc07070a9c51b1808f8703070e2050838c48b01b9930f0f0281910283f32c71c71c71b99f1469c0320401c4e2c72d34640840a0fcd4989b30000000000000000040b066dc8108141b96671c71c830c38e38fc10502d24fc2821028373a07770b072ac0e75393e28ee220409cec7c20399309cce77118204e6d92073cc8141b9e54d8a8900205835580840a0dcf71b9ed38e160039ec40a0dcfb01cf08281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4031c71c520506e4a9c71c71b98414240e8251727798714770e0401d0200d03728ce3731e70a80cc5980e6a40e6a12283f41e8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741501d0600741b01d0820742681d0a60742b80",
+  "witness_hex": "e1100ebd1127f8e08d4cab098eb34151c229e0029920c6a50b3d189b6dea2f100000000005f73545c901d41ca1f01c03d6d92d311e1806b64a98315d1841cbdf909e6dda96cfb323526a6ea46ca9cf6713e21638e4847599df28eb2a0b66da568f202dd88ac75e804b6675b01feb10cf5aa079f66181796bdcaa9efde3cf52346a081177010a98de1915ec29b7d1adade51ca80fc017fd393553d44253e1f87338379d35e51229a3555606633b989f862a810304912ffc6c038d46e91f8fa21f9e2071489b266253258627a99197d043d1d377809e4b31dbe57d0ebe282a27be947b02f941e6c26050",
+  "leaf_index": 10,
+  "witness_input0_bytes": 934
+ },
+ "depth4/exit_2_leaf_0": {
+  "size": 1204,
+  "vsize": 481,
+  "weight": 1924,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "f619258fcf6cacb9cba2b4651e5ed91d3eb7159f45186bca771a7dce58280fd7",
+  "confirmed": true,
+  "block_height": 109,
+  "program_bytes": 618,
+  "witness_bytes": 233,
+  "stack_serialized_bytes": 955,
+  "budget_wu": 3870,
+  "cost_bound_milli_wu": 433300,
+  "cost_bound_wu": 434,
+  "program_hex": "e856740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171c80a0e3e20506e244ece8204e539b9547e548a00e5320506e5801c9b0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5d8281985b59b740230083f30271c71dc07070a9c51b1808f8703070e2050838c48b01b98f0f0f0281910283f32471c71c71b99b1469c0320401c4e2c72d34640840a0fcd2989b30000000000000000040b066dc8108141b95e71c71c830c38e38fc10502d24fc2821028373987770b072ac0e74393e28ee220409cea7c20398f09ccc77118204e6c92073c48141b9e14d8a8900205835580840a0dcf51b9e938e160039e840a0dcf901cee8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4011c71c520506e4a9c71c71b98414240e8211727798714770e0401d0180d03728ce3731e70a80cc5980e6a40e6a12283f41c8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741301d0580741901d07a0742481d09e074298",
+  "witness_hex": "7d0324ef96cafd7698af7c0c73a60ff39845747b315a87f3a28956cd415905790000000005f5ffef6e3340ad045e2bb7069adab22b4740d48c085d6e433f25d07b62448d5700d1e07978531ecacd1986f3cc093eb0c218365c625f92cf42544525fd96f97095fe10b4844025fb9d1078324520787854a6ee615e8ecc8273e60651edc6ea05ec723805e306294ae62b1f611ae74a937174dfad8b0aa05185c1c0208815f3654c5bd82533abbeeb2a2ae5dfd66f7895f1ca67e964b14898338e6a1d4de3266a74251a8536b83b26cf2d1c9c64c9d41e7f579700f643b76143597332775f0ea95172ca30",
+  "leaf_index": 0,
+  "witness_input0_bytes": 955
+ },
+ "depth4/exit_3_leaf_15": {
+  "size": 1206,
+  "vsize": 482,
+  "weight": 1926,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "d71f66eb884d833f6a9fa1fb5546b19a87d45932e53140335a8aad3cb47c65f3",
+  "confirmed": true,
+  "block_height": 110,
+  "program_bytes": 620,
+  "witness_bytes": 233,
+  "stack_serialized_bytes": 957,
+  "budget_wu": 3878,
+  "cost_bound_milli_wu": 433300,
+  "cost_bound_wu": 434,
+  "program_hex": "e856740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a18fb1bc018ee8a5470df9eed60e1bc28b6232dedf3b1cdf980bd602751d013a1c8dc8030e38dc8430e1604ea8083f22c5a02ad4040348d91c2e000311620f07038481c40071281c52171700a0e330b8e405071f1028370f4ece8204e539b9547e548a00e5320506e5801c9b0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5d8281985b59b740230083f30271c71dc07070a9c51b1808f8703070e2050838c48b01b98f0f0f0281910283f32471c71c71b99b1469c0320401c4e2c72d34640840a0fcd2989b30000000000000000040b066dc8108141b95c71c71c830c38e38fc10502d24fc2821028373987770b072ac0e74393e28ee220409cea7c20398e09cc9f7118204e6c92073c48141b9e14d8a8900205835580840a0dcf51b9e938e160039e840a0dcf901cee8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4011c71c520506e4a9c71c71b98414240e8211727798714770e0401d0180d03728ce3731e70a80cc5980e6a40e6a12283f41c8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741301d0580741901d07a0742481d09e0742980",
+  "witness_hex": "5b88b0d316b7752a5f6b102fd9c06948645bef0a8577dafa7e7223a11624a8820000000005f7cff0a7d2c2cc17f9ed33ca100b3e4311741e176be107b00664d14736f182f0f8f363f17eb0d7d09f37d418840cbaa3d28f50436927e12cf1bc800124e4dbfc20564d5054bfefa158b090c64c3cd66f13a5717487dc32a78e6dfb110863bf8ce90f43b85334b1b5a235c30437fa6fd521c2e5320ca05ec991a745ee33343141500088dad20f275e1a81070e43f03740d755592cfd288f9a71b8f7fa7a9fb13dc4b08ebd4134f675928e31e7b14bb01a24f5d6f0361f1f941dae5036b2931c275ebf0b60",
+  "leaf_index": 15,
+  "witness_input0_bytes": 957
+ },
+ "depth10/program": {
+  "cmr": "88c98f056e93b63625b790f97c85da84713a74d23b218d1808763644f0b62078",
+  "commit_program_bytes": 595,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "512006988e9d55478d952627f94259bdcf017de4c7e2c1ce0d665e8af4c54cc0d854",
+  "control_block_bytes": 65,
+  "args": {},
+  "leaves": 1024,
+  "live_leaves": 1024,
+  "root": "b00182b7e6c954c3ed30e87e3f7f355a430fc1e68d2aa2a74c6c5cec89d88ce4",
+  "pool_amount": 106555891200
+ },
+ "depth10/exit_0_leaf_341": {
+  "size": 1408,
+  "vsize": 532,
+  "weight": 2128,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "da62f077c52f0a7f94d9cb36a6cd7509816dd303f7031974f95557099701d0b4",
+  "confirmed": true,
+  "block_height": 112,
+  "program_bytes": 627,
+  "witness_bytes": 426,
+  "stack_serialized_bytes": 1159,
+  "budget_wu": 4686,
+  "cost_bound_milli_wu": 592844,
+  "cost_bound_wu": 593,
+  "program_hex": "e86e740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c8141b90061c6e419871c2c49d50107e458b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3e20e30d4c3f200507e42986e43987e430a00e002c8070206a0b780a0e08072588141b8ed3b3a081397e6e608fcc08a00e5f20506e6200e598281a80de4d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e173260a06616d66dd008c020fccc9c71c7701c1c2a7146c6023e1c0c1c3881420e3122c06e69c3c3c0a06440a0fcd51c71c71c6e6cc51a700c81007138b1cb4d190210283f37a626cc0000000000000000102c19b720420506e618e38e39061871c71f820a05a49f850420506e790eee160e5581cf4727c51dc4408139ecf840734c139afee230409ce4a40e7e9028373f29b15120040b06ab0108141ba008dd00271c2c00740020506e80a039f50503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81a38e38a40a0dc9538e38e3730828481d0722e4ef30e28ee1c0803a0901a06e519c6e63ce150198b301cd481cd424507e85104038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83e03a1100e84a03a1540e86103a19c0e86b00",
+  "witness_hex": "51f98f1a923ab28552f8e56efea8c25a68f8572083a3115f220caec417351b1a00000000061f344a7ba02ae5e65fe875e2af4b43a7d4177bad05539e4c05772b4a78e32336f92937c7968028f99db9eb502ddbf8c0b7746d8765c91cfc392488c789fe3da892fafa35b2cb2e165d6e961167d6178669222826f2ee029132bd07c4bc257caff529b8769fa2a93e8c8eb5f64cf54a327f0ad0a1d5aaa028264f96f0a353943de895c4442fe25013ddc73158ca24bc671046a3200a98b395eb453c56055eeb66c81a360f4099acce505048acff7898c6921a65671d56df1318c927df1c24d62780d02b092f978c238e6562829da1cd789082bf5d3c74469b35bae893f0e26d31fcd78f67e0e90d603adaa1652ba7cc05a4951987a8dfc045db349741a8b6c7ebd7a4a4a4b8cc4496a1b9474eb6960408e96717a47ca24cc72cc864a4ffb5b25f22fe5931825ef37663614daef8b2cc73af83d6077a84dacba72af688a8c90c07637bdb18b7e525844c29cfa0758499db15f1f8205f76a76485b79dc770e4a61dedbfbd2672c3cfde5d601a5cdb4def5befe61776d8e98337f77569bc16a223bdcd8a0a3900",
+  "leaf_index": 341,
+  "witness_input0_bytes": 1159
+ },
+ "depth10/exit_1_leaf_1023": {
+  "size": 1430,
+  "vsize": 538,
+  "weight": 2150,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "13be5a2ea0d0cc35c9643875b6242fc14bd1e425915efc38360281dabbcb9bd5",
+  "confirmed": true,
+  "block_height": 113,
+  "program_bytes": 649,
+  "witness_bytes": 426,
+  "stack_serialized_bytes": 1181,
+  "budget_wu": 4774,
+  "cost_bound_milli_wu": 592844,
+  "cost_bound_wu": 593,
+  "program_hex": "e86a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c81431f6378031dd14a8e1bf3ddac1c378516c465bdbe7639bf3017ac04ea3a0274391b90261c71b90a61c2c09d50107e460b4055a8080691b2385c000622c41e0e0709038800e25038a42e2e0141c66171d107186a61f8f0507e40986e41987e410a00e002c8070206a0b780a0e08072488141b8c93b3a08139766e5f1f97a28039748141b9840395e0a06a03793600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85cc78281985b59b740230083f32a71c71dc07070a9c51b1808f8703070e2050838c48b01b9a30f0f0281910283f34c71c71c71b9af1469c0320401c4e2c72d34640840a0fcdc989b30000000000000000040b066dc8108141b98138e38e41861c71c7e082816927e14108141b9e03bb8583956073c9c9f1477110204e7a3e101cd084e69bb88c102738a9039f640a0dcfaa6c54480102c1aac0420506e7f8dcfe9c70b001cfe20506e806039f10503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81638e38a40a0dc9538e38e3730828481d06a2e4ef30e28ee1c0803a0801a06e519c6e63ce150198b301cd481cd424507e84d04038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83a03a1000e84603a1440e85d03a18c0e86700",
+  "witness_hex": "febdedab4aca05cb458d364f21daa1c2f253166ed548aedfe014f71c6a15ff810000000006719d003814a040cf6b9b140c66739614e43a31c57f49e86f57914d84b9ebc12cd0997fed43aa07f3eeddfef32f437377b671cb16b5c1e9aeb03f8a5b498b90a18649ae4e4516eee877d5098c388b472c34b0aa40b0a491c467016079bb31a338f6a631a47d036dc91e365d00d8ae10f7abd20f569284839d5485ae376a9ccc0bdff6ca776024089aabc091214da1d88fb68fb9d5d8c327b1f91654800949441f3701aece7ca87a717c403e83c2f976d75fbf36c49acaebec73c60098442c4b8166cb5dfcf3321d1020ade686dcdd1d7318dc5c06c4294e268a0c01ef3c8fb5a7169b557b6fbf38e3aa15d7b6b4b5ee366310458c6179463c1eecfe692c534b896dd0ed63655c46c150204bf46e1eca86ce41cab975c7b2b4150e0ddca28b2b63115fb741c85717266df749e10ea719711a90dd9b798a988cbe9ca07253a6f05e5a78ccd1f05faffe5284b029575fd002976847d04cd3a14a442b89309ebe34c80bc68fb8f6e5bcec0c91d73448faee13bf13469093dc743d4541af588e63d5d7bb87499e80",
+  "leaf_index": 1023,
+  "witness_input0_bytes": 1181
+ },
+ "depth10/exit_2_leaf_0": {
+  "size": 1428,
+  "vsize": 537,
+  "weight": 2148,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "387e943f00fb363c02a7e28334425057be26beb7ea745e3db418d819389025ea",
+  "confirmed": true,
+  "block_height": 114,
+  "program_bytes": 647,
+  "witness_bytes": 426,
+  "stack_serialized_bytes": 1179,
+  "budget_wu": 4766,
+  "cost_bound_milli_wu": 592844,
+  "cost_bound_wu": 593,
+  "program_hex": "e86a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c8141b90061c6e419871c2c49d50107e458b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171d107186a61f8f0507e40986e41987e410a00e002c8070206a0b780a0e08072488141b8dd3b3a08139766e5f1f97a28039748141b9840395e0a06a03793600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85cc78281985b59b740230083f32a71c71dc07070a9c51b1808f8703070e2050838c48b01b9a30f0f0281910283f34c71c71c71b9af1469c0320401c4e2c72d34640840a0fcdc989b30000000000000000040b066dc8108141b98238e38e41861c71c7e082816927e14108141b9e03bb8583956073c9c9f1477110204e7a3e101cd104e6afb88c102738a9039f640a0dcfaa6c54480102c1aac0420506e7f8dcfe9c70b001cfe20506e806039f10503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81638e38a40a0dc9538e38e3730828481d06a2e4ef30e28ee1c0803a0801a06e519c6e63ce150198b301cd481cd424507e84d04038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83a03a1000e84603a1440e85d03a18c0e8670",
+  "witness_hex": "096cc9e49968de93a4a33ef145594b75ce29a75f074b0755a8434213432cb3950000000005f5ffef62593674a18c9bcd487fbd805cd34c3aa5ae2083b59b72bd134262e96a5ed46e6360787189caa170cc365d80e7de26aa12638aac0d93a8c4f8226e1ba7f5508f09ec2f17b4d6a65906a1c65ff9e3108c3c78faf4dd7f8cebd6d03f833beb978dc6a26f519234fc179778d8076c4e8e678fdf45bd953a023c9da1c673d7f5f9140ec723cd0762e60efb4377fd50dc7acf505c490d3db06f577bf52a27835b04cbc33de1c651e1666b30b169c725ca85e7c0760f60f0f43c2c4cc3da42a740babb3b807c0714d4d1a50ed33a7db8146fcebb86bc60d192692d1d712dcd07483e0274e5e40f2db0ee16fcd3edda883164cfa25479b940bd4dfaf1e663e841a207566a732dd65381d89c9c230df48a3b95ec6f2f33eee0453529961e700550952834bb45b1b630563bb7744187f0c5a8e298606491531addbdc8ddaf200eb8683ea642bf59a911992aecf0dc69832048f3ff0376cdf5ba2f39d05160f3392a71ff887a40072c81be7e1dd26e374ab2353c8072f94f7abdc9f6d88a8d832a6396b3bc2c00",
+  "leaf_index": 0,
+  "witness_input0_bytes": 1179
+ },
+ "depth20/program": {
+  "cmr": "a942d5e18dc1ab1f84725171b1dfb4097be7d01483a3ab5b763a9a4fad6a9cc7",
+  "commit_program_bytes": 608,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "512018c289c5f41352a2b31967719c882d856b8a0cdb00dd40baf57466e2aebb2989",
+  "control_block_bytes": 65,
+  "args": {},
+  "leaves": 1048576,
+  "live_leaves": 3,
+  "root": "557ae0721283e9b640249d12fe5b187d9b14494a35fcc4d635669526e289554f",
+  "pool_amount": 300047514
+ },
+ "depth20/exit_0_leaf_699050": {
+  "size": 1742,
+  "vsize": 616,
+  "weight": 2462,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "85e53d2c92352e2c21dcd0520bece6fbd95b24da353758813287914be0057244",
+  "confirmed": true,
+  "block_height": 116,
+  "program_bytes": 640,
+  "witness_bytes": 747,
+  "stack_serialized_bytes": 1493,
+  "budget_wu": 6022,
+  "cost_bound_milli_wu": 863548,
+  "cost_bound_wu": 864,
+  "program_hex": "e878740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa050838c3530fbc506cd0283f043902841c61c8141b90e61c6e451871c2c49d50107e490b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3c0141c810b91041c61a987e450a0fc8f30dc9130fc901401c005900e040d416f0141c100e501028371f2767410273126e630fcc58a00e62102837324072f4140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b99d050330b6b36e80460107e68ce38e3b80e0e1538a363011f0e060e1c40a107189160373621e1e0503220507e6d0e38e38e3737a28d38064080389c58e5a68c8108141f9c731366000000000000000008160cdb90210283731271c71c830c38e38fc10502d24fc2821028373dc7770b072ac0e7cb93e28ee220409cfb7c2039a909cd977118204e74d20740220506e8034d8a8900205835580840a0dd0186e80b38e16003a0290283740a01cff8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4121c71c520506e4a9c71c71b98414240e8431727798714770e0401d05c0d03728ce3731e70a80cc5980e6a40e6a12283f42d8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0742401d09c0742a01d0be0743581d0e20743a8",
+  "witness_hex": "0b0cc4685dc160b7ca8495ad12e60e393feb2b475f75fb1215477bd58e3a62f50000000005f61ede00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2526b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a718cfe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47f8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c477776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3d89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860ad76b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b189bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84cbf3b8150df20cf1a18571dd04ad08c695156c91669f3c8c24cf715cca6ed5d85f3c62695a5ea4561fa13ad44825db85f1cdafdce3538956d37a20c615fa0eeafaa0f38596dcdec8920146445595c53fc1a340eed622492366c89e96f66eb2cec12773cd2a1bf8fdd6517028ccb308ca3f5e0732dab4068dfbce77ea479c59a930",
+  "leaf_index": 699050,
+  "witness_input0_bytes": 1493
+ },
+ "depth20/exit_1_leaf_0": {
+  "size": 1763,
+  "vsize": 621,
+  "weight": 2483,
+  "nin": 1,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "c5e46673f20555ceff91e8b88416fe37808258ec4519aa8bdeb08e7cfe8ae106",
+  "confirmed": true,
+  "block_height": 117,
+  "program_bytes": 661,
+  "witness_bytes": 747,
+  "stack_serialized_bytes": 1514,
+  "budget_wu": 6106,
+  "cost_bound_milli_wu": 863548,
+  "cost_bound_wu": 864,
+  "program_hex": "e874740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa050838c3530fbc506cd0283f043902841c61c8141b90e61c6e451871c2c49d50107e490b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171c00a0e3d0b90841c61a987e430a0fc8b30dc8d30fc8c1401c005900e040d416f0141c100e4e1028371d27674102730a6e620fcc38a00e6110283731c072e4140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b999050330b6b36e80460107e67ce38e3b80e0e1538a363011f0e060e1c40a1071891603735a1e1e0503220507e6c0e38e38e3737228d38064080389c58e5a68c8108141f9c331366000000000000000008160cdb90210283730a71c71c830c38e38fc10502d24fc2821028373d47770b072ac0e7bb93e28ee220409cf97c2039a509cd777118204e73d20740020506e7fd362a24008160d56021028374041ba01ce385800e80640a0dd020073f60a06c038301c2c0e22038a8833e1a810072fc5900e5f01cbdf868068212284181e6300c00d040a0fd04071c7148141b92a71c71c6e61050903a0fc5c9de61c51dc3810074150340dca338dcc79c2a033166039a9039a848a0fd0ae08070d038942e3201883950072b8d8814204c7ee86d682c1597de386df7497c9b2bbe30352d15fd56bd5848f5bfee18072fc0e6282e64006d0733a073521735c03808b9bc01c0c1cef81d0880742501d0a00742d81d0ce0743681d0e2",
+  "witness_hex": "02e1b5d37bc6ae1aa7256c1b9653628bc1a84d40c4a7d832301471ec6723414d0000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec371d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2426b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a7188fe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47e8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c077776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3c89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860a976b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b188bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84846a82d2b4a6c4ec15e8c58675940358db35cd73741f6047a8997b12f2eef41608da9543211bad65e95b81efb87fd7bc1c2a794e1308f56e46995442a84365a9084b119603e614ebb23474a711e46d09317ad0b803f90f4d735d20fab516e0816f51ea878bf4be6653195f0a996b4723a89f9d2621cf243a00ff8b767d76f03d00",
+  "leaf_index": 0,
+  "witness_input0_bytes": 1514
+ },
+ "depth4_last_leaf/program": {
+  "cmr": "34a14fe0f230a61f1e27b6acc338ba90dcfa2b6028d16f33ff9f8350beb2b139",
+  "commit_program_bytes": 565,
+  "compiler_version": "0.7.2",
+  "scriptPubKey": "51202547c2754d33d4181ac3351f55972cadd9bad6fb68be5167dd89d71f4408a72e",
+  "control_block_bytes": 65,
+  "args": {},
+  "leaves": 16,
+  "live_leaves": 1,
+  "root": "6b6d88ef0ace5cbc82b802928cd7ded7c69d7687534d5f8207026a85b7c7a4ea",
+  "pool_amount": 100007919
+ },
+ "depth4_last_leaf/exit_0_leaf_6": {
+  "size": 909,
+  "vsize": 349,
+  "weight": 1395,
+  "nin": 1,
+  "nout": 2,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001000",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00001000"
+  },
+  "txid": "42582c2312a125e571a5a98515d4169223a90d577ad4ca2f13b9c6172b24634e",
+  "confirmed": true,
+  "block_height": 119,
+  "program_bytes": 403,
+  "witness_bytes": 233,
+  "stack_serialized_bytes": 740,
+  "budget_wu": 3010,
+  "cost_bound_milli_wu": 259614,
+  "cost_bound_wu": 260,
+  "program_hex": "e781d028740a13ab2042050831061c70b16ab902102836b41871c2c5aae00840a0dc175620840a13690000000000000000000000000000000000000000000000000000000000000000042050e6e1c71b880502c4838c3531070a907186a61f40a0d9a0507da72050838c39028371f9871b90461c70b12754041f9142d8156a0201a46c8e1368188b10b807040340b816406a15072038681c48071481c5a171900a0e370b8f405072088141b8a13b3a08139566e571f95a28039548141b9680727c140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b97e0a06616d66dd008c020fcc29c71c7701c1c2a7146c6023e1c0c1c3881420e3122c06e64c3c3c0a06440a0fccb1c71c71c6e67c51a700c81007138b1cb4d190210283f352626cc0000000000000000102c19b72042050c677fd8d16a279d05c56f10fdfb196cacf92062a95aaecf0d9821ec01e62c041890c03003785c147e73c100e23038bc2e340188b904033072940e6c00e6d80e6f00e71c0e74c0e7640e774",
+  "witness_hex": "7ffe7fac8f4efa5d15f4b60393275a9f4e27033e2aa1c9dfa2999dbab39d86ff0000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d327e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f242a582e04d84e34e571333eb67bfa71537c3fb1508fc156a36870e06e9417a684b66869395b5f7318516c7e01409cf5399145b2b0b66324baee0cd17a8e3b12800",
+  "leaf_index": 6,
+  "witness_input0_bytes": 740
+ },
+ "depth4_last_leaf/pool_closed": {
+  "remainder": 0,
+  "outputs": 2
+ }
+}

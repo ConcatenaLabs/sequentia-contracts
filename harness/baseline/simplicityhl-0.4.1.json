@@ -1,0 +1,2104 @@
+{
+ "s0": {},
+ "s1": {
+  "p2pk/annex8_reject": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "p2pk/neg_keypath_random_sig": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Invalid Schnorr signature)",
+   "rpc-error": "mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -26)"
+  },
+  "p2pk/neg_program_bitflip": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Illegal padding in final byte of program)",
+   "rpc-error": "mempool-script-verify-flag-failed (Illegal padding in final byte of program) (code -26)"
+  },
+  "p2pk/neg_wrong_key": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "p2pk/program": {
+   "commit_program_bytes": 44,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "p2pk/spend": {
+   "budget_wu": 762,
+   "cost_bound_milli_wu": 52112,
+   "cost_bound_wu": 53,
+   "kind": "spend",
+   "program_bytes": 44,
+   "stack_serialized_bytes": 178,
+   "vsize": 209,
+   "weight": 833,
+   "witness_bytes": 64
+  },
+  "p2pk/spend_2": {
+   "budget_wu": 762,
+   "cost_bound_milli_wu": 52112,
+   "cost_bound_wu": 53,
+   "kind": "spend",
+   "program_bytes": 44,
+   "stack_serialized_bytes": 178,
+   "vsize": 209,
+   "weight": 833,
+   "witness_bytes": 64
+  }
+ },
+ "s1c": {
+  "e0/expects_annex": {
+   "kind": "fact",
+   "node_testmempoolaccept": true,
+   "rust_bitmachine_executed": false,
+   "rust_error": "Jet failed during execution"
+  },
+  "e0/expects_none": {
+   "kind": "fact",
+   "node_testmempoolaccept": true,
+   "rust_bitmachine_executed": true,
+   "rust_error": null
+  },
+  "e1/exact_annex": {
+   "budget_wu": 15666,
+   "cost_bound_milli_wu": 15664298,
+   "cost_bound_wu": 15665,
+   "kind": "spend",
+   "program_bytes": 549,
+   "stack_serialized_bytes": 3904,
+   "vsize": 1140,
+   "weight": 4559,
+   "witness_bytes": 0
+  },
+  "e1/neg_no_annex": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
+   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)"
+  },
+  "e1/neg_one_byte_short": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
+   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)"
+  },
+  "e1/program": {
+   "commit_program_bytes": 497,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "e2/K29/annex_100000_standard": {
+   "budget_wu": 403094,
+   "cost_bound_milli_wu": 394399914,
+   "cost_bound_wu": 394400,
+   "kind": "spend",
+   "program_bytes": 684,
+   "stack_serialized_bytes": 100761,
+   "vsize": 25354,
+   "weight": 101416,
+   "witness_bytes": 0
+  },
+  "e2/K30/neg_annex_100000_too_small": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
+   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)"
+  },
+  "e3/K295_u8/tx": {
+   "budget_wu": 3992390,
+   "cost_bound_milli_wu": 3992388266,
+   "cost_bound_wu": 3992389,
+   "kind": "spend",
+   "program_bytes": 2146,
+   "stack_serialized_bytes": 998085,
+   "vsize": 249685,
+   "weight": 998740,
+   "witness_bytes": 0
+  },
+  "e3/K296_u8/tx": {
+   "budget_wu": 4000050,
+   "cost_bound_milli_wu": 4005914538,
+   "cost_bound_wu": 4005915,
+   "kind": "spend",
+   "program_bytes": 2151,
+   "stack_serialized_bytes": 1002329,
+   "vsize": 250746,
+   "weight": 1002984,
+   "witness_bytes": 0
+  },
+  "e4/N1000/program": {
+   "budget_wu": 196634,
+   "compile_seconds": 3.6,
+   "cost_bound_milli_wu": 2807100,
+   "cost_bound_wu": 2808,
+   "kind": "spend",
+   "program_bytes": 49074,
+   "stack_serialized_bytes": 49146,
+   "vsize": 12451,
+   "weight": 49801,
+   "witness_bytes": 0
+  },
+  "e4/N4000/program": {
+   "budget_wu": 805978,
+   "compile_seconds": 48.8,
+   "cost_bound_milli_wu": 11228100,
+   "cost_bound_wu": 11229,
+   "kind": "spend",
+   "program_bytes": 201408,
+   "stack_serialized_bytes": 201482,
+   "vsize": 50535,
+   "weight": 202137,
+   "witness_bytes": 0
+  },
+  "e4/N8100/program": {
+   "budget_wu": 1652510,
+   "compile_seconds": 195.8,
+   "cost_bound_milli_wu": 22736800,
+   "cost_bound_wu": 22737,
+   "kind": "spend",
+   "program_bytes": 413041,
+   "stack_serialized_bytes": 413115,
+   "vsize": 103443,
+   "weight": 413770,
+   "witness_bytes": 0
+  }
+ },
+ "s1d": {
+  "big/K70_PAD5000/spend": {
+   "budget_wu": 1021222,
+   "cost_bound_milli_wu": 1021172196,
+   "cost_bound_wu": 1021173,
+   "kind": "spend",
+   "program_bytes": 1152,
+   "stack_serialized_bytes": 255293,
+   "vsize": 63987,
+   "weight": 255948,
+   "witness_bytes": 160000
+  },
+  "mem/PAD4000/spend": {
+   "budget_wu": 515602,
+   "cost_bound_milli_wu": 72094740,
+   "cost_bound_wu": 72095,
+   "kind": "spend",
+   "program_bytes": 812,
+   "stack_serialized_bytes": 128888,
+   "vsize": 32386,
+   "weight": 129543,
+   "witness_bytes": 128000
+  },
+  "mem/PAD6000/spend": {
+   "budget_wu": 771714,
+   "cost_bound_milli_wu": 102387124,
+   "cost_bound_wu": 102388,
+   "kind": "spend",
+   "program_bytes": 840,
+   "stack_serialized_bytes": 192916,
+   "vsize": 48393,
+   "weight": 193571,
+   "witness_bytes": 192000
+  },
+  "mem/PAD8000/spend": {
+   "budget_wu": 1027654,
+   "cost_bound_milli_wu": 132613972,
+   "cost_bound_wu": 132614,
+   "kind": "spend",
+   "program_bytes": 825,
+   "stack_serialized_bytes": 256901,
+   "vsize": 64389,
+   "weight": 257556,
+   "witness_bytes": 256000
+  },
+  "pad/K1_PAD200_no_annex": {
+   "budget_wu": 28794,
+   "cost_bound_milli_wu": 18072420,
+   "cost_bound_wu": 18073,
+   "kind": "spend",
+   "program_bytes": 712,
+   "stack_serialized_bytes": 7186,
+   "vsize": 1961,
+   "weight": 7841,
+   "witness_bytes": 6400
+  }
+ },
+ "s2": {
+  "r2_chain_single_leaf/program": {
+   "commit_program_bytes": 126,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r2_chain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 834,
+   "cost_bound_milli_wu": 17699,
+   "cost_bound_wu": 18,
+   "kind": "spend",
+   "program_bytes": 126,
+   "stack_serialized_bytes": 196,
+   "vsize": 304,
+   "weight": 1213,
+   "witness_bytes": 0
+  },
+  "r2_chain_with_sweep_leaf/program": {
+   "commit_program_bytes": 126,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r2_chain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 962,
+   "cost_bound_milli_wu": 17699,
+   "cost_bound_wu": 18,
+   "kind": "spend",
+   "program_bytes": 126,
+   "stack_serialized_bytes": 228,
+   "vsize": 513,
+   "weight": 2051,
+   "witness_bytes": 0
+  },
+  "r2_chain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 962,
+   "cost_bound_milli_wu": 17699,
+   "cost_bound_wu": 18,
+   "kind": "spend",
+   "program_bytes": 126,
+   "stack_serialized_bytes": 228,
+   "vsize": 312,
+   "weight": 1245,
+   "witness_bytes": 0
+  },
+  "r2_compact_single_leaf/program": {
+   "commit_program_bytes": 139,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r2_compact_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 886,
+   "cost_bound_milli_wu": 31138,
+   "cost_bound_wu": 32,
+   "kind": "spend",
+   "program_bytes": 139,
+   "stack_serialized_bytes": 209,
+   "vsize": 307,
+   "weight": 1226,
+   "witness_bytes": 0
+  },
+  "r2_compact_with_sweep_leaf/program": {
+   "commit_program_bytes": 139,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r2_compact_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1014,
+   "cost_bound_milli_wu": 31138,
+   "cost_bound_wu": 32,
+   "kind": "spend",
+   "program_bytes": 139,
+   "stack_serialized_bytes": 241,
+   "vsize": 516,
+   "weight": 2064,
+   "witness_bytes": 0
+  },
+  "r2_compact_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1014,
+   "cost_bound_milli_wu": 31138,
+   "cost_bound_wu": 32,
+   "kind": "spend",
+   "program_bytes": 139,
+   "stack_serialized_bytes": 241,
+   "vsize": 315,
+   "weight": 1258,
+   "witness_bytes": 0
+  },
+  "r2_plain_single_leaf/program": {
+   "commit_program_bytes": 336,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r2_plain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 1546,
+   "cost_bound_milli_wu": 46242,
+   "cost_bound_wu": 47,
+   "kind": "spend",
+   "program_bytes": 302,
+   "stack_serialized_bytes": 374,
+   "vsize": 348,
+   "weight": 1391,
+   "witness_bytes": 0
+  },
+  "r2_plain_with_sweep_leaf/program": {
+   "commit_program_bytes": 336,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r2_plain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1674,
+   "cost_bound_milli_wu": 46242,
+   "cost_bound_wu": 47,
+   "kind": "spend",
+   "program_bytes": 302,
+   "stack_serialized_bytes": 406,
+   "vsize": 558,
+   "weight": 2229,
+   "witness_bytes": 0
+  },
+  "r2_plain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1674,
+   "cost_bound_milli_wu": 46242,
+   "cost_bound_wu": 47,
+   "kind": "spend",
+   "program_bytes": 302,
+   "stack_serialized_bytes": 406,
+   "vsize": 356,
+   "weight": 1423,
+   "witness_bytes": 0
+  },
+  "r4_chain_single_leaf/program": {
+   "commit_program_bytes": 159,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r4_chain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 966,
+   "cost_bound_milli_wu": 32154,
+   "cost_bound_wu": 33,
+   "kind": "spend",
+   "program_bytes": 159,
+   "stack_serialized_bytes": 229,
+   "vsize": 469,
+   "weight": 1874,
+   "witness_bytes": 0
+  },
+  "r4_chain_with_sweep_leaf/neg_blinded_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_explicit_child_with_nonce": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)"
+  },
+  "r4_chain_with_sweep_leaf/neg_missing_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_v0_33byte_program_substitution": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "scriptpubkey",
+   "rpc-error": "scriptpubkey (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_index_shift": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_index_swap": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/neg_wrong_value_plus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_chain_with_sweep_leaf/program": {
+   "commit_program_bytes": 159,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r4_chain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1094,
+   "cost_bound_milli_wu": 32154,
+   "cost_bound_wu": 33,
+   "kind": "spend",
+   "program_bytes": 159,
+   "stack_serialized_bytes": 261,
+   "vsize": 678,
+   "weight": 2712,
+   "witness_bytes": 0
+  },
+  "r4_chain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1094,
+   "cost_bound_milli_wu": 32154,
+   "cost_bound_wu": 33,
+   "kind": "spend",
+   "program_bytes": 159,
+   "stack_serialized_bytes": 261,
+   "vsize": 477,
+   "weight": 1906,
+   "witness_bytes": 0
+  },
+  "r4_compact_single_leaf/program": {
+   "commit_program_bytes": 181,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r4_compact_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 1054,
+   "cost_bound_milli_wu": 62122,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 181,
+   "stack_serialized_bytes": 251,
+   "vsize": 474,
+   "weight": 1896,
+   "witness_bytes": 0
+  },
+  "r4_compact_with_sweep_leaf/neg_blinded_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_explicit_child_with_nonce": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)"
+  },
+  "r4_compact_with_sweep_leaf/neg_missing_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_v0_33byte_program_substitution": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "scriptpubkey",
+   "rpc-error": "scriptpubkey (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_index_shift": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_index_swap": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/neg_wrong_value_plus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_compact_with_sweep_leaf/program": {
+   "commit_program_bytes": 181,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r4_compact_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1182,
+   "cost_bound_milli_wu": 62122,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 181,
+   "stack_serialized_bytes": 283,
+   "vsize": 684,
+   "weight": 2734,
+   "witness_bytes": 0
+  },
+  "r4_compact_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1182,
+   "cost_bound_milli_wu": 62122,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 181,
+   "stack_serialized_bytes": 283,
+   "vsize": 482,
+   "weight": 1928,
+   "witness_bytes": 0
+  },
+  "r4_plain_single_leaf/program": {
+   "commit_program_bytes": 442,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r4_plain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 1970,
+   "cost_bound_milli_wu": 92384,
+   "cost_bound_wu": 93,
+   "kind": "spend",
+   "program_bytes": 408,
+   "stack_serialized_bytes": 480,
+   "vsize": 532,
+   "weight": 2125,
+   "witness_bytes": 0
+  },
+  "r4_plain_with_sweep_leaf/neg_blinded_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_missing_child": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_unpruned_program": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Program has FAIL node)",
+   "rpc-error": "mempool-script-verify-flag-failed (Program has FAIL node) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_v0_33byte_program_substitution": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "scriptpubkey",
+   "rpc-error": "scriptpubkey (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_index_shift": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_index_swap": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/neg_wrong_value_plus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "r4_plain_with_sweep_leaf/program": {
+   "commit_program_bytes": 442,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r4_plain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 2098,
+   "cost_bound_milli_wu": 92384,
+   "cost_bound_wu": 93,
+   "kind": "spend",
+   "program_bytes": 408,
+   "stack_serialized_bytes": 512,
+   "vsize": 741,
+   "weight": 2963,
+   "witness_bytes": 0
+  },
+  "r4_plain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 2098,
+   "cost_bound_milli_wu": 92384,
+   "cost_bound_wu": 93,
+   "kind": "spend",
+   "program_bytes": 408,
+   "stack_serialized_bytes": 512,
+   "vsize": 540,
+   "weight": 2157,
+   "witness_bytes": 0
+  },
+  "r8_chain_single_leaf/program": {
+   "commit_program_bytes": 227,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r8_chain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 1238,
+   "cost_bound_milli_wu": 62600,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 227,
+   "stack_serialized_bytes": 297,
+   "vsize": 800,
+   "weight": 3198,
+   "witness_bytes": 0
+  },
+  "r8_chain_with_sweep_leaf/program": {
+   "commit_program_bytes": 227,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r8_chain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1366,
+   "cost_bound_milli_wu": 62600,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 227,
+   "stack_serialized_bytes": 329,
+   "vsize": 1009,
+   "weight": 4036,
+   "witness_bytes": 0
+  },
+  "r8_chain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1366,
+   "cost_bound_milli_wu": 62600,
+   "cost_bound_wu": 63,
+   "kind": "spend",
+   "program_bytes": 227,
+   "stack_serialized_bytes": 329,
+   "vsize": 808,
+   "weight": 3230,
+   "witness_bytes": 0
+  },
+  "r8_compact_single_leaf/program": {
+   "commit_program_bytes": 267,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r8_compact_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 1406,
+   "cost_bound_milli_wu": 144010,
+   "cost_bound_wu": 145,
+   "kind": "spend",
+   "program_bytes": 267,
+   "stack_serialized_bytes": 339,
+   "vsize": 810,
+   "weight": 3240,
+   "witness_bytes": 0
+  },
+  "r8_compact_with_sweep_leaf/program": {
+   "commit_program_bytes": 267,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r8_compact_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 1534,
+   "cost_bound_milli_wu": 144010,
+   "cost_bound_wu": 145,
+   "kind": "spend",
+   "program_bytes": 267,
+   "stack_serialized_bytes": 371,
+   "vsize": 1020,
+   "weight": 4078,
+   "witness_bytes": 0
+  },
+  "r8_compact_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 1534,
+   "cost_bound_milli_wu": 144010,
+   "cost_bound_wu": 145,
+   "kind": "spend",
+   "program_bytes": 267,
+   "stack_serialized_bytes": 371,
+   "vsize": 818,
+   "weight": 3272,
+   "witness_bytes": 0
+  },
+  "r8_plain_single_leaf/program": {
+   "commit_program_bytes": 657,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "r8_plain_single_leaf/unroll_reserve_fee": {
+   "budget_wu": 2830,
+   "cost_bound_milli_wu": 184668,
+   "cost_bound_wu": 185,
+   "kind": "spend",
+   "program_bytes": 623,
+   "stack_serialized_bytes": 695,
+   "vsize": 899,
+   "weight": 3596,
+   "witness_bytes": 0
+  },
+  "r8_plain_with_sweep_leaf/program": {
+   "commit_program_bytes": 657,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "r8_plain_with_sweep_leaf/unroll_external_fee": {
+   "budget_wu": 2958,
+   "cost_bound_milli_wu": 184668,
+   "cost_bound_wu": 185,
+   "kind": "spend",
+   "program_bytes": 623,
+   "stack_serialized_bytes": 727,
+   "vsize": 1109,
+   "weight": 4434,
+   "witness_bytes": 0
+  },
+  "r8_plain_with_sweep_leaf/unroll_reserve_fee": {
+   "budget_wu": 2958,
+   "cost_bound_milli_wu": 184668,
+   "cost_bound_wu": 185,
+   "kind": "spend",
+   "program_bytes": 623,
+   "stack_serialized_bytes": 727,
+   "vsize": 907,
+   "weight": 3628,
+   "witness_bytes": 0
+  }
+ },
+ "s3": {
+  "fixed_bind_m1/neg_coin_with_other_amount": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_coin_with_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m1/program": {
+   "commit_program_bytes": 280,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_bind_m1/spend_coin1": {
+   "budget_wu": 2098,
+   "cost_bound_milli_wu": 187808,
+   "cost_bound_wu": 188,
+   "kind": "spend",
+   "program_bytes": 280,
+   "stack_serialized_bytes": 512,
+   "vsize": 304,
+   "weight": 1215,
+   "witness_bytes": 128
+  },
+  "fixed_bind_m2/neg_coin_with_other_amount": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_coin_with_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_outputs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_bind_m2/program": {
+   "commit_program_bytes": 296,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_bind_m2/spend_coin1": {
+   "budget_wu": 2162,
+   "cost_bound_milli_wu": 213094,
+   "cost_bound_wu": 214,
+   "kind": "spend",
+   "program_bytes": 296,
+   "stack_serialized_bytes": 528,
+   "vsize": 387,
+   "weight": 1545,
+   "witness_bytes": 128
+  },
+  "fixed_m1/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m1/program": {
+   "commit_program_bytes": 254,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_m1/spend_coin1": {
+   "budget_wu": 1994,
+   "cost_bound_milli_wu": 160713,
+   "cost_bound_wu": 161,
+   "kind": "spend",
+   "program_bytes": 254,
+   "stack_serialized_bytes": 486,
+   "vsize": 298,
+   "weight": 1189,
+   "witness_bytes": 128
+  },
+  "fixed_m2/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_outputs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "fixed_m2/program": {
+   "commit_program_bytes": 270,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_m2/spend_coin1": {
+   "budget_wu": 2058,
+   "cost_bound_milli_wu": 182679,
+   "cost_bound_wu": 183,
+   "kind": "spend",
+   "program_bytes": 270,
+   "stack_serialized_bytes": 502,
+   "vsize": 380,
+   "weight": 1519,
+   "witness_bytes": 128
+  },
+  "fixed_m3/program": {
+   "commit_program_bytes": 287,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_m3/spend_coin1": {
+   "budget_wu": 2126,
+   "cost_bound_milli_wu": 206305,
+   "cost_bound_wu": 207,
+   "kind": "spend",
+   "program_bytes": 287,
+   "stack_serialized_bytes": 519,
+   "vsize": 463,
+   "weight": 1850,
+   "witness_bytes": 128
+  },
+  "fixed_m4/program": {
+   "commit_program_bytes": 304,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "fixed_m4/spend_coin1": {
+   "budget_wu": 2194,
+   "cost_bound_milli_wu": 231591,
+   "cost_bound_wu": 232,
+   "kind": "spend",
+   "program_bytes": 304,
+   "stack_serialized_bytes": 536,
+   "vsize": 546,
+   "weight": 2181,
+   "witness_bytes": 128
+  },
+  "loop_bind_m1/neg_coin_with_other_amount": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_coin_with_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m1/program": {
+   "commit_program_bytes": 411,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_bind_m1/spend_coin1": {
+   "budget_wu": 2878,
+   "cost_bound_milli_wu": 279142,
+   "cost_bound_wu": 280,
+   "kind": "spend",
+   "program_bytes": 474,
+   "stack_serialized_bytes": 707,
+   "vsize": 353,
+   "weight": 1410,
+   "witness_bytes": 129
+  },
+  "loop_bind_m2/neg_coin_with_other_amount": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_coin_with_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_outputs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_bind_m2/program": {
+   "commit_program_bytes": 411,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_bind_m2/spend_coin1": {
+   "budget_wu": 2922,
+   "cost_bound_milli_wu": 288988,
+   "cost_bound_wu": 289,
+   "kind": "spend",
+   "program_bytes": 485,
+   "stack_serialized_bytes": 718,
+   "vsize": 434,
+   "weight": 1735,
+   "witness_bytes": 129
+  },
+  "loop_m1/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m1/program": {
+   "commit_program_bytes": 384,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_m1/spend_coin1": {
+   "budget_wu": 2770,
+   "cost_bound_milli_wu": 242055,
+   "cost_bound_wu": 243,
+   "kind": "spend",
+   "program_bytes": 447,
+   "stack_serialized_bytes": 680,
+   "vsize": 346,
+   "weight": 1383,
+   "witness_bytes": 129
+  },
+  "loop_m2/neg_output0_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_output0_other_script": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_output0_value_minus1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_outputs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_sig_A_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_sig_S_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_sig_all_hash_signatures": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_sigs_for_other_salt": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/neg_sigs_swapped": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "loop_m2/program": {
+   "commit_program_bytes": 384,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_m2/spend_coin1": {
+   "budget_wu": 2818,
+   "cost_bound_milli_wu": 251901,
+   "cost_bound_wu": 252,
+   "kind": "spend",
+   "program_bytes": 459,
+   "stack_serialized_bytes": 692,
+   "vsize": 428,
+   "weight": 1709,
+   "witness_bytes": 129
+  },
+  "loop_m3/program": {
+   "commit_program_bytes": 384,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_m3/spend_coin1": {
+   "budget_wu": 2738,
+   "cost_bound_milli_wu": 261747,
+   "cost_bound_wu": 262,
+   "kind": "spend",
+   "program_bytes": 439,
+   "stack_serialized_bytes": 672,
+   "vsize": 501,
+   "weight": 2003,
+   "witness_bytes": 129
+  },
+  "loop_m4/program": {
+   "commit_program_bytes": 384,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "loop_m4/spend_coin1": {
+   "budget_wu": 2654,
+   "cost_bound_milli_wu": 271593,
+   "cost_bound_wu": 272,
+   "kind": "spend",
+   "program_bytes": 418,
+   "stack_serialized_bytes": 651,
+   "vsize": 574,
+   "weight": 2296,
+   "witness_bytes": 129
+  }
+ },
+ "s4": {
+  "extend/neg_amount_increased_by_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_amount_reduced_by_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_different_program_same_data_leaf": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_other_asset_same_amount": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_plain_p2tr_of_S": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_state_equal": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_state_lowered": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_successor_at_other_index": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_witness_claims_higher_new_than_output_commits": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_witness_claims_lower_old": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/neg_wrong_signer": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "extend/st0_to_st1": {
+   "budget_wu": 2242,
+   "cost_bound_milli_wu": 236591,
+   "cost_bound_wu": 237,
+   "kind": "spend",
+   "program_bytes": 363,
+   "stack_serialized_bytes": 548,
+   "vsize": 448,
+   "weight": 1791,
+   "witness_bytes": 81
+  },
+  "extend/st1_to_st2_at_index1": {
+   "cost_bound_wu": 237,
+   "kind": "spend",
+   "program_bytes": 363,
+   "vsize": 448,
+   "weight": 1791,
+   "witness_bytes": 81
+  },
+  "program": {
+   "commit_program_bytes": 350,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "sweep/after_expiry": {
+   "budget_wu": 1522,
+   "cost_bound_milli_wu": 72255,
+   "cost_bound_wu": 73,
+   "kind": "spend",
+   "program_bytes": 193,
+   "stack_serialized_bytes": 368,
+   "vsize": 256,
+   "weight": 1023,
+   "witness_bytes": 73
+  },
+  "sweep/neg_before_expiry_nonfinal": {
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal, non-final transaction (code -25)",
+   "kind": "refusal",
+   "reject-reason": "non-final",
+   "rpc-error": "non-final (code -26)"
+  },
+  "sweep/neg_locktime_at_original_expiry_after_extension": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "sweep/neg_witness_claims_original_state": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "sweep/neg_wrong_signer": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  }
+ },
+ "s5": {
+  "depth10/exit_0_leaf_341": {
+   "budget_wu": 4686,
+   "cost_bound_milli_wu": 592844,
+   "cost_bound_wu": 593,
+   "kind": "spend",
+   "program_bytes": 627,
+   "stack_serialized_bytes": 1159,
+   "vsize": 532,
+   "weight": 2128,
+   "witness_bytes": 426
+  },
+  "depth10/exit_1_leaf_1023": {
+   "budget_wu": 4774,
+   "cost_bound_milli_wu": 592844,
+   "cost_bound_wu": 593,
+   "kind": "spend",
+   "program_bytes": 649,
+   "stack_serialized_bytes": 1181,
+   "vsize": 538,
+   "weight": 2150,
+   "witness_bytes": 426
+  },
+  "depth10/exit_2_leaf_0": {
+   "budget_wu": 4766,
+   "cost_bound_milli_wu": 592844,
+   "cost_bound_wu": 593,
+   "kind": "spend",
+   "program_bytes": 647,
+   "stack_serialized_bytes": 1179,
+   "vsize": 537,
+   "weight": 2148,
+   "witness_bytes": 426
+  },
+  "depth10/program": {
+   "commit_program_bytes": 595,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "depth20/exit_0_leaf_699050": {
+   "budget_wu": 6022,
+   "cost_bound_milli_wu": 863548,
+   "cost_bound_wu": 864,
+   "kind": "spend",
+   "program_bytes": 640,
+   "stack_serialized_bytes": 1493,
+   "vsize": 616,
+   "weight": 2462,
+   "witness_bytes": 747
+  },
+  "depth20/exit_1_leaf_0": {
+   "budget_wu": 6106,
+   "cost_bound_milli_wu": 863548,
+   "cost_bound_wu": 864,
+   "kind": "spend",
+   "program_bytes": 661,
+   "stack_serialized_bytes": 1514,
+   "vsize": 621,
+   "weight": 2483,
+   "witness_bytes": 747
+  },
+  "depth20/program": {
+   "commit_program_bytes": 608,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "depth4/exit_0_leaf_5": {
+   "budget_wu": 3786,
+   "cost_bound_milli_wu": 433300,
+   "cost_bound_wu": 434,
+   "kind": "spend",
+   "program_bytes": 597,
+   "stack_serialized_bytes": 934,
+   "vsize": 476,
+   "weight": 1903,
+   "witness_bytes": 233
+  },
+  "depth4/exit_1_leaf_10": {
+   "budget_wu": 3786,
+   "cost_bound_milli_wu": 433300,
+   "cost_bound_wu": 434,
+   "kind": "spend",
+   "program_bytes": 597,
+   "stack_serialized_bytes": 934,
+   "vsize": 476,
+   "weight": 1903,
+   "witness_bytes": 233
+  },
+  "depth4/exit_2_leaf_0": {
+   "budget_wu": 3870,
+   "cost_bound_milli_wu": 433300,
+   "cost_bound_wu": 434,
+   "kind": "spend",
+   "program_bytes": 618,
+   "stack_serialized_bytes": 955,
+   "vsize": 481,
+   "weight": 1924,
+   "witness_bytes": 233
+  },
+  "depth4/exit_3_leaf_15": {
+   "budget_wu": 3878,
+   "cost_bound_milli_wu": 433300,
+   "cost_bound_wu": 434,
+   "kind": "spend",
+   "program_bytes": 620,
+   "stack_serialized_bytes": 957,
+   "vsize": 482,
+   "weight": 1926,
+   "witness_bytes": 233
+  },
+  "depth4/neg_claims_amount_plus_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_double_exit_current_path": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_double_exit_old_path": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_no_remainder_output": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_other_owner_with_this_path": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_remainder_in_other_asset": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_remainder_keeps_old_root": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_remainder_marks_other_leaf": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_remainder_short_by_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_remainder_to_other_program": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_signed_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/neg_stranger_key_not_in_tree": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "depth4/program": {
+   "commit_program_bytes": 565,
+   "control_block_bytes": 65,
+   "kind": "program"
+  },
+  "depth4_last_leaf/exit_0_leaf_6": {
+   "budget_wu": 3010,
+   "cost_bound_milli_wu": 259614,
+   "cost_bound_wu": 260,
+   "kind": "spend",
+   "program_bytes": 403,
+   "stack_serialized_bytes": 740,
+   "vsize": 349,
+   "weight": 1395,
+   "witness_bytes": 233
+  },
+  "depth4_last_leaf/program": {
+   "commit_program_bytes": 565,
+   "control_block_bytes": 65,
+   "kind": "program"
+  }
+ },
+ "s6": {
+  "distance/BYPASS_other_input_carries_the_distance": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "distance/own_seq_10_after_10_blocks": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "distance/own_seq_10_too_early": {
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "non-BIP68-final (code -26)",
+   "testmempoolaccept": false
+  },
+  "distance/own_seq_10_version_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "distance/own_seq_9_after_10_blocks": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "distance/own_seq_is_a_TIME_lock_of_10": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "duration/BYPASS_other_input_carries_the_duration": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "duration/own_seq_is_a_BLOCK_lock_of_2": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "duration/own_seq_time1_after_wait": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "duration/own_seq_time2_after_wait": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "duration/own_seq_time2_too_early": {
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "non-BIP68-final (code -26)",
+   "testmempoolaccept": false
+  },
+  "probe/v1_other_input_seq_7": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_other_input_bit31_set_ignored": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_other_input_high_bits_masked": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_other_input_seq_7": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_other_inputs_seq_7_and_time_3": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_0": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_1_own": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_fffffffe_locktime_h": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_fffffffe_locktime_mtp": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_final": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "probe/v2_seq_final_locktime_h_IGNORED": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "program/lock_distance": {
+   "commit_program_bytes": 8,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "program/lock_duration": {
+   "commit_program_bytes": 9,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "program/lock_probe": {
+   "commit_program_bytes": 96,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "program/safe_distance": {
+   "commit_program_bytes": 163,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "program/safe_duration": {
+   "commit_program_bytes": 163,
+   "control_block_bytes": 33,
+   "kind": "program"
+  },
+  "safe_distance/other_input_carries_the_distance": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_distance/own_seq_10_after_10_blocks": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "safe_distance/own_seq_10_too_early": {
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "non-BIP68-final (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_distance/own_seq_10_with_unused_bits_set": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "safe_distance/own_seq_9": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_distance/own_seq_is_a_TIME_lock": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_distance/version_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_duration/other_input_carries_the_duration": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+   "testmempoolaccept": false
+  },
+  "safe_duration/own_seq_time2_after_wait": {
+   "confirmed": true,
+   "expected": "accepted",
+   "kind": "outcome",
+   "testmempoolaccept": true
+  },
+  "safe_duration/own_seq_time2_too_early": {
+   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
+   "expected": "refused",
+   "kind": "outcome",
+   "mined": false,
+   "rpc-error": "non-BIP68-final (code -26)",
+   "testmempoolaccept": false
+  }
+ },
+ "s7": {
+  "liquidate_asset_Y_price_1": {
+   "budget_wu": 2498,
+   "cost_bound_milli_wu": 197659,
+   "cost_bound_wu": 198,
+   "kind": "spend",
+   "program_bytes": 400,
+   "stack_serialized_bytes": 612,
+   "vsize": 317,
+   "weight": 1267,
+   "witness_bytes": 140
+  },
+  "liquidate_at_boundary_minus_1": {
+   "budget_wu": 2498,
+   "cost_bound_milli_wu": 197659,
+   "cost_bound_wu": 198,
+   "kind": "spend",
+   "program_bytes": 400,
+   "stack_serialized_bytes": 612,
+   "vsize": 317,
+   "weight": 1267,
+   "witness_bytes": 140
+  },
+  "neg_healthy_price_boundary_plus_1": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_healthy_price_that_a_64bit_product_would_pass": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_lender_signature_by_stranger": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_price_exactly_at_boundary": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_price_for_asset_X_used_on_coin_of_asset_Y": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_price_signed_by_another_key": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_statement_older_than_not_before": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "neg_witness_price_differs_from_signed_price": {
+   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+   "kind": "refusal",
+   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)"
+  },
+  "program": {
+   "commit_program_bytes": 400,
+   "control_block_bytes": 33,
+   "kind": "program"
+  }
+ }
+}

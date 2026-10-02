@@ -1,0 +1,16 @@
+/* S1 ceiling: a cost-heavy, size-light program. No signature over the
+ * transaction: the loop re-verifies one fixed BIP340 triple %%K%% times per
+ * iteration, %%ITERS%% iterations, so the static cost bound is tunable while the
+ * encoded program stays tiny (identical sub-expressions are shared). */
+fn body(acc: (), ctx: (), i: %%CTR%%) -> Either<(), ()> {
+%%BODY%%
+    Right(())
+}
+
+fn main() {
+    let out: Either<(), ()> = for_while::<body>((), ());
+    match out {
+        Left(a: ()) => (),
+        Right(b: ()) => (),
+    }
+}

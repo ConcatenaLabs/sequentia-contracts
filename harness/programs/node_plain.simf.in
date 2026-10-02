@@ -1,0 +1,20 @@
+/* S2: covenant tree node, plain form. Output i (i = 0..r-1) must carry the
+ * pinned explicit asset, the pinned explicit amount, and the pinned script
+ * (compared by SHA256 of the scriptPubKey). No signature, no witness.
+ * Nothing else in the transaction is constrained. */
+fn check(i: u32, value: u64, spk_hash: u256) {
+    let (a, v): (Asset1, Amount1) = unwrap(jet::output_amount(i));
+    match a {
+        Left(c: (u1, u256)) => panic!(),
+        Right(id: ExplicitAsset) => assert!(jet::eq_256(id, param::ASSET)),
+    };
+    match v {
+        Left(c: (u1, u256)) => panic!(),
+        Right(x: u64) => assert!(jet::eq_64(x, value)),
+    };
+    assert!(jet::eq_256(unwrap(jet::output_script_hash(i)), spk_hash));
+}
+
+fn main() {
+%%CHECKS%%
+}
