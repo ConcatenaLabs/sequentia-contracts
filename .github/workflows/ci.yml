@@ -19,6 +19,30 @@ jobs:
           files=$(git ls-files '*.simf' '*.simf.in' | grep -v '^lints/fixtures/reject/')
           cargo run --locked --quiet --bin seqc -- lint $files
 
+  mirrors:
+    name: Address mirrors (Python, JavaScript, Go) against the golden vectors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Python
+        run: python3 mirrors/python/test_sequentia_address.py -v
+      - name: JavaScript
+        run: node --test mirrors/js/sequentia-address.test.mjs
+      - name: Go
+        working-directory: mirrors/go
+        run: |
+          go vet ./...
+          go test -v ./...
+
   parity:
     name: Parity gate against the node's Simplicity library
     runs-on: ubuntu-latest

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the regtest harness against a Sequentia node.
 
-    harness/run.py                                  # S0 to S7
+    harness/run.py                                  # every test but the ceilings
     harness/run.py s2 s6                            # some of them
     harness/run.py --ceilings                       # also the slow S1 ceiling runs
     harness/run.py --node-repo /path/to/Sequentia --sequentiad /path/to/sequentiad
@@ -34,6 +34,7 @@ TESTS = [
     ("s5", "s5_leave_one", "One owner leaves a shared output"),
     ("s6", "s6_timelocks", "Relative timelocks: the broken jets and the safe form"),
     ("s7", "s7_oracle", "Oracle-signed price and 128-bit arithmetic"),
+    ("d1", "d1_descriptor", "The one-key template, addressed from its descriptor with no compiler"),
 ]
 CEILINGS = [
     ("s1c", "s1_ceiling_annex", "Budget threshold, annex cap, program size, consensus cost cap"),
@@ -60,7 +61,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, s1c, s1d); default S0 to S7")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "

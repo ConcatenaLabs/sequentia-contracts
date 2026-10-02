@@ -34,6 +34,15 @@ obvious from the code. Node and consensus conventions live in the
 - **Asset ids inside a program are in internal byte order**, the reverse of the
   hex the RPC prints.
 
+- **A template is immutable once published.** Its hash is its identity, and
+  addresses derived from it are in use. Change a program or a template only as a
+  new template (a new directory, or a new `version`), then `seqc descriptor seal`
+  it and regenerate its vectors. Never edit a vector by hand: regenerate it with
+  `seqc descriptor vectors` and check that the mirrors still agree.
+- **The mirrors must stay compiler-free.** Python, JavaScript and Go derive an
+  address with the standard library only, so any service can recognise a
+  contract. Do not add a dependency to them.
+
 ## Working in this repository
 
 - `cargo test` is the gate before every pull request; the parity gate needs a

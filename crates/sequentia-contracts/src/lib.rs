@@ -8,6 +8,7 @@
 //! It also carries the lints that refuse the jets which are wrong on this
 //! chain (see [`lint`]).
 
+pub mod descriptor;
 pub mod lint;
 
 use std::collections::HashMap;
