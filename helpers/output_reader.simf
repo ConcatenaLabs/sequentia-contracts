@@ -20,12 +20,21 @@ fn out_explicit(i: u32) -> (u256, u64, u256) {
     (id, value, unwrap(jet::output_script_hash(i)))
 }
 
-/* Output i pays exactly `amount` of `asset` to the script whose hash is `script_hash`. */
+/* Output i carries no nonce. An explicit output's nonce field is empty unless
+ * someone put data there, such as a blinding key; a covenant that pins an
+ * output pins this field too. */
+fn out_no_nonce(i: u32) {
+    assert!(is_none::<Nonce>(unwrap(jet::output_nonce(i))));
+}
+
+/* Output i pays exactly `amount` of `asset` to the script whose hash is
+ * `script_hash`, explicitly and with no nonce. */
 fn out_require(i: u32, asset: u256, amount: u64, script_hash: u256) {
     let (id, value, script): (u256, u64, u256) = out_explicit(i);
     assert!(jet::eq_256(id, asset));
     assert!(jet::eq_64(value, amount));
     assert!(jet::eq_256(script, script_hash));
+    out_no_nonce(i);
 }
 
 /* (asset id, amount) of the input being spent, refusing a confidential one. */

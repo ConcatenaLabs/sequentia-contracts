@@ -59,23 +59,30 @@ class S7(SimBase, BitcoinTestFramework):
 
         ts = NOT_BEFORE + 3600
         X, XO = self.X_ID, self.X_OUT
+        J = "Assertion failed inside jet"
+        # The negatives are not pruned (pruning replays the program, which
+        # refuses them). Their control is a liquidation at a price below the
+        # boundary, built the same way, which the node accepts; each negative
+        # differs from it in the one value it gets wrong.
+        ctl, _ = build(u, BOUNDARY - 1, ts, XO, X, ok=False)
+        ctl_y, _ = build(uy, BOUNDARY - 1, ts, self.Y_OUT, self.Y_ID, ok=False)
         tx, _ = build(u, BOUNDARY, ts, XO, X, ok=False)
-        self.reject(tx, "neg_price_exactly_at_boundary")
+        self.reject(tx, "neg_price_exactly_at_boundary", J, control=ctl)
         tx, _ = build(u, BOUNDARY + 1, ts, XO, X, ok=False)
-        self.reject(tx, "neg_healthy_price_boundary_plus_1")
+        self.reject(tx, "neg_healthy_price_boundary_plus_1", J, control=ctl)
         tx, _ = build(u, trap, ts, XO, X, ok=False)
-        self.reject(tx, "neg_healthy_price_that_a_64bit_product_would_pass")
+        self.reject(tx, "neg_healthy_price_that_a_64bit_product_would_pass", J, control=ctl)
         tx, _ = build(u, BOUNDARY - 1, ts, XO, X, oracle_sec=generate_privkey(), ok=False)
-        self.reject(tx, "neg_price_signed_by_another_key")
+        self.reject(tx, "neg_price_signed_by_another_key", J, control=ctl)
         tx, _ = build(u, BOUNDARY - 1, ts, XO, X, signed_price=BOUNDARY + 5, ok=False)
-        self.reject(tx, "neg_witness_price_differs_from_signed_price")
+        self.reject(tx, "neg_witness_price_differs_from_signed_price", J, control=ctl)
         tx, _ = build(u, BOUNDARY - 1, NOT_BEFORE - 1, XO, X, ok=False)
-        self.reject(tx, "neg_statement_older_than_not_before")
+        self.reject(tx, "neg_statement_older_than_not_before", J, control=ctl)
         tx, _ = build(u, BOUNDARY - 1, ts, XO, X, lender_sec=generate_privkey(), ok=False)
-        self.reject(tx, "neg_lender_signature_by_stranger")
+        self.reject(tx, "neg_lender_signature_by_stranger", J, control=ctl)
         # a low price the oracle signed for asset X, used on a coin of asset Y
         tx, _ = build(uy, BOUNDARY - 1, ts, self.Y_OUT, self.Y_ID, signed_asset=X, ok=False)
-        self.reject(tx, "neg_price_for_asset_X_used_on_coin_of_asset_Y")
+        self.reject(tx, "neg_price_for_asset_X_used_on_coin_of_asset_Y", J, control=ctl_y)
 
         tx, r = build(u, BOUNDARY - 1, ts, XO, X)
         self.send(tx, "liquidate_at_boundary_minus_1", extra=self.sim_measure(tx, 0, r))

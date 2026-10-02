@@ -28,8 +28,12 @@ obvious from the code. Node and consensus conventions live in the
 - **A negative test proves nothing until it is refused in a block.** The node's
   mempool runs Simplicity as policy on every chain, even where consensus has not
   activated it, so a mempool rejection can hide a consensus flaw. Force every
-  negative case into a block with the hidden `generateblock` RPC and record that
-  error. In the harness, `reject()` does both and fails if the block accepts.
+  negative case into a block with the hidden `generateblock` RPC and assert why
+  the block refused it. In the harness, `reject()` does both and requires the
+  expected reason; nodes run with `-par=1` so the block's error names it. A
+  failed assertion does not say which check failed, so such a negative must
+  name a control transaction, differing only in the claimed property, that the
+  node accepts. Never turn a negative into a probe that records whatever happens.
 - **Simplicity must be active from genesis on a test chain.** A custom chain has
   it off unless the node starts with `-evbparams=simplicity:-1:::`. The form
   `simplicity:0:::` only activates at height 384, and until then a `0xbe` output

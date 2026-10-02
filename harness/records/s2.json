@@ -1,54 +1,54 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
  },
- "source/plain_r4": "/* S2: covenant tree node, plain form. Output i (i = 0..r-1) must carry the\n * pinned explicit asset, the pinned explicit amount, and the pinned script\n * (compared by SHA256 of the scriptPubKey). No signature, no witness.\n * Nothing else in the transaction is constrained. */\nfn check(i: u32, value: u64, spk_hash: u256) {\n    let (a, v): (Asset1, Amount1) = unwrap(jet::output_amount(i));\n    match a {\n        Left(c: (u1, u256)) => panic!(),\n        Right(id: ExplicitAsset) => assert!(jet::eq_256(id, param::ASSET)),\n    };\n    match v {\n        Left(c: (u1, u256)) => panic!(),\n        Right(x: u64) => assert!(jet::eq_64(x, value)),\n    };\n    assert!(jet::eq_256(unwrap(jet::output_script_hash(i)), spk_hash));\n}\n\nfn main() {\n    check(0, param::V0, param::S0);\n    check(1, param::V1, param::S1);\n    check(2, param::V2, param::S2);\n    check(3, param::V3, param::S3);\n}\n",
+ "source/plain_r4": "/* S2: covenant tree node, plain form. Output i (i = 0..r-1) must carry the\n * pinned explicit asset, the pinned explicit amount, the pinned script\n * (compared by SHA256 of the scriptPubKey), and no nonce, so that it is the\n * same output the compact and chain forms pin by its hash. No signature, no\n * witness. Nothing else in the transaction is constrained. */\nfn check(i: u32, value: u64, spk_hash: u256) {\n    let (a, v): (Asset1, Amount1) = unwrap(jet::output_amount(i));\n    match a {\n        Left(c: (u1, u256)) => panic!(),\n        Right(id: ExplicitAsset) => assert!(jet::eq_256(id, param::ASSET)),\n    };\n    match v {\n        Left(c: (u1, u256)) => panic!(),\n        Right(x: u64) => assert!(jet::eq_64(x, value)),\n    };\n    assert!(jet::eq_256(unwrap(jet::output_script_hash(i)), spk_hash));\n    assert!(is_none::<Nonce>(unwrap(jet::output_nonce(i))));\n}\n\nfn main() {\n    check(0, param::V0, param::S0);\n    check(1, param::V1, param::S1);\n    check(2, param::V2, param::S2);\n    check(3, param::V3, param::S3);\n}\n",
  "source/compact_r4": "/* S2: covenant tree node, compact form. jet::output_hash(i) is the SHA256 of\n * output i's (asset, amount, nonce, script hash, range proof hash) with their\n * confidentiality prefixes, so one jet pins the whole output. The r output\n * hashes are folded into one SHA256 and compared with ONE constant.\n * No signature, no witness; outputs r.. and all inputs are unconstrained. */\nfn main() {\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(0)));\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(1)));\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(2)));\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(3)));\n    assert!(jet::eq_256(jet::sha_256_ctx_8_finalize(ctx), param::H));\n}\n",
  "source/chain_r4": "/* S2: covenant tree node, smallest form found. As node_compact, but the r\n * output hashes are chained through the raw SHA256 compression function, two\n * per block, starting from the SHA256 IV. There is no length padding, which is\n * sound here because r is fixed by the program (the chain is a fixed-arity\n * Merkle-Damgard hash). Saves the three context jets of the streaming form. */\nfn main() {\n    let h: u256 = jet::sha_256_iv();\n    let h: u256 = jet::sha_256_block(h, unwrap(jet::output_hash(0)), unwrap(jet::output_hash(1)));\n    let h: u256 = jet::sha_256_block(h, unwrap(jet::output_hash(2)), unwrap(jet::output_hash(3)));\n    assert!(jet::eq_256(h, param::H));\n}\n",
  "r2_plain_with_sweep_leaf/program": {
-  "cmr": "a7fb1be571a9503716ddcd09db239e2cd5518462afd75dd93b554319b878b988",
-  "commit_program_bytes": 336,
+  "cmr": "0dac52e484c222041bd51a498ee979acef8562b1b49c74795dcb70a241976501",
+  "commit_program_bytes": 365,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51203e91cbf4cede9db00e48bbc650c94300866b177baa4b8366f88f69d4ba894774",
+  "scriptPubKey": "51203cf5a06a25872911c8c98975040fcd953df2fbe6d2a74c3197b849972d86f87f",
   "control_block_bytes": 65,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0x0b7ee2b3a4a6d7602ce5a0fd7993fd731f10128945e10b55cbe0783ca2f30da2",
+   "S0": "0x61e911d0786053be2b509fc9df808853461cb191104478bbb029cd05da49a994",
    "V1": "100000000",
-   "S1": "0xadafd92da74a5abffb94722ff23cc486a38de59b8c355a6d8729608042956b92"
+   "S1": "0xd6fcf8119d25b1fa73a60fb6d36af6ee55ea62c0aa527c3ac920351f4ab62fe1"
   }
  },
  "r2_plain_with_sweep_leaf/unroll_reserve_fee": {
-  "size": 667,
-  "vsize": 356,
-  "weight": 1423,
+  "size": 727,
+  "vsize": 371,
+  "weight": 1483,
   "nin": 1,
   "nout": 3,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "65439175b630a2ddcd5f8f0c02a371f6e2ac2ebc95df68f6fd7b1b98984ab081",
+  "txid": "37909894f0fc0dd19fb5df76d6d324666d003764715121bda2152f12ae0d1815",
   "confirmed": true,
   "block_height": 106,
-  "program_bytes": 302,
+  "program_bytes": 362,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 406,
-  "budget_wu": 1674,
-  "cost_bound_milli_wu": 46242,
-  "cost_bound_wu": 47,
-  "program_hex": "e5026c8000000001166000000000bebc2000c1690b7ee2b3a4a6d7602ce5a0fd7993fd731f10128945e10b55cbe0783ca2f30da2064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b2000000010725969adafd92da74a5abffb94722ff23cc486a38de59b8c355a6d8729608042956b92072602e4a85800d0272700e002d403810",
+  "stack_serialized_bytes": 466,
+  "budget_wu": 1914,
+  "cost_bound_milli_wu": 55910,
+  "cost_bound_wu": 56,
+  "program_hex": "e5aa6c8000000001166000000000bebc2000c16961e911d0786053be2b509fc9df808853461cb191104478bbb029cd05da49a994064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d26ea21eff4ec73ef06c37ae14fcc060fd7dfffde5fff58e6854a4c81990f3f4a008160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711fc3483809091420c0f2040c00d048b224a68881aff5160cc0c9f8ecead8b401fa97eef5fc60752e98d247561a4da6ce965e0c03103400e3648a1070285c2405171580c45c7a033072440e50ac8000000041cab5a75bf3e0467496c7e9ce983edb4dabdbb957a98b02a949f0eb2480d47d2ad8bf841cad0b95416003409cb103810b500e080",
   "witness_hex": "",
-  "witness_input0_bytes": 406
+  "witness_input0_bytes": 466
  },
  "r2_plain_with_sweep_leaf/unroll_external_fee": {
-  "size": 954,
-  "vsize": 558,
-  "weight": 2229,
+  "size": 1014,
+  "vsize": 573,
+  "weight": 2289,
   "nin": 2,
   "nout": 5,
   "testmempoolaccept": true,
@@ -57,66 +57,66 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "8244c60899d8e94f9f7f6486bafeb99c052ff1f872dada65bf7c96dada94e1ab",
+  "txid": "2763b55eec6604ee2e22931a4c01def8034be6632ad310fcc26dc821ee6e581e",
   "confirmed": true,
   "block_height": 109,
-  "program_bytes": 302,
+  "program_bytes": 362,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 406,
-  "budget_wu": 1674,
-  "cost_bound_milli_wu": 46242,
-  "cost_bound_wu": 47,
-  "program_hex": "e5026c8000000001166000000000bebc2000c169ac39faa57dc89bc6636ef54ade38fd7fb30df80badd0a480c8a06e78de77cb85064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b2000000010725969885ea12a9ee3d9bd937ab1a1d7cecbe6da825ab55087f452a7db4b65148ce2c3072602e4a85800d0272700e002d403810",
+  "stack_serialized_bytes": 466,
+  "budget_wu": 1914,
+  "cost_bound_milli_wu": 55910,
+  "cost_bound_wu": 56,
+  "program_hex": "e5aa6c8000000001166000000000bebc2000c1695fabb82cf480e8313dd8fc3484c2875ea39749972ebfbb51bb12a010ffe3d0f3064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d26ea21eff4ec73ef06c37ae14fcc060fd7dfffde5fff58e6854a4c81990f3f4a008160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711fc3483809091420c0f2040c00d048b224a68881aff5160cc0c9f8ecead8b401fa97eef5fc60752e98d247561a4da6ce965e0c03103400e3648a1070285c2405171580c45c7a033072440e50ac8000000041cab5a5e3e94452d4e0d8f246eb83f53b9278055f87b28be3a69a8c7b0dbb99df86a6001cad0b95416003409cb103810b500e080",
   "witness_hex": "",
-  "witness_input0_bytes": 406
+  "witness_input0_bytes": 466
  },
  "r2_plain_single_leaf/program": {
-  "cmr": "36613edcc12fbc75e1edc0e864d4447cadf35db5e2630967fab70eddef29c588",
-  "commit_program_bytes": 336,
+  "cmr": "8fde912cf848ec6f4fc6962ac6b0774197b776cecd3102a2d849309d0a81a22c",
+  "commit_program_bytes": 365,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120747fec78c884c553a249f171b67144e35f2026ea6dd58b2577b913619f46179a",
+  "scriptPubKey": "5120ccbfdc271faef9e473efa03d55d2277dae4e65bbfa85a0bfa2682072c84c4dbe",
   "control_block_bytes": 33,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0xac9d01ea9f56f33590da03d6da73337f762b189bc1d6b65bcdb234d159918996",
+   "S0": "0x3b3efa4ab9221ab6a77c3d579b53aaac386b864342721f30ddbc1359a080b497",
    "V1": "100000000",
-   "S1": "0x535241738434bddab66148a880d095cd7c95a3a5cd4f3003e71439ce2f3df426"
+   "S1": "0x62428b4f67d74b0925b7ba4d92fb04771a08dc6d639bccd97e391d15fbd3f21c"
   }
  },
  "r2_plain_single_leaf/unroll_reserve_fee": {
-  "size": 635,
-  "vsize": 348,
-  "weight": 1391,
+  "size": 695,
+  "vsize": 363,
+  "weight": 1451,
   "nin": 1,
   "nout": 3,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "a7afb002ba751047d3bf2f280627c40e5b776e5682dcd4712dab739615cc2746",
+  "txid": "7b4ae3986e2b94a868ede69b8bec5ba30cc0ee564ac34eef0619e022998bb8c7",
   "confirmed": true,
   "block_height": 111,
-  "program_bytes": 302,
+  "program_bytes": 362,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 374,
-  "budget_wu": 1546,
-  "cost_bound_milli_wu": 46242,
-  "cost_bound_wu": 47,
-  "program_hex": "e5026c8000000001166000000000bebc2000c169ac9d01ea9f56f33590da03d6da73337f762b189bc1d6b65bcdb234d159918996064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b2000000010725969535241738434bddab66148a880d095cd7c95a3a5cd4f3003e71439ce2f3df426072602e4a85800d0272700e002d403810",
+  "stack_serialized_bytes": 434,
+  "budget_wu": 1786,
+  "cost_bound_milli_wu": 55910,
+  "cost_bound_wu": 56,
+  "program_hex": "e5aa6c8000000001166000000000bebc2000c1693b3efa4ab9221ab6a77c3d579b53aaac386b864342721f30ddbc1359a080b497064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d26ea21eff4ec73ef06c37ae14fcc060fd7dfffde5fff58e6854a4c81990f3f4a008160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711fc3483809091420c0f2040c00d048b224a68881aff5160cc0c9f8ecead8b401fa97eef5fc60752e98d247561a4da6ce965e0c03103400e3648a1070285c2405171580c45c7a033072440e50ac8000000041cab5a5890a2d3d9f5d2c2496dee9364bec11dc682371b58e6f3365f8e47457ef4fc8701cad0b95416003409cb103810b500e080",
   "witness_hex": "",
-  "witness_input0_bytes": 374
+  "witness_input0_bytes": 434
  },
  "r2_compact_with_sweep_leaf/program": {
-  "cmr": "e2e6b41a5741d15052c2a546c499704408a24bcde9bfdbd8fbe3f990e7f71f38",
+  "cmr": "4db84bca6fee7cfb82852402d1bf645db46528ba902b5d2a2eb1fb4712bf1481",
   "commit_program_bytes": 139,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120dd96e037efb894b522f6e0ef8ad8d81e05e3f91b88b5205c65f9aba93382d6eb",
+  "scriptPubKey": "51207d83e221145ce0e939725c5694c89ff2fb8b2be4aeb3d991727e47b2fdc6e6e2",
   "control_block_bytes": 65,
   "args": {
-   "H": "0x45b561087093dad447f6937c41e0ac03711fe1a0b060a938d9cd90f3d9591657"
+   "H": "0x6684dfc4c96a10dc09225641c83757e93d1dc3b6f969c9cce5a2796c0dea87a2"
   }
  },
  "r2_compact_with_sweep_leaf/unroll_reserve_fee": {
@@ -128,10 +128,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "79d471dda87f1727e31c3c0e7a5bd7131862de36d3386409eafa8f9a2ac5e087",
+  "txid": "3dbfa7ada176e39a7d8c3d9b3d51af7abe8b124001c58e22f9e6bc80b43b9efd",
   "confirmed": true,
   "block_height": 113,
   "program_bytes": 139,
@@ -140,7 +140,7 @@
   "budget_wu": 1014,
   "cost_bound_milli_wu": 31138,
   "cost_bound_wu": 32,
-  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b4a2dab0843849ed6a23fb49be20f05601b88ff0d05830549c6ce6c879ecac8b2b82058336e80460102683f168201bc0e1407180",
+  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b4b3426fe264b5086e04912b20e41babf49e8ee1db7cb4e4e672d13cb606f543d102058336e80460102683f168201bc0e1407180",
   "witness_hex": "",
   "witness_input0_bytes": 241
  },
@@ -156,7 +156,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "ce9a582789ecfd787feb9c9b1b09310904d7cea9f50b99bb72d6d54d28a66b85",
+  "txid": "fdb36c053891342046b108fd8d21e2a909aca0622dcb759cccb91867eeeb66f4",
   "confirmed": true,
   "block_height": 116,
   "program_bytes": 139,
@@ -165,18 +165,18 @@
   "budget_wu": 1014,
   "cost_bound_milli_wu": 31138,
   "cost_bound_wu": 32,
-  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b48505867f0fc4c8d46631ac502ee7fc0462ef79a68abb3d8464d4160937a4c09382058336e80460102683f168201bc0e1407180",
+  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b49323e78a0cd885a8e40491eab12ab9624e24034030b1c3d54d3e6c6020d9d8c002058336e80460102683f168201bc0e1407180",
   "witness_hex": "",
   "witness_input0_bytes": 241
  },
  "r2_compact_single_leaf/program": {
-  "cmr": "fa905dfa3029afe3a14ba8749f433c40c6ea2dfccc3d37e0f110e8b7c38244e1",
+  "cmr": "8ff9be8421b53cb210e6e0b14320c29a1b966c652b0ec6dde626b40a108ae814",
   "commit_program_bytes": 139,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120dcd0f6b4a9e465eef935a9e68796caa4ce228223e690375f2eca066cfa75ad6a",
+  "scriptPubKey": "51202547ca761329cc7520cf8d838457730c6842b0e639ce6417495ce076ed43fda0",
   "control_block_bytes": 33,
   "args": {
-   "H": "0x1d49dc7e27c70c324d5cb328c09277565709cd0e787176e428d84183a663d283"
+   "H": "0x1a846fede4b48cdcdf7f60f524e84332692c40ef166c69912e9919d0925d2a37"
   }
  },
  "r2_compact_single_leaf/unroll_reserve_fee": {
@@ -188,10 +188,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "65e51b172ae958e4a54a2940f86768be7346a63203636ae4f753ed6962bf0e2c",
+  "txid": "eb8fe66a2cc10c9c8239d4b267a5b74a26504da3814977d33ce3161504d8d085",
   "confirmed": true,
   "block_height": 118,
   "program_bytes": 139,
@@ -200,18 +200,18 @@
   "budget_wu": 886,
   "cost_bound_milli_wu": 31138,
   "cost_bound_wu": 32,
-  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b48ea4ee3f13e3861926ae599460493bab2b84e6873c38bb72146c20c1d331e94182058336e80460102683f168201bc0e1407180",
+  "program_hex": "e354eac81081420c4d900000000023b4021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d03103485bdaae40840a0dc153640000000208038201b05900d68141b87eac4109b48d4237f6f25a466e6fbfb07a92742199349620778b3634c8974c8ce8492e951b82058336e80460102683f168201bc0e1407180",
   "witness_hex": "",
   "witness_input0_bytes": 209
  },
  "r2_chain_with_sweep_leaf/program": {
-  "cmr": "63d513db3be748601f8f68be1ee8de50186f326afdc7079c7e27b49315072008",
+  "cmr": "1f6d18b8701e438ee4b4a8f2a96643d5d7ac9a3e0519f88000e097edbc9a6d23",
   "commit_program_bytes": 126,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51205f19aa36049956a48bdccc4eeee2daeb2c6b4ac064f9392cfec07c24a93470ea",
+  "scriptPubKey": "51201378f262e8726d829bad9150ac4d76e379861d08caf8d44503cf69d7b3149da2",
   "control_block_bytes": 65,
   "args": {
-   "H": "0x6154b46e3a2b9f8c5adf727eafa26113710c4d6bce8405920a84194c7d75e57a"
+   "H": "0x9ee4410fd0265a87949b40e63bff01ba60a46d574e718b87b9ae3fa5425684e8"
   }
  },
  "r2_chain_with_sweep_leaf/unroll_reserve_fee": {
@@ -223,10 +223,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "67c32f280068640e0b5ae2f5fd1cf9e537937fb088ecd73b63c3fe499dd7e9c0",
+  "txid": "64dd13c22171263519657d5d3dc389056244de059b65241354becdb39f0eab6b",
   "confirmed": true,
   "block_height": 120,
   "program_bytes": 126,
@@ -235,7 +235,7 @@
   "budget_wu": 962,
   "cost_bound_milli_wu": 17699,
   "cost_bound_wu": 18,
-  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213696154b46e3a2b9f8c5adf727eafa26113710c4d6bce8405920a84194c7d75e57a040b066dd008c0204d07e240403681c4c0",
+  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213699ee4410fd0265a87949b40e63bff01ba60a46d574e718b87b9ae3fa5425684e8040b066dd008c0204d07e240403681c4c0",
   "witness_hex": "",
   "witness_input0_bytes": 228
  },
@@ -251,7 +251,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "6b29dec4961d31618b054d3f1bbb4d7bb6346cee529073296d5c83d14b3a65e0",
+  "txid": "706848af5a478192e76eea5fd24dafdd8a6ffeee2b459a8f9ada04e8d61d57c9",
   "confirmed": true,
   "block_height": 123,
   "program_bytes": 126,
@@ -260,18 +260,18 @@
   "budget_wu": 962,
   "cost_bound_milli_wu": 17699,
   "cost_bound_wu": 18,
-  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc21369c4f79d2822f82d6c32c9a48c896c823e1ab01c4665e5e811d22bfe15a9a21921040b066dd008c0204d07e240403681c4c0",
+  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc21369db0519d71cc6c344c9aa1f89c8701a6f3d0f04b4e7e03c5ca01243b580a36965040b066dd008c0204d07e240403681c4c0",
   "witness_hex": "",
   "witness_input0_bytes": 228
  },
  "r2_chain_single_leaf/program": {
-  "cmr": "cc173729b5f4c80ad6be9c2025beeacad12bfbbdd80489b914871ac728424360",
+  "cmr": "055495500c6e6d620de3c73a77ef57945ccc0e719e0371f9d4d1193dd8f5ae67",
   "commit_program_bytes": 126,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51203bb265d95ecd8176f3b15a1edf2c74544868216b7e70f49b2923fe7b264b3445",
+  "scriptPubKey": "5120cb9dd25c12fecd2cc5618ecb871bdb1ac2893660f52980d5e29f8d46ce694819",
   "control_block_bytes": 33,
   "args": {
-   "H": "0x0ae29126f6b757d65659f43d4595f243cd5c52b6cb52a5b53d67fd0e296aa5a3"
+   "H": "0x1e4288b87d57aa93dcc46db853e8fb92e57672f8e11179caf368cb2f850fc3b6"
   }
  },
  "r2_chain_single_leaf/unroll_reserve_fee": {
@@ -283,10 +283,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "95974279d20c0da26daf136a0d887da2ea4b0d826a8e548725c34dad6f731eaa",
+  "txid": "6b0f46be2f1f8e45e015465ab06811fd96fbd4a00da1ed6e4217d25a0e193254",
   "confirmed": true,
   "block_height": 125,
   "program_bytes": 126,
@@ -295,151 +295,227 @@
   "budget_wu": 834,
   "cost_bound_milli_wu": 17699,
   "cost_bound_wu": 18,
-  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213690ae29126f6b757d65659f43d4595f243cd5c52b6cb52a5b53d67fd0e296aa5a3040b066dd008c0204d07e240403681c4c0",
+  "program_hex": "e2b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213691e4288b87d57aa93dcc46db853e8fb92e57672f8e11179caf368cb2f850fc3b6040b066dd008c0204d07e240403681c4c0",
   "witness_hex": "",
   "witness_input0_bytes": 196
  },
  "r4_plain_with_sweep_leaf/program": {
-  "cmr": "ceea9cd0250c16ea120fad385423ebd986859c052fe56718e99017a3d2fcdf22",
-  "commit_program_bytes": 442,
+  "cmr": "609b62afd56e9e38928e4c7652407178079033c8441b2ecc1d7868b43bc66991",
+  "commit_program_bytes": 471,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51201adc759ec0475d919c3454332152a452ba49633f9f7554bc0758ee3620e88a48",
+  "scriptPubKey": "512010db92fc6927990721ef5cb719c110e06d454b38c614351a12d57657afa6e875",
   "control_block_bytes": 65,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0x4eb7b7c0552b94f7405e0e045b35837afd5fe6a13d027896799de33e6eb869bf",
+   "S0": "0x4b7ff633bd8b555ba5c341014253eb2c48f5072f2bd0e73c986cf15e4c3918bd",
    "V1": "100000000",
-   "S1": "0x4a88842b107584ac43691604f93bfe9a7c2d9135a3834a69cf9349381f411e31",
+   "S1": "0x5a1d0ad0e0626f3433f31702800ec2147b7c9d5e869836c32623d123d0e4dbd1",
    "V2": "100000000",
-   "S2": "0xe8565763d3e1c6730e05ca185e5f3e0370dfe582d13c76b1f82208fa9719e2e2",
+   "S2": "0xe63b05b7c315b7bc774c4a307d07e43d25c6baeaae84aca243d1f2a671644191",
    "V3": "100000000",
-   "S3": "0xb48d164c550561f9f31d75137f350f14438f1eb5093ab303b4f535d038884e64"
+   "S3": "0x456e65cbb60140056a0b035f9f45d2eaf6899baaaf8e3b9f8971fc69dc666c2b"
   }
  },
  "r4_plain_with_sweep_leaf/neg_wrong_asset": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d52cb26acfd943074e1d8f8e306b114bfd3b32c97a6ae8ff80689dcdec192253",
+   "same_coin": true,
+   "vsize": 690,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 0f8f14e9b01d646e65804f8de8c2e797b281aa6df15fafb71c90151ff51840ea failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_wrong_value_minus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 65726386c929cdc9e6c006aef5cfd6785317f2b6d84e24ce37631cb5a0876d3b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_wrong_value_plus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "8fb600bdbbf923a836593b43341185644494e9512b1275cf5a8afe34a67604ac",
+   "same_coin": true,
+   "vsize": 623,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on e03329878a06ea209c353349d1c0f644bf97d7b0a9af9617d47018163428d300 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_wrong_script": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 34727a3182554c319379a0d7e31c528d2a59f9791363458861fb88c80fd8ae84 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_wrong_index_swap": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 09c0bfcd871189a68b08f398129b37c060a99de00dbe77a5932cd5474931a5db failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_wrong_index_shift": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 937609153c865ae3438938273a62eb83db96f06b179dbcf753ab22ca4158e9ca failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_blinded_child": {
   "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "59f7279a666dd005bbeebfffbe541f6c3f5856e38ed5b40cd3a306b89541e4d4",
+   "same_coin": true,
+   "vsize": 690,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 7f9d6b1cb1ecac679dc303f85043670a51bff2d2397bdc175d14832c7ebb7f68 failed with mempool-script-verify-flag-failed (Assertion failed)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_missing_child": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 62a3f311fbfcb5aa5192b75e6b899d5d5c72837e27998fdb53e5ab33ca777eec failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_v0_33byte_program_substitution": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
   "reject-reason": "scriptpubkey",
   "rpc-error": "scriptpubkey (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on ee7450acc44200bd258ae0a06aaaf171a715745ccd15ae046ca94166649a54f1 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_plain_with_sweep_leaf/neg_unpruned_program": {
   "rejected": true,
+  "expect": "Program has FAIL node",
   "reject-reason": "mempool-script-verify-flag-failed (Program has FAIL node)",
   "rpc-error": "mempool-script-verify-flag-failed (Program has FAIL node) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program has FAIL node) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c failed with mempool-script-verify-flag-failed (Program has FAIL node)"
   ]
  },
- "r4_plain_with_sweep_leaf/probe_explicit_child_with_nonce": {
-  "testmempoolaccept": true,
-  "reject-reason": null
+ "r4_plain_with_sweep_leaf/neg_explicit_child_with_nonce": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
+   "same_coin": true,
+   "vsize": 555,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 6c4f607c02e56081a22075f5c839beb8162a11a685f346a6eeabed45a9a78dcb failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ]
  },
  "r4_plain_with_sweep_leaf/unroll_reserve_fee": {
-  "size": 933,
-  "vsize": 540,
-  "weight": 2157,
+  "size": 993,
+  "vsize": 555,
+  "weight": 2217,
   "nin": 1,
   "nout": 5,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "2c2045bd805f744ad7c1559f996608d93d7c55d11c19a7c75793432c549579fb",
+  "txid": "af3c8a2ba2a9338f1bbec96772112b4cb15ac54e9d4c723b152b2dc24f25591c",
   "confirmed": true,
   "block_height": 130,
-  "program_bytes": 408,
+  "program_bytes": 468,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 512,
-  "budget_wu": 2098,
-  "cost_bound_milli_wu": 92384,
-  "cost_bound_wu": 93,
-  "program_hex": "e5926c8000000001166000000000bebc2000c1694eb7b7c0552b94f7405e0e045b35837afd5fe6a13d027896799de33e6eb869bf064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b20000000107259694a88842b107584ac43691604f93bfe9a7c2d9135a3834a69cf9349381f411e31072602e4a85800d164000000040e4ead3d0acaec7a7c38ce61c0b9430bcbe7c06e1bfcb05a278ed63f04411f52e33c5c40e4f85c9c0b001bec80000000c1ca45a6d2345931541587e7cc75d44dfcd43c510e3c7ad424eacc0ed3d4d740e22139901ca60b946160038309caa03870b500e20170301c442e1803890",
+  "stack_serialized_bytes": 572,
+  "budget_wu": 2338,
+  "cost_bound_milli_wu": 111720,
+  "cost_bound_wu": 112,
+  "program_hex": "e61d3640000000008b30000000005f5e100060b4a5bffb19dec5aaadd2e1a080a129f596247a839795e8739e4c3678af261c8c5e8320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad2b43a15a1c0c4de6867e62e05001d8428f6f93abd0d306d864c47a247a1c9b7a20e5685caa0b001a2c8000000081cb25a798ec16df0c56def1dd3128c1f41f90f4971aebaaba12b2890f47ca99c59106441cb40b962160037d90000000183972b4a2b732e5db00a002b50581afcfa2e9757b44cdd557c71dcfc4b8fe34ee33361583976172e02c007061397e07100b500e22170301c482e1803898",
   "witness_hex": "",
-  "witness_input0_bytes": 512
+  "witness_input0_bytes": 572
  },
  "r4_plain_with_sweep_leaf/unroll_external_fee": {
-  "size": 1220,
-  "vsize": 741,
-  "weight": 2963,
+  "size": 1280,
+  "vsize": 756,
+  "weight": 3023,
   "nin": 2,
   "nout": 7,
   "testmempoolaccept": true,
@@ -448,164 +524,230 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "1aeda1028aaca14652845ef68815004c8dcec26f3c4b7ab6f93b76e6b7500056",
+  "txid": "4747039e7b41e60a4898f2c9d2a3de86e3f0e40a2a78f9281a78e3ecd36ba0c9",
   "confirmed": true,
   "block_height": 133,
-  "program_bytes": 408,
+  "program_bytes": 468,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 512,
-  "budget_wu": 2098,
-  "cost_bound_milli_wu": 92384,
-  "cost_bound_wu": 93,
-  "program_hex": "e5926c8000000001166000000000bebc2000c169de939d985d35ecb1d1d07ca6508c4b00a8114646a0e35cd5fe1c3e37377db2eb064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b2000000010725969114dbfc9868c23ab3224ff0e6878348b585161a0fb7ceb1e2aa33af154fe0cec072602e4a85800d164000000040e4ead3434ab25cd867086ccab119c85e65cf25555258325fb77b7e11de649257cdc62a0e4f85c9c0b001bec80000000c1ca45a7f8a74783987c607046f56ad7352eccd8364c19f4c45fcb8c165f81434d0c37cc1ca60b946160038309caa03870b500e20170301c442e1803890",
+  "stack_serialized_bytes": 572,
+  "budget_wu": 2338,
+  "cost_bound_milli_wu": 111720,
+  "cost_bound_wu": 112,
+  "program_hex": "e61d3640000000008b30000000005f5e100060b4a666241ad1c603f070161493f7091ca34fb5d7935999bc31bb02eff7fcc32a0b8320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad3406745c77f2f2f6bafb7be523f0f3d1bc4dc32954845e6453f4461f3a344b3420e5685caa0b001a2c8000000081cb25a760d703597499c59cdd39c308d460e4c2df5e47ec25b57b50b30bcf666825c4bc1cb40b962160037d90000000183972b49972aeff27a0efe2b6b213af0816b550e7374a788ef234063da8bef2e4e677ed03976172e02c007061397e07100b500e22170301c482e1803898",
   "witness_hex": "",
-  "witness_input0_bytes": 512
+  "witness_input0_bytes": 572
  },
  "r4_plain_single_leaf/program": {
-  "cmr": "4096661fdb70703681d30824ec01fb95a7889fad2a4add1db4311ce8b95410cf",
-  "commit_program_bytes": 442,
+  "cmr": "b5d0d58da000f2fc85fbd2b220246964444a2bca6057e01202cec2e27d970576",
+  "commit_program_bytes": 471,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120f3349b6c19e58225df5535d8eb2e1e3a7d9ec3c91a2f238bf404d6fdf341e394",
+  "scriptPubKey": "512015d33348f5effa109955135be32e1776a78644277abe80e7b159299138720c52",
   "control_block_bytes": 33,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0x199a5cdfb9cc0c5defbd4e4868dd5df05afd54b28b0258a65b1bfdec5bceee97",
+   "S0": "0x614cecb08bd19a6c2ad51dfa4ce6bc5246ea67fe2772777bf08bc49f7f988272",
    "V1": "100000000",
-   "S1": "0x824d9226f514edb950c67eb5c13e8424088658f1e26ab35d11ecabd597e72c5d",
+   "S1": "0xf006d1d477bc05982fb7970aa44ea97e057ebe581596422bf9f9f5366fdb1496",
    "V2": "100000000",
-   "S2": "0x2c336d721ff59d33d4d7e197cec9fdb05fc87180ead6c03d9dbefce6e0917c4e",
+   "S2": "0x5f33a9c4f4cc827b80cedf08029bfe0b52f83a7c95935dab19a143cffab5ff6c",
    "V3": "100000000",
-   "S3": "0x329fac65a97e5a6ebde9cb29525bec6991502c3e9c8d34efe9ef9fbe02f2b37f"
+   "S3": "0x49650dbfa660c1b5515ccaa799d6ff78aaee6cca1d6fe1ee8a3dc77218d81418"
   }
  },
  "r4_plain_single_leaf/unroll_reserve_fee": {
-  "size": 901,
-  "vsize": 532,
-  "weight": 2125,
+  "size": 961,
+  "vsize": 547,
+  "weight": 2185,
   "nin": 1,
   "nout": 5,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "5de6fbfc422d53a0e97a775fb1b8e20fe3a94b99f850e51a279a3323b9f7c295",
+  "txid": "4a782a2dd42d355c3944af1874da992723510df20634314d8d22349489473c98",
   "confirmed": true,
   "block_height": 135,
-  "program_bytes": 408,
+  "program_bytes": 468,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 480,
-  "budget_wu": 1970,
-  "cost_bound_milli_wu": 92384,
-  "cost_bound_wu": 93,
-  "program_hex": "e5926c8000000001166000000000bebc2000c169199a5cdfb9cc0c5defbd4e4868dd5df05afd54b28b0258a65b1bfdec5bceee97064150b220cf86804212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a0620692050830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfd0626d3e10121936c40bc4c5338b10102e3173ecd0902119ea85bfdf0667254e6b974ae08160cdba01180407581b4838c138120c3438e3858b36e4080380878581b07e30f86a04212283711078c40a0663f131c70b001c480711a450838142e0c028b8a00620e3c03918b2000000010725969824d9226f514edb950c67eb5c13e8424088658f1e26ab35d11ecabd597e72c5d072602e4a85800d164000000040e4ead25866dae43feb3a67a9afc32f9d93fb60bf90e301d5ad807b3b7df9cdc122f89c0e4f85c9c0b001bec80000000c1ca45a4ca7eb196a5f969baf7a72ca5496fb1a64540b0fa7234d3bfa7be7ef80bcacdfc1ca60b946160038309caa03870b500e20170301c442e1803890",
+  "stack_serialized_bytes": 540,
+  "budget_wu": 2210,
+  "cost_bound_milli_wu": 111720,
+  "cost_bound_wu": 112,
+  "program_hex": "e61d3640000000008b30000000005f5e100060b4b0a6765845e8cd36156a8efd26735e29237533ff13b93bbdf845e24fbfcc41390320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad3e00da3a8ef780b305f6f2e15489d52fc0afd7cb02b2c8457f3f3ea6cdfb6292c0e5685caa0b001a2c8000000081cb25a57ccea713d33209ee033b7c200a6ff82d4be0e9f2564d76ac66850f3fead7fdb01cb40b962160037d90000000183972b4a4b286dfd33060daa8ae6553cceb7fbc557736650eb7f0f7451ee3b90c6c0a0c03976172e02c007061397e07100b500e22170301c482e1803898",
   "witness_hex": "",
-  "witness_input0_bytes": 480
+  "witness_input0_bytes": 540
  },
  "r4_compact_with_sweep_leaf/program": {
-  "cmr": "2d67318bab64faccd43ed6f927e0b3bde8f63d4a73e924e8383cf08c1744be48",
+  "cmr": "9447210d690e84a8e8225273b79941bf977eaa35f7d5d56d7ee687bf3da3a871",
   "commit_program_bytes": 181,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120437879353225557f1227c9b6715f3606de934bef78e432b2f127e56bf3ce390a",
+  "scriptPubKey": "51205d4b46a6c2683072f6e61a5b525200ae90bc2bb6457f24ac63d98837e12bdd0c",
   "control_block_bytes": 65,
   "args": {
-   "H": "0xa6b8d4946d055bf50977f0b91429fef50213d371b213ce64fc751df94d51929b"
+   "H": "0x89e21ea2098e7891a7373574995206c6de289e5093fbaca2457208bf65a97316"
   }
  },
  "r4_compact_with_sweep_leaf/neg_wrong_asset": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "8cf28f91c1778f0fd97322107015d765049c99e8a9f41608d11c4bbadbbad8eb",
+   "same_coin": true,
+   "vsize": 617,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on e99badcebc0bd2af74119b296f08a871869f10b569787065e40ca2185da90f59 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_wrong_value_minus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 1bcd0f3a8e36c68da0335f415deb85ec33c909117e720ba9d8df967f78cda986 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_wrong_value_plus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "267d3da96eddce82a80774655f9a0a063e9799f8a4c76e9bad1b795cdebe903b",
+   "same_coin": true,
+   "vsize": 551,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 1a92fa4ee6d12fe0f6dff81e1f1b0a62ade7a1e0ca8a99de7589d701c74e247b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_wrong_script": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 1c16b14e4cd61c6df4ebf77a20327a9a641a3e0265eee26087a55676e0a491e8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_wrong_index_swap": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on b117d25919bf7b9c1c9794ea4fdfb9c23caee3233be6ceb7cda020548ca4b3b8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_wrong_index_shift": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on fa4fc010f69ea2d316d5aaf7773eee1d152f5f25ce35a4a9c42930fc9d82ffa7 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_blinded_child": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "1ec66d225953089a5602d18b2ee8c2a239dc6ca05cbc80e53ec88da55573f490",
+   "same_coin": true,
+   "vsize": 617,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on fdecc36fabce5c1f7c3bd4853c2c5c42a7ada49c3b2b97e4ed6a12aa83e29d7c failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_missing_child": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on a92494fd10fa818d2245e17141890d0e6f520e4b5c62477b1672546e93854c0e failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/neg_v0_33byte_program_substitution": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "scriptpubkey",
   "rpc-error": "scriptpubkey (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 958d7796ad852f487abb4c9efd7f12f2bf1baa12e70e2aff8fc7346f37b716e3 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
- },
- "r4_compact_with_sweep_leaf/probe_explicit_child_with_nonce": {
-  "testmempoolaccept": false,
-  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)"
  },
  "r4_compact_with_sweep_leaf/neg_explicit_child_with_nonce": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
+   "same_coin": true,
+   "vsize": 482,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 7501b60ae1aa21189430fdd96779e9208bfb3bd3c85147bc101dd862861cb21c failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_compact_with_sweep_leaf/unroll_reserve_fee": {
@@ -617,10 +759,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "76fc37a6db50d801a6c6f7420b20b5740a3093c3b02218cbf00bcc38fa6f394a",
+  "txid": "e068b1ad929fa3b502858ae1bc4ad8f574ea78d62ab75b9563b394e0651ebc7e",
   "confirmed": true,
   "block_height": 140,
   "program_bytes": 181,
@@ -629,7 +771,7 @@
   "budget_wu": 1182,
   "cost_bound_milli_wu": 62122,
   "cost_bound_wu": 63,
-  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d58821369a6b8d4946d055bf50977f0b91429fef50213d371b213ce64fc751df94d51929b040b066dd008c0204d07e408201bc0e14071281c6007218",
+  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d5882136989e21ea2098e7891a7373574995206c6de289e5093fbaca2457208bf65a97316040b066dd008c0204d07e408201bc0e14071281c6007218",
   "witness_hex": "",
   "witness_input0_bytes": 283
  },
@@ -645,7 +787,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "49dd4a81e495b5887deaf908a3af48f61c20f420be58230bc4416f697a2cd414",
+  "txid": "1c6939d3dd688c74ccb8945457a1e60dcbc0b46ef062c4c95a60886ba5f59148",
   "confirmed": true,
   "block_height": 143,
   "program_bytes": 181,
@@ -654,18 +796,18 @@
   "budget_wu": 1182,
   "cost_bound_milli_wu": 62122,
   "cost_bound_wu": 63,
-  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d5882136977f37d52ea76bd326d69bc87e0f3014d66bc93656b6f7c73aedc6af719cd6b1e040b066dd008c0204d07e408201bc0e14071281c6007218",
+  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d588213692fa1e1731fbf3971bc4ddde693070e855b9afeeb6291f2c4544e42b53a7b14af040b066dd008c0204d07e408201bc0e14071281c6007218",
   "witness_hex": "",
   "witness_input0_bytes": 283
  },
  "r4_compact_single_leaf/program": {
-  "cmr": "e30b7c7775ab439584629283bcd0d76b3ded8f1796bfef80feca8bee1ebb77cf",
+  "cmr": "81483dbdfe325e6b26f8fd11d3e0f530156798efe3ce038e3ab7b375e3bb601e",
   "commit_program_bytes": 181,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51204b4d5ffa3d2aab811bd5fbe435a505fd21ec1cebcae06d6ab8aaaa7617d40e92",
+  "scriptPubKey": "51200eb5bc630d31c9f26426b2e2bd8f7b3d46364406047f219b87a0f00353c30851",
   "control_block_bytes": 33,
   "args": {
-   "H": "0x818254c3e04adff274b796702fb7d405fa40b15e1b5e21f931629469190ce4e8"
+   "H": "0x551b7da9c5b75ec1efa1826a6991cb366aa77f79959fa532b92eed615b87d6d2"
   }
  },
  "r4_compact_single_leaf/unroll_reserve_fee": {
@@ -677,10 +819,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "db6fb73d8c689980abda051679d1edcb296f219050153de484b3f8d1b52b65d6",
+  "txid": "905b82e50762689fcfe0de5f8dd7a779cf0188f3f751dae0518e41eeeb25d994",
   "confirmed": true,
   "block_height": 145,
   "program_bytes": 181,
@@ -689,112 +831,178 @@
   "budget_wu": 1054,
   "cost_bound_milli_wu": 62122,
   "cost_bound_wu": 63,
-  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d58821369818254c3e04adff274b796702fb7d405fa40b15e1b5e21f931629469190ce4e8040b066dd008c0204d07e408201bc0e14071281c6007218",
+  "program_hex": "e45a75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e33d58821369551b7da9c5b75ec1efa1826a6991cb366aa77f79959fa532b92eed615b87d6d2040b066dd008c0204d07e408201bc0e14071281c6007218",
   "witness_hex": "",
   "witness_input0_bytes": 251
  },
  "r4_chain_with_sweep_leaf/program": {
-  "cmr": "b6c8cdd9e485e439246fedba83437ca54d6a615eaed547d3b82b5cc32268f2a4",
+  "cmr": "73283cbbbea353c74b5ab4dc812cbab30dc95789f921a54253f57d5b40150547",
   "commit_program_bytes": 159,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120797f0b89137129193ebb6a53d6cf2efe806acd4a5d1bbdb4b924d33b6c16098d",
+  "scriptPubKey": "512065a83e193effed4d814b40be12477e71e8d2082be8bf233d1517765bfbeb436b",
   "control_block_bytes": 65,
   "args": {
-   "H": "0x7d86a4ad07d82863178850b368d3dd8beb4c3ef85c74234eb8e0ef72cf20dd79"
+   "H": "0x8403f491771b5b271fe7a0275b602d128695cf3cb1c4ebfb61e01d50f9fe1c04"
   }
  },
  "r4_chain_with_sweep_leaf/neg_wrong_asset": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "c3a61533011a18ef14a08c541c241c2c8f347cd384d00c65970dadb657d08c3d",
+   "same_coin": true,
+   "vsize": 612,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 29f042291633d53f61de3fd890034b3bbb679f8f53155c3442235534fcbce8c8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_wrong_value_minus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 6c3ab1bd707fd962a082cc0c8347b692cbe15f17ec77cd576fa37d8c19da6666 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_wrong_value_plus1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "6db6c532e6ed629abb2bc9265c6545591eba7fca25d50d875e7bffb2d39533c8",
+   "same_coin": true,
+   "vsize": 545,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on b34c9079d2c64095f7c32b65ddd19c5654852dc8353ccc032686bf992a145b5b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_wrong_script": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 3f921c7941f6148c2b01b74874ea36f07eac824ed2381516dca71e4d3e1d7d00 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_wrong_index_swap": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on cb381e991a8c594d089900e0b6faac9a49f90e23763448b5f407ceb744ad2f43 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_wrong_index_shift": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 36b4a66ed448cebbd14261a78198df0b64a1943e60f49852b97c2f7f89e69435 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_blinded_child": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "190c7cea10ffbd1ad6831ede130fc35b67b42078d9386edacf4343fce682dc3d",
+   "same_coin": true,
+   "vsize": 612,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 6bcca19f015c28d55d87fb6079c4aa1a73d9a3e4b3bc83761c076451a5087635 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_missing_child": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on dab080b10a8809cbb6f5c9b0bb82f593398d0242db05928c0b235d8a8411864b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/neg_v0_33byte_program_substitution": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "scriptpubkey",
   "rpc-error": "scriptpubkey (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on c313374527e48215cb57542fc2ee8438b28b6403e63e2cee82ca5275d43346df failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
- },
- "r4_chain_with_sweep_leaf/probe_explicit_child_with_nonce": {
-  "testmempoolaccept": false,
-  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)"
  },
  "r4_chain_with_sweep_leaf/neg_explicit_child_with_nonce": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
+   "same_coin": true,
+   "vsize": 477,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 330ffe9ed7e0adfee8e5a88c10235fbf75b4b978be0c55de38bf2bdbb0172597 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "r4_chain_with_sweep_leaf/unroll_reserve_fee": {
@@ -806,10 +1014,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "d79a898c31127389b943a7562f2863d434e3c10e22ea2a6960e83ca39779f7ac",
+  "txid": "d69bec54d1d095afae1f3f7aed5908e528ac856701ef87d598ab98c1aac8abfa",
   "confirmed": true,
   "block_height": 150,
   "program_bytes": 159,
@@ -818,7 +1026,7 @@
   "budget_wu": 1094,
   "cost_bound_milli_wu": 32154,
   "cost_bound_wu": 33,
-  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d2fb0d495a0fb050c62f10a166d1a7bb17d6987df0b8e8469d71c1dee59e41baf208160cdba01180409a0fc660806d038681c6c0",
+  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d30807e922ee36b64e3fcf404eb6c05a250d2b9e796389d7f6c3c03aa1f3fc380808160cdba01180409a0fc660806d038681c6c0",
   "witness_hex": "",
   "witness_input0_bytes": 261
  },
@@ -834,7 +1042,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "65a2f73630be0f9578690c160c02eed6624c53dfa839c553393c92a9e7a6c8be",
+  "txid": "ba397df74b207696ed0ec570e7cdaaca2bfaed6d9e0fae84ca659c310729abe7",
   "confirmed": true,
   "block_height": 153,
   "program_bytes": 159,
@@ -843,18 +1051,18 @@
   "budget_wu": 1094,
   "cost_bound_milli_wu": 32154,
   "cost_bound_wu": 33,
-  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d39341ce84536220c3526274fc0c20d8c097a32d1c914036ce63639407577af8b808160cdba01180409a0fc660806d038681c6c0",
+  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d37c51831acdb557d43f80967c634514212b2443c532b5e06f5fb1f442952c19d608160cdba01180409a0fc660806d038681c6c0",
   "witness_hex": "",
   "witness_input0_bytes": 261
  },
  "r4_chain_single_leaf/program": {
-  "cmr": "f94ecc01299dfe176688c3c3ee46b6076c3f8256c26f87ff03bcd6360fc81cef",
+  "cmr": "d71f28b7b32f6821608d0da16606cab0c4a0a14f171f10b85d1b79a6f0f83665",
   "commit_program_bytes": 159,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120dd7472e6a6432a567407b37e27c025f0ff544e10a52013515176229103a3197c",
+  "scriptPubKey": "51201ef2e57867f91709dae70a53523a71a1d54fbcf83b5dbb60fa17619ae2ceee33",
   "control_block_bytes": 33,
   "args": {
-   "H": "0xcfd4aad38e2d32c5a2d22101574297fec29c0f34a59607da12dd4a4d333ddf63"
+   "H": "0xdc2d05b962c546dca992477cc0148d3132190bf22698f26c4617b0ccefb63f67"
   }
  },
  "r4_chain_single_leaf/unroll_reserve_fee": {
@@ -866,10 +1074,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "a499b46715b71db10ab9bd48b2ce1850e7cf1f48edd13e0f3cb54277d1e4180c",
+  "txid": "36a6afe0f1a8daf61bdf925f28a98420c32385622d9cddecf9c84ce8768cebae",
   "confirmed": true,
   "block_height": 155,
   "program_bytes": 159,
@@ -878,65 +1086,65 @@
   "budget_wu": 966,
   "cost_bound_milli_wu": 32154,
   "cost_bound_wu": 33,
-  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d39fa955a71c5a658b45a44202ae852ffd85381e694b2c0fb425ba949a667bbec608160cdba01180409a0fc660806d038681c6c0",
+  "program_hex": "e3b4ea80840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2d40a066b20000000106d01ac0c45885c09a80840a0dc213640000000408038381c06c80000000c1900e16070516216b01c010283713a6d3b85a0b72c58a8db953248ef980291a62643217e44d31e4d88c2f6199df6c7ece08160cdba01180409a0fc660806d038681c6c0",
   "witness_hex": "",
   "witness_input0_bytes": 229
  },
  "r8_plain_with_sweep_leaf/program": {
-  "cmr": "18d1e286b47d1ee0de41e751f5db4d3bd545274ffb143276fe42a9f570aa3da4",
-  "commit_program_bytes": 657,
+  "cmr": "ddc270aa22c4d921d7629e572b7e1acb368848595348b592d65dcbaee6a5cea0",
+  "commit_program_bytes": 687,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "512039c2b8fa381d0f279ebffe865424ba3b83da85e2897811d4072734ca20c919e1",
+  "scriptPubKey": "5120b96071e4be2b67f4a12d2a0464c2e97c6b7e120a1eda14e127a140e78d017f1c",
   "control_block_bytes": 65,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0x116ca90f7942cd513d166491100b8add61e2d04f0b4f9fc7e2d253ec7b802eed",
+   "S0": "0x9beb13ecb431002f968c92be3c90c857183a4a47f9236666ee09d1b8ec424ba0",
    "V1": "100000000",
-   "S1": "0xfd2acfdabcd1dd0c6f0a1685c58b37bdd7d83ec1dc27ad9871a46b894b272d9d",
+   "S1": "0x0f69952cb11f32a562e3c33e87fd897166c61806716351dd90fdbc7e680667b6",
    "V2": "100000000",
-   "S2": "0x0f96475be6a258e85534189efcffe499af6d73d4e38c716784c68dada1ed5661",
+   "S2": "0xc979d660bbecc7869b64eca56290d6400ea0270ac9cb75d0661d8459796b3433",
    "V3": "100000000",
-   "S3": "0x17d6c4072f5eb4bc73d510a628eecd9d92cc7d4e7df4014c0dd124ece4f1aa26",
+   "S3": "0xc1a4d4132181936c555165527ebf1b47f744d238852546c74f5d5165cbfc53bd",
    "V4": "100000000",
-   "S4": "0x5f23bb7e0764a204adcc6087d1aa554bc769653674ec5eeb326d8a96b5f5c3d6",
+   "S4": "0x26b32f6082b2e932a69c8229022dda1a00420d0b5878272e3ee0458ad8bdf032",
    "V5": "100000000",
-   "S5": "0x3f8adc0465fdf77e08a3d95b6d3275b3223384f6e8c6b3c3a5039262f62ae7b3",
+   "S5": "0xc5024c1b3eaef5859a8f148ae9b8d5164f53c50306749580b76623536b024790",
    "V6": "100000000",
-   "S6": "0x81e5bb0ef61f7e78bd1b11a8ed85cfc3acf5707eb65644d8fe436817f3bd3788",
+   "S6": "0x8b497b29b45d0d67d744119b741a75b92de45923c0d04f3658f292c5185408f0",
    "V7": "100000000",
-   "S7": "0xc99c7b25bf5e6f3dbbf49f99783b75f8fe64c2182dc0a21d96f892e9b88da293"
+   "S7": "0x369e3e0819e0d0feb87af612f2d3c12ee7d7cbffb736fb27217a1ee630267212"
   }
  },
  "r8_plain_with_sweep_leaf/unroll_reserve_fee": {
-  "size": 1468,
-  "vsize": 907,
-  "weight": 3628,
+  "size": 1529,
+  "vsize": 923,
+  "weight": 3689,
   "nin": 1,
   "nout": 9,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "305427ff4cfe03c99978a0157cc5f059dd86e392d626bef361ce245f719b2bd8",
+  "txid": "545cdb439d38d8811e59f779461232a0ccbe05358586e97e9f5f438e3a78b0c6",
   "confirmed": true,
   "block_height": 157,
-  "program_bytes": 623,
+  "program_bytes": 684,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 727,
-  "budget_wu": 2958,
-  "cost_bound_milli_wu": 184668,
-  "cost_bound_wu": 185,
-  "program_hex": "e6593640000000008b30000000005f5e100060b488b65487bca166a89e8b32488805c56eb0f1682785a7cfe3f16929f63dc017768320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe831369f08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388d22841c0a17060145c50031071e01c8c59000000008392cb4fe9567ed5e68ee8637850b42e2c59bdeebec1f60ee13d6cc38d235c4a59396ce83930172542c0068b20000000207275690f96475be6a258e85534189efcffe499af6d73d4e38c716784c68dada1ed56610727c2e4e05800df64000000060e522d22fad880e5ebd6978e7aa214c51dd9b3b2598fa9cfbe802981ba249d9c9e3544c0e5305ca30b001c1ac8000000101cab5a57c8eedf81d928812b731821f46a9552f1da594d9d3b17bacc9b62a5ad7d70f581cad0b9541600386d90000000283964b49fc56e0232fefbbf0451ecadb6993ad99119c27b746359e1d281c9317b1573d983968172c42c00712590000000303972b4c0f2dd877b0fbf3c5e8d88d476c2e7e1d67ab83f5b2b226c7f21b40bf9de9bc403976172e02c00715d900000003839805a72671ec96fd79bcf6efd27e65e0edd7e3f9930860b70288765be24ba6e2368a4c1cc105cbf0b001c642730c071d0b500e3c170301c7c2e18039002e2501c82171700e420b8dc072185c8001c88",
+  "stack_serialized_bytes": 788,
+  "budget_wu": 3202,
+  "cost_bound_milli_wu": 223340,
+  "cost_bound_wu": 224,
+  "program_hex": "e6ad3640000000008b30000000005f5e100060b4cdf589f65a188017cb46495f1e48642b8c1d2523fc91b3337704e8dc762125d00320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad21ed32a59623e654ac5c7867d0ffb12e2cd8c300ce2c6a3bb21fb78fcd00ccf6c0e5685caa0b001a2c8000000081cb25a725e75982efb31e1a6d93b2958a4359003a809c2b272dd74198761165e5acd0cc1cb40b962160037d90000000183972b4e0d26a0990c0c9b62aa8b2a93f5f8da3fba2691c4292a363a7aea8b2e5fe29de83976172e02c00706b20000000407300b4935997b041597499534e41148116ed0d00210685ac3c13971f7022c56c5ef819039820b97e1600386d900000002839875a71409306cfabbd6166a3c522ba6e354593d4f140c19d25602dd988d4dac091e401cc485cc305800e24b2000000060731cb4c5a4bd94da2e86b3eba208cdba0d3adc96f22c91e068279b2c7949628c2a0478039900b98d0b001c57640000000e0e65569369e3e0819e0d0feb87af612f2d3c12ee7d7cbffb736fb27217a1ee6302672120732e17328160038c84e66c0e3c16a01c7c2e06039002e18039042e2501c84171700e430b8dc072205c8001c8a",
   "witness_hex": "",
-  "witness_input0_bytes": 727
+  "witness_input0_bytes": 788
  },
  "r8_plain_with_sweep_leaf/unroll_external_fee": {
-  "size": 1755,
-  "vsize": 1109,
-  "weight": 4434,
+  "size": 1816,
+  "vsize": 1124,
+  "weight": 4495,
   "nin": 2,
   "nout": 11,
   "testmempoolaccept": true,
@@ -945,78 +1153,78 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "cce08f5687a719ebdc8a0b3619f0ca5e4a1cc1fec0e6b6484e93d5c7a83e5a8a",
+  "txid": "114e0d2307518996802e83229a30f9ef616356c2c295bfc2632583c673c4c45c",
   "confirmed": true,
   "block_height": 160,
-  "program_bytes": 623,
+  "program_bytes": 684,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 727,
-  "budget_wu": 2958,
-  "cost_bound_milli_wu": 184668,
-  "cost_bound_wu": 185,
-  "program_hex": "e6593640000000008b30000000005f5e100060b4f5c4a9531788427376d8789382d28ec61d90df149dff182ddd5beec21b3a6a7a8320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe831369f08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388d22841c0a17060145c50031071e01c8c59000000008392cb4c044e6cf37c44b6ec1320641e1f1cfe73ed5d9f5a001472d54e61739dc4ab3f683930172542c0068b2000000020727569cec2cf669ff3d23804bfd007ce1b2af034a1dc12ae63ad2e1d7d5e86bfd3f8eb0727c2e4e05800df64000000060e522d3fcb7145d0a80f898f4501cb6976c7605f675038191fb80cab7b0573caf04cebc0e5305ca30b001c1ac8000000101cab5a6d9e0e60c8c87909aaa22958dd72be1414707c7a324739e7636c689fb7803a0c01cad0b9541600386d90000000283964b48f5866ae0cfa3cb82cbe2b57f8830d44b00f0969df0b09c1ca5c24d7e3247f0803968172c42c00712590000000303972b4c74142ae81fd17419c7fff79a38d2cc7882d3448b442a75f54d85457655f9cb503976172e02c00715d900000003839805a5fb686234574996eedc86254d41e0be8ef7904309db0f33dc32fcc4c25487d47c1cc105cbf0b001c642730c071d0b500e3c170301c7c2e18039002e2501c82171700e420b8dc072185c8001c88",
+  "stack_serialized_bytes": 788,
+  "budget_wu": 3202,
+  "cost_bound_milli_wu": 223340,
+  "cost_bound_wu": 224,
+  "program_hex": "e6ad3640000000008b30000000005f5e100060b4aafe2cbdee6f3c412e67c0212a40b46cfb7156f1a7c9091880e34d2bc59a8d280320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad20f30e48fc6e514573e1267d7c22edebde1eff5e8dffebaca653664f4e71fec200e5685caa0b001a2c8000000081cb25a5823339e5fc51e28099e8cbceb5aaa3ab43defeb9779f9f23da8c68bfd28857081cb40b962160037d90000000183972b4a86e814a42a44c1f1377f199880299622de88b146dd46f75233a0ca5d5f8c4a683976172e02c00706b20000000407300b49e630b191f55f4553ab92f7f6d946dc94b09d6b98cbe70e4743eccac09e776d1839820b97e1600386d900000002839875a7e1632358019f52490afcf142d49fd545189ea12ec33901559fa13c3793d149fc1cc485cc305800e24b2000000060731cb4e5e34b5410745df721e1eab3cb71082cc42373bf87c10443b9d5de4e737e8d15839900b98d0b001c57640000000e0e655699cc9af69a08879a08e727c4afbdd3a830beec7182a5fc03a9292325739aa9d430732e17328160038c84e66c0e3c16a01c7c2e06039002e18039042e2501c84171700e430b8dc072205c8001c8a",
   "witness_hex": "",
-  "witness_input0_bytes": 727
+  "witness_input0_bytes": 788
  },
  "r8_plain_single_leaf/program": {
-  "cmr": "afdc8981b0da4b020a918131e2255786c7ca728b87d42eb433a0e61079eb5655",
-  "commit_program_bytes": 657,
+  "cmr": "4b23d64cf140d66ee4d3bf1429e3721495e57cd9319553788322cb6261010d8f",
+  "commit_program_bytes": 687,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "512098ae1bdbf76d24ebba52adef401aff72aa1f0010fcfe5ee4f50f830e45516a44",
+  "scriptPubKey": "512075da7fc019106e71d05fb11e20e4fca9d164da0518cd53c39087ce303b76a44c",
   "control_block_bytes": 33,
   "args": {
-   "ASSET": "0xf08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57",
+   "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "V0": "100000000",
-   "S0": "0x5e03c55f2edce755458ba07012f0a567822fca68703b39a34bbce4eaa6a44d45",
+   "S0": "0x4d3b9c26c3bd1c009d61924046c4a8638690dc833c467dc47dc80aec3cb37fa8",
    "V1": "100000000",
-   "S1": "0xb8caaa688483652e3017fd06174e148c8f0a7a700df9a06910bd89a452f57c83",
+   "S1": "0xb07e0ff8e1ca5bd8fa1692b98f567e665d5357f199656f49e6a446a77f69edd8",
    "V2": "100000000",
-   "S2": "0x7fb69156dbc7f7c0d6ce42d7e91a3c646bcfd683ce9f2dd4bfc9411cf29c7d45",
+   "S2": "0x42f26c7721711afc3dc43a23f1790bd2bde37ab2891176c882814c742f2f65f0",
    "V3": "100000000",
-   "S3": "0x753fab53339088d77694e00ab721520bcd72b780285c111537c52e4a9b8a25be",
+   "S3": "0x6601a8cea5eaedbde7f8f7128dc0bb0113361524054fb9ba294e10bf4b310432",
    "V4": "100000000",
-   "S4": "0x45f9e39f2492c9970949bfd578c9d2700fdd3fdab800b3f760e29da62db782aa",
+   "S4": "0xb7a575f274d0a24be414ea1c18163e6f314ff0c789c65347355592e2cc5bd0d7",
    "V5": "100000000",
-   "S5": "0x3039ab419f11cfcc6746abe5ab834a9cfdc7bd0356be43e86409a32094fec112",
+   "S5": "0x87a2d16f1d788ab4256c47676aa3865fc120d0a5218a84603bc23fa3f44a9994",
    "V6": "100000000",
-   "S6": "0x4cbf7214513ef120f6075649ece82bd5a21bf5adfeccca73d55d6510c03684a0",
+   "S6": "0x24418f8a76d9bae0160b69a577cc56a87b2fa218e1b41b581800943c87bd387a",
    "V7": "100000000",
-   "S7": "0xa2ba8ed0eb757c079e896c2079ad4c83e4f02ca46d1dafa49e0ad2f24d564112"
+   "S7": "0xd83aa3a3ba6c69299d4a8eb21dbce482a3d35fc0ed4015d73ed5da10e9734ccd"
   }
  },
  "r8_plain_single_leaf/unroll_reserve_fee": {
-  "size": 1436,
-  "vsize": 899,
-  "weight": 3596,
+  "size": 1497,
+  "vsize": 915,
+  "weight": 3657,
   "nin": 1,
   "nout": 9,
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "34e1bedcec171f1cc14db2317ae2bdec24aa72ee5be9cc79b120f13a2faba57a",
+  "txid": "190064ecf1886effdd9ddc4fbd6a5c07f3150012b700fb10cc06c5bc4ce4dda0",
   "confirmed": true,
   "block_height": 162,
-  "program_bytes": 623,
+  "program_bytes": 684,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 695,
-  "budget_wu": 2830,
-  "cost_bound_milli_wu": 184668,
-  "cost_bound_wu": 185,
-  "program_hex": "e6593640000000008b30000000005f5e100060b4af01e2af976e73aaa2c5d038097852b3c117e534381d9cd1a5de7275535226a28320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe831369f08090c9b6205e26299c588081718b9f66848108cf542dfef833392a735cba57040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388d22841c0a17060145c50031071e01c8c59000000008392cb4dc6555344241b297180bfe830ba70a4647853d3806fcd034885ec4d2297abe4183930172542c0068b20000000207275697fb69156dbc7f7c0d6ce42d7e91a3c646bcfd683ce9f2dd4bfc9411cf29c7d450727c2e4e05800df64000000060e522d2ea7f56a6672111aeed29c0156e42a4179ae56f0050b8222a6f8a5c9537144b7c0e5305ca30b001c1ac8000000101cab5a517e78e7c924b265c2526ff55e32749c03f74ff6ae002cfdd838a7698b6de0aa81cad0b9541600386d90000000283964b4981cd5a0cf88e7e633a355f2d5c1a54e7ee3de81ab5f21f43204d1904a7f608903968172c42c00712590000000303972b4a65fb90a289f78907b03ab24f67415ead10dfad6ff666539eaaeb288601b425003976172e02c00715d900000003839805a68aea3b43add5f01e7a25b081e6b5320f93c0b291b476be92782b4bc9355904481cc105cbf0b001c642730c071d0b500e3c170301c7c2e18039002e2501c82171700e420b8dc072185c8001c88",
+  "stack_serialized_bytes": 756,
+  "budget_wu": 3074,
+  "cost_bound_milli_wu": 223340,
+  "cost_bound_wu": 224,
+  "program_hex": "e6ad3640000000008b30000000005f5e100060b4a69dce1361de8e004eb0c92023625431c3486e419e233ee23ee405761e59bfd40320a8591067c34021091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098ba0c0d031034902841862050dce0df5045c4819c764d4c4558c9dec4cf970a921adcbb5332cf337a56c70d6fe83136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c0203ac0da41c609c09061a1c71c2c59b720401c043c2c0d83f187c3502109141b8883c62050331f898e385800e240388fe1a41c04848a10607902060068245912534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601881a0071b2450838142e12028b8ac0622e3d019839220728564000000020e55ad360fc1ff1c394b7b1f42d25731eacfcccbaa6afe332cade93cd488d4efed3dbb00e5685caa0b001a2c8000000081cb25a50bc9b1dc85c46bf0f710e88fc5e42f4af78deaca2445db220a0531d0bcbd97c01cb40b962160037d90000000183972b4b300d46752f576def3fc7b8946e05d80899b0a9202a7dcdd14a7085fa598821903976172e02c00706b20000000407300b4dbd2baf93a685125f20a750e0c0b1f3798a7f863c4e329a39aaac971662de86b839820b97e1600386d900000002839875a61e8b45bc75e22ad095b11d9daa8e197f04834294862a1180ef08fe8fd12a66501cc485cc305800e24b2000000060731cb49220c7c53b6cdd700b05b4d2bbe62b543d97d10c70da0dac0c004a1e43de9c3d039900b98d0b001c57640000000e0e65569d83aa3a3ba6c69299d4a8eb21dbce482a3d35fc0ed4015d73ed5da10e9734ccd0732e17328160038c84e66c0e3c16a01c7c2e06039002e18039042e2501c84171700e430b8dc072205c8001c8a",
   "witness_hex": "",
-  "witness_input0_bytes": 695
+  "witness_input0_bytes": 756
  },
  "r8_compact_with_sweep_leaf/program": {
-  "cmr": "ad40a1fbd978b57aba27c53d0dae98e0bef2afbb7bb91c1a7063b6e2508d3ccb",
+  "cmr": "d23309220c6302ba8800a3a872bdb51b739d2ff5e3d3cb0fe6ea0581ea448cdd",
   "commit_program_bytes": 267,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51207ac560f7e4c0eddceb5c7cc97541a726738947b9e36b6540f5d6bb182148f626",
+  "scriptPubKey": "5120b1c6f1c9d4af80621178e6f3531d7d3fda9710070607ad862104ca9a766cc74e",
   "control_block_bytes": 65,
   "args": {
-   "H": "0x23525c28c44d1a78ccf4b35280aeac453112931c5c4eb35d21dd56547e5cc6b6"
+   "H": "0xef50aacdbfd1e9d77488ad6c81e4ad5152c33b174b5de674504e7754e7f19112"
   }
  },
  "r8_compact_with_sweep_leaf/unroll_reserve_fee": {
@@ -1028,10 +1236,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "460572b7000234be328910ecddad299dbdf102c73997ed904adb41948c161014",
+  "txid": "cbaa93190395abc8e88820e87e1cad802ea90b07ada983cb3985d036e566ee2d",
   "confirmed": true,
   "block_height": 164,
   "program_bytes": 267,
@@ -1040,7 +1248,7 @@
   "budget_wu": 1534,
   "cost_bound_milli_wu": 144010,
   "cost_bound_wu": 145,
-  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d246a4b851889a34f199e966a5015d588a62252638b89d66ba43baaca8fcb98d6c08160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
+  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d3dea1559b7fa3d3aee9115ad903c95aa2a586762e96bbcce8a09ceea9cfe3222408160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
   "witness_hex": "",
   "witness_input0_bytes": 371
  },
@@ -1056,7 +1264,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "bfcba64aa97ece527463f5814e9ce94ff257f551f11d80f3d858858afbe69973",
+  "txid": "128e3ea0075485ec7e9177e6cb1ed19aa9c7543248e7eb64cfe140029d1312e9",
   "confirmed": true,
   "block_height": 167,
   "program_bytes": 267,
@@ -1065,18 +1273,18 @@
   "budget_wu": 1534,
   "cost_bound_milli_wu": 144010,
   "cost_bound_wu": 145,
-  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d3d1f0a401e98447e8b667d780859dddfa63c7d12d8a8b7621fa60fc339152215808160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
+  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d2ad8a516340dad177e6a128c05f4fdb53232a4d79e12758d58fca929b699b27c808160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
   "witness_hex": "",
   "witness_input0_bytes": 371
  },
  "r8_compact_single_leaf/program": {
-  "cmr": "3bd53c3620895a70e4c5d7399fcab11200ffcfc4c42b377cd886826475bd6f81",
+  "cmr": "c63917e611d13882d7cf8cb3e1b3121a266da871cbd76dc87e4e9e4f69de9565",
   "commit_program_bytes": 267,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120681feaddf711d0e9ce29a788c8bce882634ec0fd9392be234b0fcc240f0cd63b",
+  "scriptPubKey": "5120840bc025324a52e9ef18d4d4167a3b09f6e86fe1522af95b9cf42c980897f52b",
   "control_block_bytes": 33,
   "args": {
-   "H": "0xf3e130dac90f54be157043e3e8d342e02c652959358ba88d26e469b25a2c465a"
+   "H": "0xff2e7985e19edcc310af960a3ffb57e8336a9ac1e64510f42f80ed6839bd3c01"
   }
  },
  "r8_compact_single_leaf/unroll_reserve_fee": {
@@ -1088,10 +1296,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "5afee3128074dfe1440b5068d40647fa19d4698093896138e73d8656123324d9",
+  "txid": "9981706d55367923de2e6d2a2fd8d65bf26cebe35f609893554ad9da22a49355",
   "confirmed": true,
   "block_height": 169,
   "program_bytes": 267,
@@ -1100,18 +1308,18 @@
   "budget_wu": 1406,
   "cost_bound_milli_wu": 144010,
   "cost_bound_wu": 145,
-  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d3e7c261b5921ea97c2ae087c7d1a685c058ca52b26b17511a4dc8d364b4588cb408160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
+  "program_hex": "e5ba75640840a10626c80000000011da010848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5d060681881a42ded5720420506e0a9b2000000010401c100d82c806b40a0dc3d3640000000408038701c185900e0a8141b8a53640000000608038a00e201640387a0506e334d9000000020200e32038a85900e2940a0dc7a9b2000000050401c78071a0b201c668141b90e9b2000000060401c86038f85900e3d40a0dc914d9000000038200e4801c881640390e8141b937ab10426d3fe5cf30bc33db986215f2c147ff6afd066d53583cc8a21e85f01dad0737a780208160cdba01180409a0fca90403781c280e25038c00e3b0390c072440e4e01cb20",
   "witness_hex": "",
   "witness_input0_bytes": 339
  },
  "r8_chain_with_sweep_leaf/program": {
-  "cmr": "68c8724bfb9280815ea9e26ec44ed8d855e44a4e5215250408222e130fdc98fe",
+  "cmr": "27ccd48235ca73631294940a676c2f003ea8db7049f705dea40f9615a5b8b7ea",
   "commit_program_bytes": 227,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120f63de0838eb02f8f095c74004f10dac0f57cebf612304ac3db9f1667b00dea43",
+  "scriptPubKey": "512057dd9f6f184736bba5557f425775f042ac6be0631bc4e8a559503fb3fdd238c1",
   "control_block_bytes": 65,
   "args": {
-   "H": "0x09b54e7d7cb2c5ba14764a60ca6ddf9753d09269ee97ef13dfbb726eea5f7901"
+   "H": "0x18d0a2dbc9a1859a04cc77bd08073f586fd51478b03ed3ee56a1cfa8b3337040"
   }
  },
  "r8_chain_with_sweep_leaf/unroll_reserve_fee": {
@@ -1123,10 +1331,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "7cd520b56c40c7e53d6dc89c0d76c2228150af559d6f3c7001859996214ef8c4",
+  "txid": "61bf6071a9d7f60cf528fa2c5bfa2d049869df2fff56e46fcbc6b3394258fd31",
   "confirmed": true,
   "block_height": 171,
   "program_bytes": 227,
@@ -1135,7 +1343,7 @@
   "budget_wu": 1366,
   "cost_bound_milli_wu": 62600,
   "cost_bound_wu": 63,
-  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b90283721536909b54e7d7cb2c5ba14764a60ca6ddf9753d09269ee97ef13dfbb726eea5f7901040b066dd008c0204d07e488201b40e1a071681c7a072580",
+  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b90283721536918d0a2dbc9a1859a04cc77bd08073f586fd51478b03ed3ee56a1cfa8b3337040040b066dd008c0204d07e488201b40e1a071681c7a072580",
   "witness_hex": "",
   "witness_input0_bytes": 329
  },
@@ -1151,7 +1359,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00002000"
   },
-  "txid": "f1358f30862203ce4bd64c0fcb94df0de74a3c2a052ff60b69b01cdc40e86694",
+  "txid": "99fd95734299948f8808dfa570190438d2cf5027b4e45cfac4237f2ed2e8104a",
   "confirmed": true,
   "block_height": 174,
   "program_bytes": 227,
@@ -1160,18 +1368,18 @@
   "budget_wu": 1366,
   "cost_bound_milli_wu": 62600,
   "cost_bound_wu": 63,
-  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b902837215369d4c522d46c4559d3f18211b6633bb12fa0a34cc5c1708e2c085e7bb6e6722468040b066dd008c0204d07e488201b40e1a071681c7a072580",
+  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b9028372153699d4d0814d245bc844e8d598fb31a8461f53462a122f7d8b06c55d33195cc282a040b066dd008c0204d07e488201b40e1a071681c7a072580",
   "witness_hex": "",
   "witness_input0_bytes": 329
  },
  "r8_chain_single_leaf/program": {
-  "cmr": "d25db0fa60ae6b63e986b5712d5ee29601698fbbe4e935555cfd3697c0655b44",
+  "cmr": "5c9c0a8e69179d0c1bc962258bd2f1afec3d63f0b49828fb118bf7b1903573ec",
   "commit_program_bytes": 227,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51204a30a192834cfae21738dd890aba4c3d1be5426d9ae2f455440a4910bd378dc0",
+  "scriptPubKey": "5120c61dd0e70617f816e2499597fae369f4faea1b4a40e1ee9d29d8aeb6094e104d",
   "control_block_bytes": 33,
   "args": {
-   "H": "0x626f079ab8993530a22b53553b5d97f5a85ac44f5e8bce823b60b340f2818904"
+   "H": "0x9e83bfe76b12894de00abc20d9fcb0e481f82678a68f5e008e3c4821fb193fd1"
   }
  },
  "r8_chain_single_leaf/unroll_reserve_fee": {
@@ -1183,10 +1391,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001000",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "da958e7fbefdf6f68b7c6a677545c3e424f8c71bc74e78a6b3221b48345b2a95",
+  "txid": "f73372d6f8bc29d334865fde9eab2f7e885c9b6dbdd8b909ddb02df4e966151c",
   "confirmed": true,
   "block_height": 176,
   "program_bytes": 227,
@@ -1195,7 +1403,7 @@
   "budget_wu": 1238,
   "cost_bound_milli_wu": 62600,
   "cost_bound_wu": 63,
-  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b902837215369626f079ab8993530a22b53553b5d97f5a85ac44f5e8bce823b60b340f2818904040b066dd008c0204d07e488201b40e1a071681c7a072580",
+  "program_hex": "e4da7540420508313640000000008ed00842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e16a05033590000000083680d60622c42e04d40420506e109b2000000020401c1c0e0364000000060c8070b03828b10b580e008141b89d3640000000808038980e20b200000005064038a80e2416216b01c3d028371b26c80000001810071a81c5f640000000e0c8071c81c662c42d6038b9028372153699e83bfe76b12894de00abc20d9fcb0e481f82678a68f5e008e3c4821fb193fd1040b066dd008c0204d07e488201b40e1a071681c7a072580",
   "witness_hex": "",
   "witness_input0_bytes": 297
  }

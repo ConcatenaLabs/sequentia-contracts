@@ -36,12 +36,15 @@ buys (4 weight units per witness byte, plus 50).
 | Function | Does |
 |---|---|
 | `out_explicit(i) -> (asset, amount, script_hash)` | Reads output `i`, refusing one that is missing or whose asset or amount is confidential |
-| `out_require(i, asset, amount, script_hash)` | Output `i` pays exactly that amount of that asset to that script |
+| `out_no_nonce(i)` | Output `i` carries no nonce |
+| `out_require(i, asset, amount, script_hash)` | Output `i` pays exactly that amount of that asset to that script, explicitly and with no nonce |
 | `in_explicit_current() -> (asset, amount)` | Reads the coin being spent, refusing a confidential one |
 
 Asset ids are in internal byte order, the reverse of the hex an RPC prints. A
 covenant can only police explicit outputs, which is why the reader refuses the
-rest instead of guessing.
+rest instead of guessing. An explicit output still has a nonce field, which
+anyone building the transaction can fill, with a blinding key for instance; an
+output a covenant pins exactly has none, so `out_require` checks that too.
 
 ### `wide_arith`
 
@@ -107,9 +110,9 @@ one, or requires the fee to be paid in the asset it holds.
 
 | Helper, as used in its test program | Accepted spend | Program | Witness | Cost bound | Budget |
 |---|---|---|---|---|---|
-| `output_reader`: covenant pays a fixed amount to a fixed script | 267 vB | 339 B | 0 B | 47 WU | 1,694 WU |
+| `output_reader`: covenant pays a fixed amount to a fixed script | 284 vB | 409 B | 0 B | 53 WU | 1,974 WU |
 | `wide_arith`: pays `floor(x * price / scale)` with a product above 2^64; 128-bit cap | 315 vB | 517 B | 16 B | 74 WU | 2,470 WU |
-| `state`: a counter in the data leaf, moved forward by one per spend (two spends) | 455 vB | 438 B | 32 B | 214 WU | 2,346 WU |
+| `state`: a counter in the data leaf, moved forward by one per spend (two spends) | 472 vB | 509 B | 32 B | 220 WU | 2,630 WU |
 | `relative_lock`: 5 blocks | 216 vB | 136 B | 0 B | 8 WU | 874 WU |
 | `merkle`: membership in a set of 256, depth 8 | 310 vB | 224 B | 289 B | 376 WU | 2,390 WU |
 | `fee_cap`: at most 500 in the covenant's asset | 199 vB | 71 B | 0 B | 5 WU | 614 WU |
@@ -118,15 +121,18 @@ The program sizes include each test's parameters, which are compiled in. The
 `state` spend has a second, wallet input that pays the fee.
 
 Every refusal below was refused by the mempool with
-`mempool-script-verify-flag-failed (…)` and in a block with
-`TestBlockValidity failed: block-validation-failed (code -25)`. The mempool's
-detail is `Assertion failed inside jet` where a jet's check failed, and
-`Assertion failed` where execution failed outside a jet: an `assert!` on a
-computed value, an `unwrap` of nothing, or a branch the valid spend had pruned.
+`mempool-script-verify-flag-failed (…)`, and in a block with
+`TestBlockValidity failed: mempool-script-verify-flag-failed (…) (code -25)`,
+each with the same detail, which the test asserts. The detail is `Assertion
+failed inside jet` where a jet's check failed, and `Assertion failed` where
+execution failed outside a jet: an `assert!` on a computed value, an `unwrap`
+of nothing, or a branch the valid spend had pruned. Neither says which check
+failed, so each refusal has a control: the valid spend it differs from in the
+one property it breaks, which the node accepts.
 
 | Helper | Refused |
 |---|---|
-| `output_reader` | Output one atom short; output to another script; a coin of another asset at the same program |
+| `output_reader` | Output one atom short; output to another script; a coin of another asset at the same program; the right output carrying a nonce |
 | `wide_arith` | Output one more than the proven quotient; a quotient one too small; one too large; a product over the 128-bit cap |
 | `state` | A successor that skips a state; a successor one atom short; a witness naming a state the data leaf does not hold |
 | `relative_lock` | This input's sequence below the lock; transaction version 1; this input's lock disabled while another, old input carries one |

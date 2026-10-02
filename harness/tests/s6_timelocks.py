@@ -57,33 +57,37 @@ class S6(SimBase, BitcoinTestFramework):
             tx = self.wallet_sign(tx)
         return tx, r
 
-    def outcome(self, tx, label, expect_ok, r=None):
-        """Record mempool + block outcome without presuming it; assert the expectation."""
-        res = self.accept(tx)
-        d = {"expected": "accepted" if expect_ok else "refused", "testmempoolaccept": bool(res["allowed"]),
-             "reject-reason": res.get("reject-reason"), **self.measure(tx),
-             "nVersion": tx.nVersion, "nLockTime": tx.nLockTime,
+    def facts(self, tx, r=None):
+        d = {**self.measure(tx), "nVersion": tx.nVersion, "nLockTime": tx.nLockTime,
              "nSequence": ["0x%08x" % i.nSequence for i in tx.vin], "height": self.node.getblockcount()}
         if r is not None and "executed" in r:
             d["rust_bitmachine_executed"] = r["executed"]
-        if res["allowed"]:
-            txid = self.node.sendrawtransaction(tx.serialize().hex())
-            self.mine(1)
-            d["confirmed"] = self.node.getrawtransaction(txid, True).get("confirmations", 0) >= 1
-            self.log.info("ACCEPTED %-46s seq=%s v=%d", label, d["nSequence"], tx.nVersion)
-        else:
-            try:
-                self.node.sendrawtransaction(tx.serialize().hex())
-            except JSONRPCException as e:
-                d["rpc-error"] = "%s (code %s)" % (e.error["message"], e.error["code"])
-            bd = self.try_block(tx, label + "/block")
-            d["block"] = bd
-            # A refusal counts only when the block refuses it too.
-            assert expect_ok or not bd["mined"], (label, "refused by the mempool but MINED", bd)
-            self.log.info("REFUSED  %-46s %s | mined-in-block=%s", label, d.get("rpc-error"), bd["mined"])
-        self.rec(label, d)
-        assert res["allowed"] == expect_ok, (label, d)
         return d
+
+    def accepted(self, tx, label, r=None):
+        """Assert the mempool accepts `tx`; broadcast and mine it."""
+        res = self.accept(tx)
+        d = {"expected": "accepted", "testmempoolaccept": bool(res["allowed"]),
+             "reject-reason": res.get("reject-reason"), **self.facts(tx, r)}
+        assert res["allowed"], (label, d)
+        txid = self.node.sendrawtransaction(tx.serialize().hex())
+        self.mine(1)
+        d["confirmed"] = self.node.getrawtransaction(txid, True).get("confirmations", 0) >= 1
+        assert d["confirmed"], (label, d)
+        self.log.info("ACCEPTED %-46s seq=%s v=%d", label, d["nSequence"], tx.nVersion)
+        self.rec(label, d)
+        return d
+
+    def refused(self, tx, label, expect, mempool=None, control=None, r=None):
+        """reject(), with the transaction's version, lock time and sequences recorded."""
+        self.reject(tx, label, expect, mempool=mempool, control=control)
+        self.R[label].update(self.facts(tx, r))
+        self.rec(label, self.R[label])
+
+    @staticmethod
+    def program_of(tx):
+        st = tx.wit.vtxinwit[0].scriptWitness.stack
+        return st[1], st[0]
 
     def run_test(self):
         self.boot()
@@ -117,7 +121,7 @@ class S6(SimBase, BitcoinTestFramework):
                  "TIME": vu(want["time"], 32), "SEQ": vu(seq, 32), "VERSION": vu(version, 32),
                  "FINAL": vu(want["final"], 1)}
             tx, r = self.spend(probe, u, seq, version, extra, locktime, witness=w)
-            d = self.outcome(tx, "probe/" + label, True, r)
+            d = self.accepted(tx, "probe/" + label, r)
             d["jets_returned"] = want
             self.rec("probe/" + label, d)
 
@@ -143,72 +147,86 @@ class S6(SimBase, BitcoinTestFramework):
         probe_case("v1_other_input_seq_7", 0xffffffff, version=1, extra=[(old[5], 7)],
                    want=dict(dist=0, dur=0, height=0, time=0, final=0))
 
+        # Refusals for a lock not yet reached are the lock time rule's own
+        # (non-BIP68-final), named exactly. A refusal by a program says only
+        # that an assertion failed, so each comes after the lock has matured,
+        # beside a control: the same spend with the lock where it belongs,
+        # which the node accepts. The negative reuses the control's program.
+        J = "Assertion failed inside jet"
+        A = "Assertion failed"
+        NONFINAL = dict(expect="bad-txns-nonfinal", mempool="non-BIP68-final")
+
         # ------------------------------------------------------------ check_lock_distance(10)
         u = self.fund_now(dist.spk)                         # 1 confirmation
         tx, r = self.spend(dist, u, N)
-        self.outcome(tx, "distance/own_seq_10_too_early", False, r)
+        self.refused(tx, "distance/own_seq_10_too_early", r=r, **NONFINAL)
         # THE FLAW: own sequence final, ANOTHER input (an old wallet coin) carries nSequence = 10
         u_bug = self.fund_now(dist.spk)
         tx, r = self.spend(dist, u_bug, 0xffffffff, extra=[(old[6], N)])
         self.rec("distance/BYPASS_note", {"covenant_coin_confirmations": node.gettxout(u_bug.txid, u_bug.vout)["confirmations"]})
-        self.outcome(tx, "distance/BYPASS_other_input_carries_the_distance", True, r)
-        # the same on the safe program
+        self.accepted(tx, "distance/BYPASS_other_input_carries_the_distance", r)
+        # the same on the safe program: too early, its own lock refuses
         us = self.fund_now(sdist.spk)
         us2 = self.fund_now(sdist.spk)
         # a pruned program + witness from a spend that WILL be valid later
         txv, rv = self.spend(sdist, us, N)
         simv = seqc(self.req(sdist, txv, 0, {}, True))
         PS, WS = bytes.fromhex(simv["program_hex"]), bytes.fromhex(simv["witness_hex"])
-        tx, _ = self.spend(sdist, us2, 0xffffffff, extra=[(old[7], N)], P=PS, W=WS)
-        self.outcome(tx, "safe_distance/other_input_carries_the_distance", False)
         tx, _ = self.spend(sdist, us2, N, P=PS, W=WS)
-        self.outcome(tx, "safe_distance/own_seq_10_too_early", False)
-        tx, _ = self.spend(sdist, us2, N, version=1, P=PS, W=WS)
-        self.outcome(tx, "safe_distance/version_1", False)
+        self.refused(tx, "safe_distance/own_seq_10_too_early", **NONFINAL)
         self.mine(N)
         # now `u` and `us`, `us2` have >= 10 confirmations
-        tx, r = self.spend(dist, u, N - 1)
-        self.outcome(tx, "distance/own_seq_9_after_10_blocks", False, r)
-        tx, r = self.spend(dist, u, N, version=1)
-        self.outcome(tx, "distance/own_seq_10_version_1", False, r)
-        tx, r = self.spend(dist, u, TYPE_FLAG | N)
-        self.outcome(tx, "distance/own_seq_is_a_TIME_lock_of_10", False, r)
-        tx, r = self.spend(dist, u, N)
-        self.outcome(tx, "distance/own_seq_10_after_10_blocks", True, r)
+        ctl, r = self.spend(dist, u, N)
+        P, W = self.program_of(ctl)
+        tx, _ = self.spend(dist, u, N - 1, P=P, W=W)
+        self.refused(tx, "distance/own_seq_9_after_10_blocks", J, control=ctl)
+        tx, _ = self.spend(dist, u, N, version=1, P=P, W=W)
+        self.refused(tx, "distance/own_seq_10_version_1", J, control=ctl)
+        tx, _ = self.spend(dist, u, TYPE_FLAG | N, P=P, W=W)
+        self.refused(tx, "distance/own_seq_is_a_TIME_lock_of_10", J, control=ctl)
+        self.accepted(ctl, "distance/own_seq_10_after_10_blocks", r)
+        # The safe program refuses the bypass, and every other misplaced lock.
+        # The control, accepted: the old wallet coin's lock moved onto the covenant input.
+        ctl = self.spend(sdist, us2, N, extra=[(old[7], 0xffffffff)], P=PS, W=WS)[0]
+        tx, _ = self.spend(sdist, us2, 0xffffffff, extra=[(old[7], N)], P=PS, W=WS)
+        self.refused(tx, "safe_distance/other_input_carries_the_distance", A, control=ctl)
+        ctl, _ = self.spend(sdist, us2, N, P=PS, W=WS)
+        tx, _ = self.spend(sdist, us2, N, version=1, P=PS, W=WS)
+        self.refused(tx, "safe_distance/version_1", J, control=ctl)
         tx, _ = self.spend(sdist, us2, TYPE_FLAG | N, P=PS, W=WS)
-        self.outcome(tx, "safe_distance/own_seq_is_a_TIME_lock", False)
+        self.refused(tx, "safe_distance/own_seq_is_a_TIME_lock", A, control=ctl)
         tx, _ = self.spend(sdist, us2, N - 1, P=PS, W=WS)
-        self.outcome(tx, "safe_distance/own_seq_9", False)
-        tx, _ = self.spend(sdist, us2, N, P=PS, W=WS)
-        self.outcome(tx, "safe_distance/own_seq_10_after_10_blocks", True)
+        self.refused(tx, "safe_distance/own_seq_9", J, control=ctl)
+        self.accepted(ctl, "safe_distance/own_seq_10_after_10_blocks")
         tx, r = self.spend(sdist, us, 0x003f0000 | N)
-        self.outcome(tx, "safe_distance/own_seq_10_with_unused_bits_set", True, r)
+        self.accepted(tx, "safe_distance/own_seq_10_with_unused_bits_set", r)
 
         # ------------------------------------------------------------ check_lock_duration(2)  (2 x 512 s)
         ud = self.fund_now(dur.spk)
         tx, r = self.spend(dur, ud, TYPE_FLAG | 2)
-        self.outcome(tx, "duration/own_seq_time2_too_early", False, r)
+        self.refused(tx, "duration/own_seq_time2_too_early", r=r, **NONFINAL)
         ud_bug = self.fund_now(dur.spk)
         tx, r = self.spend(dur, ud_bug, 0xffffffff, extra=[(old[8], TYPE_FLAG | 2)])
-        self.outcome(tx, "duration/BYPASS_other_input_carries_the_duration", True, r)
+        self.accepted(tx, "duration/BYPASS_other_input_carries_the_duration", r)
         usd = self.fund_now(sdur.spk)
         txv, rv = self.spend(sdur, usd, TYPE_FLAG | 2)
         simv = seqc(self.req(sdur, txv, 0, {}, True))
         PD, WD = bytes.fromhex(simv["program_hex"]), bytes.fromhex(simv["witness_hex"])
-        tx, _ = self.spend(sdur, usd, 0xffffffff, extra=[(old[9], TYPE_FLAG | 2)], P=PD, W=WD)
-        self.outcome(tx, "safe_duration/other_input_carries_the_duration", False)
         tx, _ = self.spend(sdur, usd, TYPE_FLAG | 2, P=PD, W=WD)
-        self.outcome(tx, "safe_duration/own_seq_time2_too_early", False)
+        self.refused(tx, "safe_duration/own_seq_time2_too_early", **NONFINAL)
         self.mine(8, step=600)                              # MTP moves well past 1024 s
-        tx, r = self.spend(dur, ud, TYPE_FLAG | 1)
-        self.outcome(tx, "duration/own_seq_time1_after_wait", False, r)
-        tx, r = self.spend(dur, ud, 2)
-        self.outcome(tx, "duration/own_seq_is_a_BLOCK_lock_of_2", False, r)
-        tx, r = self.spend(dur, ud, TYPE_FLAG | 2)
-        self.outcome(tx, "duration/own_seq_time2_after_wait", True, r)
+        ctl, r = self.spend(dur, ud, TYPE_FLAG | 2)
+        P, W = self.program_of(ctl)
+        tx, _ = self.spend(dur, ud, TYPE_FLAG | 1, P=P, W=W)
+        self.refused(tx, "duration/own_seq_time1_after_wait", J, control=ctl)
+        tx, _ = self.spend(dur, ud, 2, P=P, W=W)
+        self.refused(tx, "duration/own_seq_is_a_BLOCK_lock_of_2", J, control=ctl)
+        self.accepted(ctl, "duration/own_seq_time2_after_wait", r)
+        ctl = self.spend(sdur, usd, TYPE_FLAG | 2, extra=[(old[9], 0xffffffff)], P=PD, W=WD)[0]
+        tx, _ = self.spend(sdur, usd, 0xffffffff, extra=[(old[9], TYPE_FLAG | 2)], P=PD, W=WD)
+        self.refused(tx, "safe_duration/other_input_carries_the_duration", A, control=ctl)
         tx, _ = self.spend(sdur, usd, TYPE_FLAG | 2, P=PD, W=WD)
-        self.outcome(tx, "safe_duration/own_seq_time2_after_wait", True)
-
+        self.accepted(tx, "safe_duration/own_seq_time2_after_wait")
 
 if __name__ == "__main__":
     S6().main()

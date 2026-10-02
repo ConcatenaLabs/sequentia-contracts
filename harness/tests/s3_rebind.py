@@ -106,31 +106,42 @@ class S3(SimBase, BitcoinTestFramework):
             return self.wallet_sign(t) if extra_in else t
 
         if negatives:
+            # Each refusal names its control: the valid spend of coin 1 (`tx`),
+            # or that spend with the same extra input and outputs.
+            J = "Assertion failed inside jet"
             self.reject(raw(u1, [self.out(vals[0] - 1, spks[0], self.X_OUT)] + good[1:] + [self.fee(FEE + 1, self.X_OUT)]),
-                        tag + "/neg_output0_value_minus1")
+                        tag + "/neg_output0_value_minus1", J, control=tx)
             self.reject(raw(u1, [self.out(vals[0], self.p2tr()[0], self.X_OUT)] + good[1:] + [self.fee(FEE, self.X_OUT)]),
-                        tag + "/neg_output0_other_script")
+                        tag + "/neg_output0_other_script", J, control=tx)
             y = self.wallet_utxo(vals[0], self.Y)
+            wy = self.wallet_spk()
             self.reject(raw(u1, [self.out(vals[0], spks[0], self.Y_OUT)] + good[1:] +
-                            [self.out(vals[0], self.wallet_spk(), self.X_OUT), self.fee(FEE, self.X_OUT)], [y]),
-                        tag + "/neg_output0_other_asset")
+                            [self.out(vals[0], wy, self.X_OUT), self.fee(FEE, self.X_OUT)], [y]),
+                        tag + "/neg_output0_other_asset", J,
+                        control=raw(u1, good + [self.out(vals[0], wy, self.Y_OUT), self.fee(FEE, self.X_OUT)], [y]))
             if m == 2:
-                self.reject(raw(u1, [good[1], good[0], self.fee(FEE, self.X_OUT)]), tag + "/neg_outputs_swapped")
+                self.reject(raw(u1, [good[1], good[0], self.fee(FEE, self.X_OUT)]), tag + "/neg_outputs_swapped",
+                            J, control=tx)
             # signatures made for another salt
             msg2 = message(os.urandom(32), couts, (self.X_ID, LEAF) if bind else None)
             wb = bit_replace(bit_replace(WB, sig_a, sign_schnorr(self.a_sec, msg2)), sig_s, sign_schnorr(self.s_sec, msg2))
-            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sigs_for_other_salt")
+            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sigs_for_other_salt",
+                        J, control=tx)
             wb = bit_replace(WB, sig_a, sign_schnorr(generate_privkey(), msg))
-            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_A_by_stranger")
+            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_A_by_stranger",
+                        J, control=tx)
             wb = bit_replace(WB, sig_s, sign_schnorr(generate_privkey(), msg))
-            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_S_by_stranger")
+            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_S_by_stranger",
+                        J, control=tx)
             tmp = os.urandom(64)      # a random placeholder: an all-zero one can match at a shifted bit offset
             wb = bit_replace(bit_replace(bit_replace(WB, sig_a, tmp), sig_s, sig_a), tmp, sig_s)
-            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sigs_swapped")
+            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sigs_swapped",
+                        J, control=tx)
             # a signature made over Simplicity's ordinary sig_all_hash does not satisfy it
             sh = self.sim_sighash(prog, tx, 0)
             wb = bit_replace(bit_replace(WB, sig_a, sign_schnorr(self.a_sec, sh)), sig_s, sign_schnorr(self.s_sec, sh))
-            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_all_hash_signatures")
+            self.reject(raw(u1, good + [self.fee(FEE, self.X_OUT)], wb=wb), tag + "/neg_sig_all_hash_signatures",
+                        J, control=tx)
 
         txid1 = self.send(tx, tag + "/spend_coin1", extra=meas)
 
@@ -159,8 +170,15 @@ class S3(SimBase, BitcoinTestFramework):
         wx = self.wallet_utxo(LEAF, self.X)
         tx4 = raw(u4, good + [self.out(LEAF, self.wallet_spk(), self.Y_OUT), self.fee(FEE, self.X_OUT)], [wx])
         if bind:
-            self.reject(tx3, tag + "/neg_coin_with_other_amount")
-            self.reject(tx4, tag + "/neg_coin_with_other_asset")
+            # The control of both: another coin of this program with the signed
+            # asset and amount, spent into the same outputs.
+            uc = self.fund(prog.spk, LEAF, self.X)
+            J = "Assertion failed inside jet"
+            self.reject(tx3, tag + "/neg_coin_with_other_amount", J,
+                        control=raw(uc, good + [self.fee(FEE, self.X_OUT)]), other_coin=True)
+            self.reject(tx4, tag + "/neg_coin_with_other_asset", J,
+                        control=raw(uc, good + [self.out(LEAF, self.wallet_spk(), self.X_OUT),
+                                                self.fee(FEE, self.X_OUT)], [wx]), other_coin=True)
         else:
             self.send(tx3, tag + "/spend_coin3_other_amount_ACCEPTED")
             self.send(tx4, tag + "/spend_coin4_other_asset_ACCEPTED")

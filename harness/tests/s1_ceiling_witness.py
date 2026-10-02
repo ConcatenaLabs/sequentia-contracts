@@ -55,11 +55,9 @@ class S1D(SimBase, BitcoinTestFramework):
             prog, tx, r = self.build(1, PAD)
             d = {**self.sim_measure(tx, 0, r), "extra_cells_rust_bound": r["extra_cells"], "CELLS_MAX": CELLS_MAX}
             self.rec("mem/PAD%d/program" % PAD, d)
-            m = self.try_mempool(tx, "mem/PAD%d/mempool" % PAD)
-            if m["testmempoolaccept"]:
-                self.send(tx, "mem/PAD%d/spend" % PAD, extra=d)
-            else:
-                self.try_block(tx, "mem/PAD%d/block" % PAD)
+            # Each is within the cell limit the node enforces, and relays.
+            self.try_mempool(tx, "mem/PAD%d/mempool" % PAD, "accepted")
+            self.send(tx, "mem/PAD%d/spend" % PAD, extra=d)
 
         # (c) > 1,000,000 WU in one relay-standard transaction:
         #     100,000-byte annex cap + read witness data

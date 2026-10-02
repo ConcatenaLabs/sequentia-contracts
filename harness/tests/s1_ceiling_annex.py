@@ -14,6 +14,7 @@ SEC = b"\x11" * 32
 
 class S1C(SimBase, BitcoinTestFramework):
     NAME = "s1c"
+    BUDGET = "Program's execution cost could exceed budget"
 
     def set_test_params(self):
         self.chain_params()
@@ -81,8 +82,9 @@ class S1C(SimBase, BitcoinTestFramework):
             self.rec("e0/" + name, {"rust_bitmachine_executed": r["executed"], "rust_error": r.get("exec_error"),
                                     "node_testmempoolaccept": res["allowed"], "node_reject": res.get("reject-reason")})
             self.log.info("E0 %s rust=%s node=%s", name, r["executed"], res["allowed"])
-            if res["allowed"]:
-                self.send(tx, "e0/%s_spend" % name)
+            # Both the Rust library and the node read the annex the same way.
+            assert r["executed"], (name, r.get("exec_error"))
+            self.send(tx, "e0/%s_spend" % name)
 
     # -- E1: exact budget threshold
     def e1_threshold(self):
@@ -92,19 +94,21 @@ class S1C(SimBase, BitcoinTestFramework):
         cost = r["cost_milli"]
         base = self.sim_measure(tx0, 0, r)
         self.rec("e1/no_annex", base)
-        self.reject(tx0, "e1/neg_no_annex")
         L, need_wu, need_bytes = self.annex_len_for(prog, r, tx0, cost)
         self.rec("e1/threshold", {"cost_milli": cost, "need_budget_wu": need_wu, "need_stack_bytes": need_bytes,
                                   "annex_payload_bytes": L})
+        # The control of both refusals: the same spend with the smallest annex
+        # that buys the budget.
+        _, exact, rx = self.build(prog, L, u=u)
+        dx = self.sim_measure(exact, 0, rx)
+        assert dx["budget_wu"] >= need_wu
+        self.reject(tx0, "e1/neg_no_annex", self.BUDGET, control=exact)
         _, tx, r = self.build(prog, L - 1, u=u)
         d = self.sim_measure(tx, 0, r)
         self.rec("e1/one_byte_short", d)
         assert d["budget_wu"] < need_wu
-        self.reject(tx, "e1/neg_one_byte_short")
-        _, tx, r = self.build(prog, L, u=u)
-        d = self.sim_measure(tx, 0, r)
-        assert d["budget_wu"] >= need_wu
-        self.send(tx, "e1/exact_annex", extra=d)
+        self.reject(tx, "e1/neg_one_byte_short", self.BUDGET, control=exact)
+        self.send(exact, "e1/exact_annex", extra=dx)
 
     # -- E2: the relay-standard annex cap (100,000 bytes including the tag)
     def e2_standard_annex_cap(self):
@@ -123,15 +127,18 @@ class S1C(SimBase, BitcoinTestFramework):
                 self.rec(tag + "/seconds_accept_and_mine", round(time.time() - t0, 2))
                 u2 = self.fund(prog.spk, 1_0000_0000, self.X)
                 _, tx, r = self.build(prog, 100000, u=u2)     # item = 100,001 bytes: one past
-                self.try_mempool(tx, tag + "/annex_100001_mempool")
-                self.try_block(tx, tag + "/annex_100001_block")
+                # past the relay limit on an annex, consensus still takes it
+                self.try_mempool(tx, tag + "/annex_100001_mempool", "bad-witness-nonstandard")
+                self.try_block(tx, tag + "/annex_100001_block", "mined")
             else:
+                # The relay-standard annex does not buy this program's budget;
+                # the smallest one that does is past the relay limit, and a
+                # block takes it. That spend is the refusal's control.
                 _, tx, r = self.build(prog, 99999, u=u)
-                self.reject(tx, tag + "/neg_annex_100000_too_small")
-                _, tx, r = self.build(prog, L, u=u)
-                self.rec(tag + "/min_annex", self.sim_measure(tx, 0, r))
-                self.try_mempool(tx, tag + "/min_annex_mempool")
-                self.try_block(tx, tag + "/min_annex_block")
+                _, mn, rm = self.build(prog, L, u=u)
+                self.rec(tag + "/min_annex", self.sim_measure(mn, 0, rm))
+                self.try_mempool(mn, tag + "/min_annex_mempool", "bad-witness-nonstandard")
+                self.reject(tx, tag + "/neg_annex_100000_too_small", self.BUDGET, control=mn, control_mined=True)
 
     # -- E4: program size
     def e4_program_size(self):
@@ -146,11 +153,14 @@ class S1C(SimBase, BitcoinTestFramework):
             self.rec(tag + "/program", d)
             self.log.info("E4 N=%d program=%d B weight=%d cost=%d WU budget=%d", N, d["program_bytes"],
                           d["weight"], d["cost_bound_wu"], d["budget_wu"])
-            m = self.try_mempool(tx, tag + "/mempool")
-            if m["testmempoolaccept"]:
+            # Up to the relay limit on transaction size it relays; past it, a
+            # block still takes it.
+            if N < 8100:
+                self.try_mempool(tx, tag + "/mempool", "accepted")
                 self.send(tx, tag + "/spend")
             else:
-                self.try_block(tx, tag + "/block")
+                self.try_mempool(tx, tag + "/mempool", "tx-size")
+                self.try_block(tx, tag + "/block", "mined")
 
     # -- E3: the consensus cap BUDGET_MAX = 4,000,050 WU
     def e3_budget_max(self):
@@ -168,8 +178,11 @@ class S1C(SimBase, BitcoinTestFramework):
                 L = 1_000_100
             _, tx, r = self.build(prog, L, u=u, amount=1_0000_0000)
             self.rec(tag + "/tx", {**self.sim_measure(tx, 0, r), **self.measure(tx)})
-            self.try_mempool(tx, tag + "/mempool")
-            self.try_block(tx, tag + "/block")
+            # Each is past the relay limit on transaction size. The cost of
+            # K=295 is within BUDGET_MAX and a block takes it; K=296 is past
+            # BUDGET_MAX, which no witness can buy, and consensus refuses it.
+            self.try_mempool(tx, tag + "/mempool", "tx-size")
+            self.try_block(tx, tag + "/block", "mined" if K == 295 else self.BUDGET)
 
 
 if __name__ == "__main__":

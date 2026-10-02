@@ -1,7 +1,7 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
  },
  "source/lock_distance": "/* Refused: the relative-height jet, used the way its name suggests. It reads\n * the largest relative lock over EVERY input, so a spender adds an old coin of\n * their own and spends this output at once. The regtest harness runs it only\n * to prove that bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_distance(param::N)\n}\n",
  "source/lock_duration": "/* Refused: the relative-time jet (units of 512 seconds), with the same defect\n * as the height form. The regtest harness runs it only to prove the bypass. */\nfn main() {\n    jet::broken_do_not_use_check_lock_duration(param::N)\n}\n",
@@ -166,7 +166,7 @@
   "nin": 1,
   "nout": 2,
   "nVersion": 2,
-  "nLockTime": 1790975330,
+  "nLockTime": 1790987194,
   "nSequence": [
    "0xfffffffe"
   ],
@@ -177,7 +177,7 @@
    "dist": 0,
    "dur": 0,
    "height": 0,
-   "time": 1790975330,
+   "time": 1790987194,
    "final": 0
   }
  },
@@ -289,9 +289,9 @@
   "expected": "accepted",
   "testmempoolaccept": true,
   "reject-reason": null,
-  "size": 570,
+  "size": 571,
   "vsize": 345,
-  "weight": 1377,
+  "weight": 1378,
   "nin": 2,
   "nout": 3,
   "nVersion": 2,
@@ -337,20 +337,15 @@
    "final": 0
   }
  },
- "distance/own_seq_10_too_early/block": {
-  "vsize": 184,
-  "weight": 733,
-  "mined": false,
+ "distance/own_seq_10_too_early": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-BIP68-final",
+  "rpc-error": "non-BIP68-final (code -26)",
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T01:48:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T05:06:35Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.01
- },
- "distance/own_seq_10_too_early": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "non-BIP68-final",
   "size": 247,
   "vsize": 184,
   "weight": 733,
@@ -362,18 +357,7 @@
    "0x0000000a"
   ],
   "height": 151,
-  "rust_bitmachine_executed": true,
-  "rpc-error": "non-BIP68-final (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 733,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T01:48:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
-   ],
-   "seconds": 0.01
-  }
+  "rust_bitmachine_executed": true
  },
  "distance/BYPASS_note": {
   "covenant_coin_confirmations": 1
@@ -397,58 +381,15 @@
   "rust_bitmachine_executed": true,
   "confirmed": true
  },
- "safe_distance/other_input_carries_the_distance/block": {
-  "vsize": 349,
-  "weight": 1394,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.02
- },
- "safe_distance/other_input_carries_the_distance": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
-  "size": 587,
-  "vsize": 349,
-  "weight": 1394,
-  "nin": 2,
-  "nout": 3,
-  "nVersion": 2,
-  "nLockTime": 0,
-  "nSequence": [
-   "0xffffffff",
-   "0x0000000a"
-  ],
-  "height": 155,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
-  "block": {
-   "vsize": 349,
-   "weight": 1394,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.02
-  }
- },
- "safe_distance/own_seq_10_too_early/block": {
-  "vsize": 214,
-  "weight": 854,
-  "mined": false,
+ "safe_distance/own_seq_10_too_early": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-BIP68-final",
+  "rpc-error": "non-BIP68-final (code -26)",
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T05:46:35Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.02
- },
- "safe_distance/own_seq_10_too_early": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "non-BIP68-final",
   "size": 368,
   "vsize": 214,
   "weight": 854,
@@ -459,70 +400,23 @@
   "nSequence": [
    "0x0000000a"
   ],
-  "height": 155,
-  "rpc-error": "non-BIP68-final (code -26)",
-  "block": {
-   "vsize": 214,
-   "weight": 854,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
-   ],
-   "seconds": 0.02
-  }
- },
- "safe_distance/version_1/block": {
-  "vsize": 214,
-  "weight": 854,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T02:28:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.01
- },
- "safe_distance/version_1": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
-  "size": 368,
-  "vsize": 214,
-  "weight": 854,
-  "nin": 1,
-  "nout": 2,
-  "nVersion": 1,
-  "nLockTime": 0,
-  "nSequence": [
-   "0x0000000a"
-  ],
-  "height": 155,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 214,
-   "weight": 854,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T02:28:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
- },
- "distance/own_seq_9_after_10_blocks/block": {
-  "vsize": 184,
-  "weight": 733,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.01
+  "height": 155
  },
  "distance/own_seq_9_after_10_blocks": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "6b7837fa64f65ec6472d09fdad849c3c8db78f43f8a13cfc7a302904f6319f57",
+   "same_coin": true,
+   "vsize": 184,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:26:35Z) [httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on d976d259ae71c254fdcd47b841d846ab9f2f3958b62c80c6cb38bf4835832f66 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 247,
   "vsize": 184,
   "weight": 733,
@@ -533,34 +427,23 @@
   "nSequence": [
    "0x00000009"
   ],
-  "height": 165,
-  "rust_bitmachine_executed": false,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 733,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
- },
- "distance/own_seq_10_version_1/block": {
-  "vsize": 184,
-  "weight": 733,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.01
+  "height": 165
  },
  "distance/own_seq_10_version_1": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "6b7837fa64f65ec6472d09fdad849c3c8db78f43f8a13cfc7a302904f6319f57",
+   "same_coin": true,
+   "vsize": 184,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:26:35Z) [httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on bf1e01fdfb26f5afdd8d90bb7ef83877eb41b4b55b82ea96724d0a5732627fbf failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 247,
   "vsize": 184,
   "weight": 733,
@@ -571,34 +454,23 @@
   "nSequence": [
    "0x0000000a"
   ],
-  "height": 165,
-  "rust_bitmachine_executed": false,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 733,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
- },
- "distance/own_seq_is_a_TIME_lock_of_10/block": {
-  "vsize": 184,
-  "weight": 733,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.01
+  "height": 165
  },
  "distance/own_seq_is_a_TIME_lock_of_10": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "6b7837fa64f65ec6472d09fdad849c3c8db78f43f8a13cfc7a302904f6319f57",
+   "same_coin": true,
+   "vsize": 184,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:26:35Z) [httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on f775fe1865daabada17dcf72e87cdde5efaaa22ca3cd8853cefcfc180e382de3 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 247,
   "vsize": 184,
   "weight": 733,
@@ -609,19 +481,7 @@
   "nSequence": [
    "0x0040000a"
   ],
-  "height": 165,
-  "rust_bitmachine_executed": false,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 733,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:08:51Z) [httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
+  "height": 165
  },
  "distance/own_seq_10_after_10_blocks": {
   "expected": "accepted",
@@ -641,20 +501,76 @@
   "rust_bitmachine_executed": true,
   "confirmed": true
  },
- "safe_distance/own_seq_is_a_TIME_lock/block": {
+ "safe_distance/other_input_carries_the_distance": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "490a7ad9c3ca487198a5c9753bfb0cd39bd47f99eeab0b421f3d90f3adbb46dc",
+   "same_coin": true,
+   "vsize": 349,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:36:35Z) [httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 9f027e8407ef44df215b59c9f683cb9e2fd9c228726b09c8dc364b8c0de96940 failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ],
+  "size": 587,
+  "vsize": 349,
+  "weight": 1394,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x0000000a"
+  ],
+  "height": 166
+ },
+ "safe_distance/version_1": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ff203e80af7e2571e78d74e8ef7e62ccf7b1ac8d882c2a77ed147723291e77a7",
+   "same_coin": true,
+   "vsize": 214,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:36:35Z) [httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on ca48e7351bddaf61258f8a0fc8b40834b332547e34a70b3385124c853d82c837 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
+  "size": 368,
   "vsize": 214,
   "weight": 854,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T04:18:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+  "nin": 1,
+  "nout": 2,
+  "nVersion": 1,
+  "nLockTime": 0,
+  "nSequence": [
+   "0x0000000a"
   ],
-  "seconds": 0.01
+  "height": 166
  },
  "safe_distance/own_seq_is_a_TIME_lock": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "ff203e80af7e2571e78d74e8ef7e62ccf7b1ac8d882c2a77ed147723291e77a7",
+   "same_coin": true,
+   "vsize": 214,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:36:35Z) [httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 1eb0857d2771ddacf16260567fc97146cd8ff19210681eeab507c296c08694bd failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ],
   "size": 368,
   "vsize": 214,
   "weight": 854,
@@ -665,33 +581,23 @@
   "nSequence": [
    "0x0040000a"
   ],
-  "height": 166,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
-  "block": {
-   "vsize": 214,
-   "weight": 854,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:18:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
- },
- "safe_distance/own_seq_9/block": {
-  "vsize": 214,
-  "weight": 854,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T04:18:51Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.01
+  "height": 166
  },
  "safe_distance/own_seq_9": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ff203e80af7e2571e78d74e8ef7e62ccf7b1ac8d882c2a77ed147723291e77a7",
+   "same_coin": true,
+   "vsize": 214,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T07:36:35Z) [httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on e329a816d960a315fd87bb746d5a034aa203b715ddf81fa5a8cbe41b10182c4a failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 368,
   "vsize": 214,
   "weight": 854,
@@ -702,18 +608,7 @@
   "nSequence": [
    "0x00000009"
   ],
-  "height": 166,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 214,
-   "weight": 854,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:18:51Z) [httpworker.1] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.01
-  }
+  "height": 166
  },
  "safe_distance/own_seq_10_after_10_blocks": {
   "expected": "accepted",
@@ -750,20 +645,15 @@
   "rust_bitmachine_executed": true,
   "confirmed": true
  },
- "duration/own_seq_time2_too_early/block": {
-  "vsize": 184,
-  "weight": 734,
-  "mined": false,
+ "duration/own_seq_time2_too_early": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-BIP68-final",
+  "rpc-error": "non-BIP68-final (code -26)",
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T04:48:51Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T08:06:35Z) [httpworker.0] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.01
- },
- "duration/own_seq_time2_too_early": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "non-BIP68-final",
   "size": 248,
   "vsize": 184,
   "weight": 734,
@@ -775,18 +665,7 @@
    "0x00400002"
   ],
   "height": 169,
-  "rust_bitmachine_executed": true,
-  "rpc-error": "non-BIP68-final (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 734,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T04:48:51Z) [httpworker.1] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
-   ],
-   "seconds": 0.01
-  }
+  "rust_bitmachine_executed": true
  },
  "duration/BYPASS_other_input_carries_the_duration": {
   "expected": "accepted",
@@ -807,58 +686,15 @@
   "rust_bitmachine_executed": true,
   "confirmed": true
  },
- "safe_duration/other_input_carries_the_duration/block": {
-  "vsize": 349,
-  "weight": 1394,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T05:18:51Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.07
- },
- "safe_duration/other_input_carries_the_duration": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
-  "size": 587,
-  "vsize": 349,
-  "weight": 1394,
-  "nin": 2,
-  "nout": 3,
-  "nVersion": 2,
-  "nLockTime": 0,
-  "nSequence": [
-   "0xffffffff",
-   "0x00400002"
-  ],
-  "height": 172,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
-  "block": {
-   "vsize": 349,
-   "weight": 1394,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T05:18:51Z) [httpworker.3] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.07
-  }
- },
- "safe_duration/own_seq_time2_too_early/block": {
-  "vsize": 214,
-  "weight": 854,
-  "mined": false,
+ "safe_duration/own_seq_time2_too_early": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-BIP68-final",
+  "rpc-error": "non-BIP68-final (code -26)",
   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
   "block-log": [
-   "(mocktime: 2026-10-03T05:18:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
+   "(mocktime: 2026-10-03T08:36:35Z) [httpworker.3] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
   ],
-  "seconds": 0.09
- },
- "safe_duration/own_seq_time2_too_early": {
-  "expected": "refused",
-  "testmempoolaccept": false,
-  "reject-reason": "non-BIP68-final",
   "size": 368,
   "vsize": 214,
   "weight": 854,
@@ -869,33 +705,23 @@
   "nSequence": [
    "0x00400002"
   ],
-  "height": 172,
-  "rpc-error": "non-BIP68-final (code -26)",
-  "block": {
-   "vsize": 214,
-   "weight": 854,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: bad-txns-nonfinal (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T05:18:51Z) [httpworker.2] [validation.cpp:3151] [ConnectBlock] ERROR: ConnectBlock: contains a non-BIP68-final transaction"
-   ],
-   "seconds": 0.09
-  }
- },
- "duration/own_seq_time1_after_wait/block": {
-  "vsize": 184,
-  "weight": 734,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.07
+  "height": 172
  },
  "duration/own_seq_time1_after_wait": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "46d05d3dfde97a6b7517c2584e1df2cab47cd5acb0f2a50895d5830499d752b5",
+   "same_coin": true,
+   "vsize": 184,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T09:56:35Z) [httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 31893b2428501961c84d0ec0e7ac50ea39e7c7fa54a209790c6128a8402abb4d failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 248,
   "vsize": 184,
   "weight": 734,
@@ -906,34 +732,23 @@
   "nSequence": [
    "0x00400001"
   ],
-  "height": 180,
-  "rust_bitmachine_executed": false,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 734,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.07
-  }
- },
- "duration/own_seq_is_a_BLOCK_lock_of_2/block": {
-  "vsize": 184,
-  "weight": 734,
-  "mined": false,
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-  "block-log": [
-   "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-  ],
-  "seconds": 0.04
+  "height": 180
  },
  "duration/own_seq_is_a_BLOCK_lock_of_2": {
-  "expected": "refused",
-  "testmempoolaccept": false,
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "46d05d3dfde97a6b7517c2584e1df2cab47cd5acb0f2a50895d5830499d752b5",
+   "same_coin": true,
+   "vsize": 184,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T09:56:35Z) [httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on b9e2ef66c2779e76f9bce6c2958d8fe9709902030af7ae2e6c20157405070ab1 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
   "size": 248,
   "vsize": 184,
   "weight": 734,
@@ -944,19 +759,7 @@
   "nSequence": [
    "0x00000002"
   ],
-  "height": 180,
-  "rust_bitmachine_executed": false,
-  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block": {
-   "vsize": 184,
-   "weight": 734,
-   "mined": false,
-   "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
-   "block-log": [
-    "(mocktime: 2026-10-03T06:38:51Z) [httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
-   ],
-   "seconds": 0.04
-  }
+  "height": 180
  },
  "duration/own_seq_time2_after_wait": {
   "expected": "accepted",
@@ -975,6 +778,34 @@
   "height": 180,
   "rust_bitmachine_executed": true,
   "confirmed": true
+ },
+ "safe_duration/other_input_carries_the_duration": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "676a759119279f68dd07c9f6a785e6a11499e1a007db01840affcbd1fa3b37d6",
+   "same_coin": true,
+   "vsize": 349,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "(mocktime: 2026-10-03T10:06:35Z) [httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 7cb1ae8628eb9104e8b86d2f84f4ff78f9b983746e607f2aaf2c292f3fb60395 failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ],
+  "size": 587,
+  "vsize": 349,
+  "weight": 1394,
+  "nin": 2,
+  "nout": 3,
+  "nVersion": 2,
+  "nLockTime": 0,
+  "nSequence": [
+   "0xffffffff",
+   "0x00400002"
+  ],
+  "height": 181
  },
  "safe_duration/own_seq_time2_after_wait": {
   "expected": "accepted",

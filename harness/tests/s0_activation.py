@@ -26,13 +26,11 @@ class S0(SimBase, BitcoinTestFramework):
         # a thief with NO key: garbage "program" and "witness", correct CMR and control block
         tx = self.mktx([u], [self.out(1_0000_0000 - 300, self.wallet_spk(), self.X_OUT), self.fee(300, self.X_OUT)])
         self.set_sim_wit(tx, 0, prog, b"\x00", b"")
-        m = self.try_mempool(tx, "inactive/keyless_spend_mempool")
-        b = self.try_block(tx, "inactive/keyless_spend_block")
         # The trap this test exists to show: relay policy runs Simplicity and
         # refuses the theft, but consensus does not, so a block takes it.
         assert "simplicity" not in dep
-        assert not m["testmempoolaccept"], m
-        assert b["mined"], b
+        self.try_mempool(tx, "inactive/keyless_spend_mempool", "Value out of range")
+        self.try_block(tx, "inactive/keyless_spend_block", "mined")
 
 
 if __name__ == "__main__":

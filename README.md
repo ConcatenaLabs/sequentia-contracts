@@ -212,10 +212,18 @@ The harness runs programs on a real Sequentia node. Each test starts its own
 genesis (`-evbparams=simplicity:-1:::`) and transparent defaults
 (`-con_default_blinded_addresses=0`, `-blindedaddresses=0`), issues test assets
 and puts them on the fee whitelist. It then pays to program addresses, builds
-and broadcasts spends, and for every negative case records both the mempool's
-error and the error from forcing the same transaction into a block with the
-hidden `generateblock` RPC. A rejection counts only when the block refuses it
-too, because the mempool runs Simplicity as policy even where consensus does not.
+and broadcasts spends, and refuses every negative case twice: in the mempool,
+and by forcing the same transaction into a block with the hidden
+`generateblock` RPC. A rejection counts only when the block refuses it too,
+because the mempool runs Simplicity as policy even where consensus does not.
+
+Each refusal asserts its reason, in the mempool and in the block. Nodes run
+with `-par=1`, which checks scripts on the validating thread, so a block's
+error names the script failure instead of only `block-validation-failed`. Where
+that failure is a failed assertion, which does not say which check failed,
+the negative names a control: a transaction that differs from it only in the
+property the negative breaks, spends the same program, and is accepted. Then
+the refusal is that property's and no other check's.
 
 ```sh
 harness/run.py                                   # every test but the ceilings
@@ -234,7 +242,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 |---|---|
 | `s0` | On a chain where Simplicity is not active, a keyless spend of a `0xbe` output is refused by the mempool and accepted in a block |
 | `s1` | A one-key program; wrong key, a flipped program bit and a key-path attempt refused; a `sig_all_hash` signature with an annex, refused when the signed hash omits the annex and accepted when it commits to it |
-| `s2` | A covenant tree node at radix 2, 4 and 8 in three encodings, with the tapscript node's violations refused |
+| `s2` | A covenant tree node at radix 2, 4 and 8 in three encodings, with the tapscript node's violations refused, and a child carrying a nonce refused by every form |
 | `s3` | A custom signature hash that names no outpoint, rebound to a second coin, with and without binding the coin's asset and amount |
 | `s4` | State in a taproot data leaf, moved forward by a spend and swept after expiry |
 | `s5` | One owner leaves a shared output of 16, 1,024 and about a million leaves |
@@ -261,8 +269,8 @@ refuse. The only exception is `s6`, which compiles the reject fixtures with
 | `SimProg(source, args, data=..., sibling=...)` | Compiles a program and builds its taproot output: the program leaf alone, beside a hidden data leaf, or beside a tapscript leaf |
 | `fund(spk, atoms, asset)` | Pays a program address from the node wallet and mines it |
 | `mktx`, `sim_satisfy`, `send` | Builds a spend, satisfies and prunes the program against it, broadcasts, mines and records it |
-| `reject(tx, label)` | Asserts the mempool refuses the transaction and that `generateblock` refuses it too, and records both errors |
-| `try_block`, `try_mempool` | Record what the block or the mempool says without asserting it |
+| `reject(tx, label, expect, mempool=, control=)` | Asserts the mempool refuses the transaction and that `generateblock` refuses it too, each with the expected reason (`mempool` when policy refuses first for another), and that the control, required for a failed assertion, is accepted; records it all |
+| `try_block(tx, label, expect)`, `try_mempool(tx, label, expect)` | Mine the transaction directly, or offer it to the mempool, and assert the result: accepted, or refused for the reason given |
 | `bit_replace`, `set_sim_wit` | Rewrite a witness at bit granularity for a negative case the compiler would not satisfy |
 
 ## Comparing roots across compilers
