@@ -270,19 +270,21 @@ class SimBase(ChainBase):
                     out.append(ln[:400])
         return out
 
-    def reject(self, tx, label, expect=None, consensus=True):
+    def reject(self, tx, label, expect, mempool=None, control=None, index=0, other_coin=False,
+               control_mined=False):
         pos = self._logpos()
-        reason = ChainBase.reject(self, tx, label, expect, consensus)
-        if consensus:
-            d = self.R[label]
-            d["block-log"] = [l for l in self._logsince(pos) if "ConnectBlock" in l or "CheckInputScripts" in l][:2]
-            self.rec(label, d)
+        reason = ChainBase.reject(self, tx, label, expect, mempool=mempool, control=control,
+                                  index=index, other_coin=other_coin, control_mined=control_mined)
+        d = self.R[label]
+        d["block-log"] = [l for l in self._logsince(pos) if "ConnectBlock" in l or "CheckInputScripts" in l][:2]
+        self.rec(label, d)
         return reason
 
-    def try_block(self, tx, label):
-        """Mine `tx` directly (bypassing relay policy); record success or the error."""
+    def try_block(self, tx, label, expect):
+        """Mine `tx` directly, bypassing relay policy, and assert the outcome:
+        `expect` is "mined", or the block's error (reason_matches)."""
         pos = self._logpos()
-        d = {"vsize": self.measure(tx)["vsize"], "weight": self.measure(tx)["weight"]}
+        d = {"vsize": self.measure(tx)["vsize"], "weight": self.measure(tx)["weight"], "expect": expect}
         t0 = __import__("time").time()
         try:
             self.node.generateblock(self.node.getnewaddress(), [tx.serialize().hex()], invalid_call=False)
@@ -295,17 +297,22 @@ class SimBase(ChainBase):
         d["seconds"] = round(__import__("time").time() - t0, 2)
         self.log.info("BLOCK %-42s %s", label, {k: v for k, v in d.items()})
         self.rec(label, d)
+        if expect == "mined":
+            assert d["mined"], (label, d)
+        else:
+            assert not d["mined"] and reason_matches(expect, d["block-error"]), (label, expect, d)
         return d
 
-    def try_mempool(self, tx, label):
+    def try_mempool(self, tx, label, expect):
+        """Ask the mempool and assert its answer: `expect` is "accepted", or
+        its reason for refusing (reason_matches)."""
         res = self.accept(tx)
         d = {"testmempoolaccept": bool(res["allowed"]), "reject-reason": res.get("reject-reason"),
-             "vsize": self.measure(tx)["vsize"], "weight": self.measure(tx)["weight"]}
+             "vsize": self.measure(tx)["vsize"], "weight": self.measure(tx)["weight"], "expect": expect}
         self.log.info("MEMPOOL %-40s %s", label, d)
         self.rec(label, d)
+        if expect == "accepted":
+            assert res["allowed"], (label, d)
+        else:
+            assert not res["allowed"] and reason_matches(expect, res.get("reject-reason")), (label, expect, d)
         return d
-
-    def reject2(self, tx, label):
-        """Like reject(), but returns the record (mempool + block strings)."""
-        self.reject(tx, label)
-        return self.R[label]

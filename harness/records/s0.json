@@ -17,11 +17,13 @@
   "testmempoolaccept": false,
   "reject-reason": "mempool-script-verify-flag-failed (Value out of range)",
   "vsize": 182,
-  "weight": 726
+  "weight": 726,
+  "expect": "Value out of range"
  },
  "inactive/keyless_spend_block": {
   "vsize": 182,
   "weight": 726,
+  "expect": "mined",
   "mined": true,
   "seconds": 0.01
  }

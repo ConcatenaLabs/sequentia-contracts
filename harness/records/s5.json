@@ -1,7 +1,7 @@
 {
  "whitelist": {
+  "8647b6128a21479ae83ef92ae159119e7bee383832346763e8762ed0702a9c08": 100000000,
   "bitcoin": 100000000,
-  "ef1807ec70b989dd0278b608b16c41e95a7e4c3fdd3652427b464b0fbd6f28c7": 100000000,
   "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
  },
  "source/depth4": "/* S5: leave one, keep the rest.\n *\n * Output = P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(root)))  where root\n * is the Merkle root over 2^4 leaf records:\n *      leaf  = SHA256(owner_key(32) || amount_be8)        spent leaf = 32 zero bytes\n *      node  = SHA256-compression(IV, left || right)      (fixed depth, no padding)\n *\n * One owner exits: the witness gives OWNER, AMOUNT and the Merkle path\n * [(sibling, is_right); 4] from the leaf up. The program\n *   1. folds the path twice at once: from the leaf (old root) and from the\n *      spent marker (new root), same siblings;\n *   2. checks the spent output commits to the old root (tappath(0));\n *   3. checks OWNER's signature over sig_all_hash, so the owner decides every\n *      other output, including where their own money goes;\n *   4. requires the output at the SAME index to pay this same program with the\n *      NEW root, in the same asset, for exactly input_amount - AMOUNT\n *      (no remainder output is required when that is zero).\n */\nfn node(l: u256, r: u256) -> u256 {\n    jet::sha_256_block(jet::sha_256_iv(), l, r)\n}\n\nfn step(elt: (u256, bool), acc: (u256, u256)) -> (u256, u256) {\n    let (sib, is_right): (u256, bool) = elt;\n    let (a, b): (u256, u256) = acc;\n    match is_right {\n        true => (node(sib, a), node(sib, b)),\n        false => (node(a, sib), node(b, sib)),\n    }\n}\n\nfn tapdata(root: u256) -> u256 {\n    let ctx: Ctx8 = jet::tapdata_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\nfn spk_hash(root: u256) -> u256 {\n    let tr: u256 = jet::build_tapbranch(jet::tapleaf_hash(), tapdata(root));\n    let key: u256 = jet::build_taptweak(jet::internal_key(), tr);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);\n    jet::sha_256_ctx_8_finalize(ctx)\n}\n\nfn amount_digest(a: Asset1, v: Amount1) -> u256 {\n    jet::sha_256_ctx_8_finalize(jet::asset_amount_hash(jet::sha_256_ctx_8_init(), a, v))\n}\n\nfn check_remainder(new_root: u256, asset: Asset1, rem: u64) {\n    let i: u32 = jet::current_index();\n    assert!(jet::eq_256(spk_hash(new_root), unwrap(jet::output_script_hash(i))));\n    let (oa, ov): (Asset1, Amount1) = unwrap(jet::output_amount(i));\n    let want: Amount1 = Right(rem);\n    assert!(jet::eq_256(amount_digest(asset, want), amount_digest(oa, ov)));\n}\n\nfn main() {\n    let owner: Pubkey = witness::OWNER;\n    let amount: u64 = witness::AMOUNT;\n    let ctx: Ctx8 = jet::sha_256_ctx_8_init();\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);\n    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, amount);\n    let leaf: u256 = jet::sha_256_ctx_8_finalize(ctx);\n    let spent: u256 = 0x0000000000000000000000000000000000000000000000000000000000000000;\n    let (old_root, new_root): (u256, u256) = array_fold::<step, 4>(witness::PATH, (leaf, spent));\n    assert!(jet::eq_256(tapdata(old_root), unwrap(jet::tappath(0))));\n    jet::bip_0340_verify((owner, jet::sig_all_hash()), witness::SIG);\n    let (ia, iv): (Asset1, Amount1) = jet::current_amount();\n    let in_amt: u64 = unwrap_right::<(u1, u256)>(iv);\n    assert!(jet::le_64(amount, in_amt));\n    let (borrow, rem): (bool, u64) = jet::subtract_64(in_amt, amount);\n    match jet::eq_64(rem, 0) {\n        true => (),\n        false => check_remainder(new_root, ia, rem),\n    }\n}\n",
@@ -9,102 +9,172 @@
   "cmr": "34a14fe0f230a61f1e27b6acc338ba90dcfa2b6028d16f33ff9f8350beb2b139",
   "commit_program_bytes": 565,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120ea16b9fd9fba0b3295573aa97e7480b7b0365963a3008ed165cdd15925b0a536",
+  "scriptPubKey": "5120fe8c364d815f52c933763d6c415c78a3d759302dbd64115798f7adb7aa8da263",
   "control_block_bytes": 65,
   "args": {},
   "leaves": 16,
   "live_leaves": 16,
-  "root": "4c976cfd7bc6ec6a4cc33aa6fc3c4620b6d3dbcc8f8ba443f14fe730420dcbcc",
+  "root": "9c88a87084e6c97b7489696636544ac50b4726e0d7ad00511bd10e30c33319c0",
   "pool_amount": 1601076984
  },
  "depth4/neg_remainder_keeps_old_root": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 1947d74925ccc6dd4763fbc1b2258b494047b9bc6ebb85e9b886fb4e575b26ee failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_remainder_marks_other_leaf": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on c3a6b19823315b07cc8667004a5cfc3b8f398207569931b2fb8cbdb1d3c8806d failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_remainder_short_by_1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on eb8d105035dcd855c70b116f557673b0fc25084b1a041f9762dfd14656f13b7c failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_claims_amount_plus_1": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on eb8d105035dcd855c70b116f557673b0fc25084b1a041f9762dfd14656f13b7c failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_remainder_to_other_program": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on e45a240ac6ff84fc9e91047b3b143af8e4accb5d5ebe30c53231175c20b4b2a1 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_remainder_in_other_asset": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "e3d714373bf84d28ac7ba322dd27d854d5ea3a902854921e6233a8eb6ee7f08f",
+   "same_coin": true,
+   "vsize": 611,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on db8984c2750bb460e31a829253317deb544bfeed3dccecc914a3d5f964a8d6a6 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_no_remainder_output": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on e5b61a3804b8a22511a6c23ea6620b9d318a66c27610a9e520f052c89d73e3d1 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_signed_by_stranger": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_stranger_key_not_in_tree": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_other_owner_with_this_path": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.0] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 05305ff1fec1dcb841d97a05b4e2d2f900d058e7d77805b9d8623dbda67ae097 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/exit_0_leaf_5": {
@@ -119,7 +189,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "cabdeac85cef11d0b3185a63d6837fb6d6d5a572d0cf0bb291a50444323329a8",
+  "txid": "d70b4ba1134041d1a106c2004f38ca9d928cf828d1f78f5bfef7b1cfe87f5a5f",
   "confirmed": true,
   "block_height": 107,
   "program_bytes": 597,
@@ -129,26 +199,40 @@
   "cost_bound_milli_wu": 433300,
   "cost_bound_wu": 434,
   "program_hex": "e85a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3d0141c8220506e284ece8204e559b95c7e568a00e5520506e5a01c9f0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5f8281985b59b740230083f30a71c71dc07070a9c51b1808f8703070e2050838c48b01b9930f0f0281910283f32c71c71c71b99f1469c0320401c4e2c72d34640840a0fcd4989b30000000000000000040b066dc8108141b96671c71c830c38e38fc10502d24fc2821028373a07770b072ac0e75393e28ee220409cec7c20399309cce77118204e6d92073cc8141b9e54d8a8900205835580840a0dcf71b9ed38e160039ec40a0dcfb01cf08281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4031c71c520506e4a9c71c71b98414240e8251727798714770e0401d0200d03728ce3731e70a80cc5980e6a40e6a12283f41e8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741501d0600741b01d0820742681d0a60742b80",
-  "witness_hex": "3b29b9eb00157c3ab7ed4abc5d0cf31648ecfde454a9b756365055196eb3f8b00000000005f69a9ae17dc315f65ac147aa459f9a6bdc7efd47d159aa7b989e1a885fbf915077f6f0c9e42015e1afb476e2998f5217cd5169bd71cf69d4d29c32d3542700d44da21614171d79b5b7d87212f65f2d89c8b1c116b831a9f61dd41f01de469aaa886ca17f8bf10afe75d92207750bd870d2ba93bf26e0ea13f2db9835011421e63618c8ae30b1f19db07a0f73200fffa01908bc14be1a14b5da16d49ff1b59ecca30464bf724c34ef65dda7f699066ab35d1bdf599d943c35dbcb747a8c36319573d798b0",
+  "witness_hex": "3e19245c5a4d17e8af3efbb8c4b2c77382353bb7b164c237c4c1d40ad7198ce80000000005f69a9ad1239c885635b1b53d8b844c9ef78607866d62eca95e4f4a2c9d27f62a762dc3cc68431e344a7abffbecaabf10cbec53ecfad2351a8f16b3e8641091ecd4525c8614ca101c472f8235d69216163353aafe7ac6326816e7f98c08505d9e95e71868f9d345b3a9621b3f75c08a3936ec1a36943bd51813ed9c6785d07ba476ab642864a94e2472036b047c462d084d68e0407ebfb088f457a2f1fc644047e2fee526fdbdaa06fe83edc1af988b15159367ca2b1162cc7ba1ea0591a40d70b2a3da10",
   "leaf_index": 5,
   "witness_input0_bytes": 934
  },
  "depth4/neg_double_exit_old_path": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ee9581de1c2f810a072e3121e11c5eeaf1567c6a382ef3f7bb7813b91668cffc",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 659765836ab2521ca3097692c5974d5395e9c3f2137740131d91e949ee57a20e failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/neg_double_exit_current_path": {
   "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ee9581de1c2f810a072e3121e11c5eeaf1567c6a382ef3f7bb7813b91668cffc",
+   "same_coin": true,
+   "vsize": 476,
+   "testmempoolaccept": true
+  },
   "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
-  "block-error": "TestBlockValidity failed: block-validation-failed (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3317] [ConnectBlock] ERROR: ConnectBlock: CheckQueue failed"
+   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 659765836ab2521ca3097692c5974d5395e9c3f2137740131d91e949ee57a20e failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "depth4/exit_1_leaf_10": {
@@ -163,7 +247,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "982c713415f44979e81fede73495c1416995d2c7f9bdca65cdc7dbf83c6ccaa1",
+  "txid": "ee9581de1c2f810a072e3121e11c5eeaf1567c6a382ef3f7bb7813b91668cffc",
   "confirmed": true,
   "block_height": 108,
   "program_bytes": 597,
@@ -173,7 +257,7 @@
   "cost_bound_milli_wu": 433300,
   "cost_bound_wu": 434,
   "program_hex": "e85a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3d0141c8220506e284ece8204e559b95c7e568a00e5520506e5a01c9f0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5f8281985b59b740230083f30a71c71dc07070a9c51b1808f8703070e2050838c48b01b9930f0f0281910283f32c71c71c71b99f1469c0320401c4e2c72d34640840a0fcd4989b30000000000000000040b066dc8108141b96671c71c830c38e38fc10502d24fc2821028373a07770b072ac0e75393e28ee220409cec7c20399309cce77118204e6d92073cc8141b9e54d8a8900205835580840a0dcf71b9ed38e160039ec40a0dcfb01cf08281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4031c71c520506e4a9c71c71b98414240e8251727798714770e0401d0200d03728ce3731e70a80cc5980e6a40e6a12283f41e8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741501d0600741b01d0820742681d0a60742b80",
-  "witness_hex": "7c320adbad814706d03f5d7657a165efcd4ad3824a4e2066e4d1dd741d731d530000000005f73545c6d42d286ced16f676440821429aff4c47728eb5c4dead58d5bd83334b2ed7ce1a7ec98c4f104434285522c67d8c9e8d2b2f14ef01d84c56c0e244c12ab56ec5f9c93e6bdab650aee40822124ff7acc5f448d6b85279d641c21a9c781383f1ec1451ccc7acc6a812da293f8c3d3139ae42f633f7eec1873360bdbdfa949c241bfd349a5f1a5c5fa181f26fd7fa2a59854098b84802b2cac215fcdd44ec2c0d25ce15219c85eb3a191ca85b9daf7b8c00c25ff9aa4c2fe9fdbd6c573efa48a30060",
+  "witness_hex": "db30c9e8cbd1ae8fce72c34a461b54b90680a032f961bf9defb6426db82fa74e0000000005f7354512a0c0e011417fe2a76127ec64f71de1cd7ce66701bf0af715de372d34034e984a5229f9e6f2ab9c4b2edfad1acea4d8bd7d7ed1171ff32129fff6b7e73b95934a48f1e0890df04d2b0603ef206644a1994b6c52960119ac1b90c3d311c2ffc483e8c445dd579d3f094f50d5ca0e40a41dd44cd6ef8e8cddf96323d209841b1a96409c6e524594113465cfc6d298c956072c6f8ecd7b2182d8ca721ac9714a649e5f7e1506b7df3a0ad8740272bb851c3d83d2129e7b8db22465774660dcb8b970",
   "leaf_index": 10,
   "witness_input0_bytes": 934
  },
@@ -189,7 +273,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "03a0d45bf175eea832a02d970727aed0146d22fd85ebf8d213b7cd82074a7690",
+  "txid": "5ab4dac4df67a8eff187e6f5ee7cb831cf7ac92dbed7846a6a29b6d328bedb9d",
   "confirmed": true,
   "block_height": 109,
   "program_bytes": 618,
@@ -199,7 +283,7 @@
   "cost_bound_milli_wu": 433300,
   "cost_bound_wu": 434,
   "program_hex": "e856740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a0dc7e61c6e411871c2c49d50107e450b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171c80a0e3e20506e244ece8204e539b9547e548a00e5320506e5801c9b0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5d8281985b59b740230083f30271c71dc07070a9c51b1808f8703070e2050838c48b01b98f0f0f0281910283f32471c71c71b99b1469c0320401c4e2c72d34640840a0fcd2989b30000000000000000040b066dc8108141b95e71c71c830c38e38fc10502d24fc2821028373987770b072ac0e74393e28ee220409cea7c20398f09ccc77118204e6c92073c48141b9e14d8a8900205835580840a0dcf51b9e938e160039e840a0dcf901cee8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4011c71c520506e4a9c71c71b98414240e8211727798714770e0401d0180d03728ce3731e70a80cc5980e6a40e6a12283f41c8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741301d0580741901d07a0742481d09e074298",
-  "witness_hex": "37b7875ca149a3330974facc39866dc72ee699f61e68f245fee3f8953fdfc8b10000000005f5ffef46590fb0ad8177a8a3cd61ea2833e0186fe7b72baf273ea0ac56a4c228c81fba13fb112428cf90a30b198738016f402412e2c34dab77cdcfa6dfdf40951eb2c2a8a1b0c64df65632064952ba674d1ad292210f7a10e1875742e758b9b72c9c2f5b74fbfa47fd85664d5103fb189fbd995431808b61f62d55a236013f35d7402c6da61c0ecf17137ffa3277ab8450c49c07281f9d2ad8bdfb0a7699d76a298ad4f29d3d092454ef676953cdd2527937510975cffc9c0351c1b99167d3076b8ddc60",
+  "witness_hex": "75a8d6c56c1106f50e401c4d3a5908dae1faf9d790cf05cfb008103e3abce2290000000005f5ffef29beb22afefb50fec8b8af7b0611f21a4b4bb3f050399ad7f420a8cc660a88961ad11c1e3a33c01615052060da558a1c97975f1f7e4e495f5645af8449a98568b310d15d3ee491e2115408dc7bb51e016049de2d41f6ce937f1cb95bb9f6d8b3d35209de2e35e800be2b4af20e4684edbffabdd0cc15b968974dc3c063e6db39080f3f2051610dac032e6078e713164d46c2b253fbadbe67bcf8ed8c47f26fc3b85e62baddd94b90772245f3084eb7949efaf682f86d04f6fa826e91bee0097b40",
   "leaf_index": 0,
   "witness_input0_bytes": 955
  },
@@ -215,7 +299,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "fc78aa20c5aa1c9e0becc447e5b5ceedf02069c5cb53339a1773ae52b79cf5b4",
+  "txid": "89efa11c1e2cd8414d58a62e4e59ebef7a08852d2a307410a62fa9a233a37e97",
   "confirmed": true,
   "block_height": 110,
   "program_bytes": 620,
@@ -225,7 +309,7 @@
   "cost_bound_milli_wu": 433300,
   "cost_bound_wu": 434,
   "program_hex": "e856740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e30d4c41c2a41c61a987d0283668141f69c81420e30e40a18fb1bc018ee8a5470df9eed60e1bc28b6232dedf3b1cdf980bd602751d013a1c8dc8030e38dc8430e1604ea8083f22c5a02ad4040348d91c2e000311620f07038481c40071281c52171700a0e330b8e405071f1028370f4ece8204e539b9547e548a00e5320506e5801c9b0503501bc9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e5d8281985b59b740230083f30271c71dc07070a9c51b1808f8703070e2050838c48b01b98f0f0f0281910283f32471c71c71b99b1469c0320401c4e2c72d34640840a0fcd2989b30000000000000000040b066dc8108141b95c71c71c830c38e38fc10502d24fc2821028373987770b072ac0e74393e28ee220409cea7c20398e09cc9f7118204e6c92073c48141b9e14d8a8900205835580840a0dcf51b9e938e160039e840a0dcf901cee8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4011c71c520506e4a9c71c71b98414240e8211727798714770e0401d0180d03728ce3731e70a80cc5980e6a40e6a12283f41c8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0741301d0580741901d07a0742481d09e0742980",
-  "witness_hex": "3931cdc09f81c4e9a5be1f87cd5072f947107f3aae57b91ec676c1abc0dabb410000000005f7cff0b7d6075a74bfc8a1c3a037abf5c1c4e24b2d323b646c21e308581be7c1cdfa56ae00fd2945dbf39caea8f4fc017129b067f63d2128c7ef1fa07d4572f85f3d2dcf6aa868abbff9277e22d08808e5c9a07d70c789c9d2c1700f81636f6c5e92a27976c9816e2215d0bb62693e5d826369fd0ca11d1ffc471bd6fb7a7e4298e059d696a235acc5e7a2cdcddef78324b40e4655c8a382f699ca5c5ef3445c35f2b0948851ffd50f3a2c02c7ef8393546c1f1971f4e3b0367f3e058bcec46c36b17140",
+  "witness_hex": "faaf833ab3889d020ff7f4e46b007fcfe4887d2c4807e02ae620b20bf8c5351a0000000005f7cff06787268b3105d4a2facad1d1aaba83f6fd84d7153b6e2de7106b40424d57d55bf95f2f4b34d099b479cc8fce9f06ef11e3d873861faa61b214504194995a7209ee99deba83bd12004369232f97e6abad1780443b182538b84ad2137c9a31f15ef21c438ccaf3e91ecc9a180ffbfcffc51b1f80e9cca4339499319db2983314e0f537d362e5108c334a703581cba444c339df5a6527ed309bab660c202149e9387d6fe4468acf763ac10e1b504cd7d78ad61fe68bba8cd952885f1f25ac7d86bda0",
   "leaf_index": 15,
   "witness_input0_bytes": 957
  },
@@ -233,12 +317,12 @@
   "cmr": "88c98f056e93b63625b790f97c85da84713a74d23b218d1808763644f0b62078",
   "commit_program_bytes": 595,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "512067fc199854ff9aa0e14317760bc0090d12867aa891c6c40cd5453ce7e2383d5d",
+  "scriptPubKey": "51200e9c72fec83e57fc42ce0b773cd4708755cb3a94cc167b5667a07d12c589ec18",
   "control_block_bytes": 65,
   "args": {},
   "leaves": 1024,
   "live_leaves": 1024,
-  "root": "7bb5b728ad39b19afc6fc345cca4c16d9879f133ebed896c8d3f7acf34216b2f",
+  "root": "9ba3a6c61d2d640ee87b73c8f157087bc1638e312108c0f8530e4255701af56a",
   "pool_amount": 106555891200
  },
  "depth10/exit_0_leaf_341": {
@@ -253,7 +337,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "7996116f3430af0e7f440acd120450dbee6591731ec613bc0fa09711ba0ed445",
+  "txid": "fdaf64524d4697334bb95005fdee9c4b2915e0b241792928e5ff08ea530a07bf",
   "confirmed": true,
   "block_height": 112,
   "program_bytes": 627,
@@ -263,7 +347,7 @@
   "cost_bound_milli_wu": 592844,
   "cost_bound_wu": 593,
   "program_hex": "e86e740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c8141b90061c6e419871c2c49d50107e458b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3e20e30d4c3f200507e42986e43987e430a00e002c8070206a0b780a0e08072588141b8ed3b3a081397e6e608fcc08a00e5f20506e6200e598281a80de4d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e173260a06616d66dd008c020fccc9c71c7701c1c2a7146c6023e1c0c1c3881420e3122c06e69c3c3c0a06440a0fcd51c71c71c6e6cc51a700c81007138b1cb4d190210283f37a626cc0000000000000000102c19b720420506e618e38e39061871c71f820a05a49f850420506e790eee160e5581cf4727c51dc4408139ecf840734c139afee230409ce4a40e7e9028373f29b15120040b06ab0108141ba008dd00271c2c00740020506e80a039f50503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81a38e38a40a0dc9538e38e3730828481d0722e4ef30e28ee1c0803a0901a06e519c6e63ce150198b301cd481cd424507e85104038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83e03a1100e84a03a1540e86103a19c0e86b00",
-  "witness_hex": "95c4efe63b94f554d33fb5ac701a9d849d4a8cd06e9347666f0df416c70a3ec000000000061f344aa467ad9d4b1f009302ef002a9fafc093468d35e7ce2302d68ccdba25e21efadda12f1221be4f9c13efafdbdecc73763ee38c2006b1698eb6937838e477e9a4d03d721eee1cff4fbbe1b41801b0c8e71500dd1bed3d0baee671334089b5cae84bb8e39a80df81d26be3be9e7206072a2207ba89bdf9931a37bb7be66c3a044631cc51679cad03456021d80034b0ca04c0dc0ee65575626a6800395c6f820a3e8ab8208c72f45c9623511eb1c984b3f21ac1293ad329fa38f44fb1a08c1a96e1462ac3133b2f41f0aba2f899e532144d1991fb538dcdea8288c75e69242c94940952dad37c1180399b4cc0f2590f07a3219239252620716a5b11d61975c59c9a6d048ef7f6d158669ef13548ee6448b1dd97616bb74edf12ca0f9341d44e00df127e969a0d986bf16bd1d345f6ab9dc4ce23e02f5cbb1dc1ba406cbe432d00fd7ecb0cc016134c2b683613aaa52ea32b55d291fd26b3610cb1c02fa5a4b8315180c1ed0ad9db24d7799b2bfdacf80e7bf385df6cd28e9b176f050b2bd88f74c1a641c0",
+  "witness_hex": "7a529854f08dcf3ecf0e0244a9c11e660c2682a404813d4e2395dc1eff28fe9800000000061f344ae50f2fae5a25febfe10d74ac01ed5301d7ea369b8bd9a0de66972a4fc7268635e8a08249e517a9b9ac10751dad391ed70d8ecb810b3870f5598a9edcc14462f82977de128a044e7899ee115b230b61a7cae5641bab1094928c7af9ee8ccd356bf8918f6e0f3b92cdc2a54cb91335643f87477c26b7d9e31b19a8dcb34f568d864e510c4046927e311cd51a8706efd690f1e6125effa6262fa5cf22311ff42bb6aeb994eb96e88a287af70fa564b836b7b9ec371b1cb8c8cf762c9c3b8db8f41d1849f2911b5e96b438a47b3b7debb719eaec916b5f244097c339b71f80855b8b9674cbccd7777c19fe2eb94ce31eeac025ca23a7d42c1a347f167b9747eec227c801782e6cd7c8fa16ac883ef3ef6645bc72146302a5c79fc8e43d31e3b3f7d840dad4e1dc0c3bb74ac220b9af2e6a1e46f1f760ed173b3d5cc80e55019e41d039210fd2eadbe8941641de4e76932c72c5250333782e32ef9d25eaca9defb6358e5e5cd2ccb2eb65a06604c50d07a6641c91f5964d22c7782423b5eae4eba5871e80",
   "leaf_index": 341,
   "witness_input0_bytes": 1159
  },
@@ -279,7 +363,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "ca94a77be7d3d9030d41c66cf8556b6d4adda383b576037c4d935ea8fb0728ea",
+  "txid": "00a2d63b26f53f251286220c2d467755256312ab5eb3a61b9219555ddc38ea26",
   "confirmed": true,
   "block_height": 113,
   "program_bytes": 649,
@@ -289,7 +373,7 @@
   "cost_bound_milli_wu": 592844,
   "cost_bound_wu": 593,
   "program_hex": "e86a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c81431f6378031dd14a8e1bf3ddac1c378516c465bdbe7639bf3017ac04ea3a0274391b90261c71b90a61c2c09d50107e460b4055a8080691b2385c000622c41e0e0709038800e25038a42e2e0141c66171d107186a61f8f0507e40986e41987e410a00e002c8070206a0b780a0e08072488141b8c93b3a08139766e5f1f97a28039748141b9840395e0a06a03793600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85cc78281985b59b740230083f32a71c71dc07070a9c51b1808f8703070e2050838c48b01b9a30f0f0281910283f34c71c71c71b9af1469c0320401c4e2c72d34640840a0fcdc989b30000000000000000040b066dc8108141b98138e38e41861c71c7e082816927e14108141b9e03bb8583956073c9c9f1477110204e7a3e101cd084e69bb88c102738a9039f640a0dcfaa6c54480102c1aac0420506e7f8dcfe9c70b001cfe20506e806039f10503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81638e38a40a0dc9538e38e3730828481d06a2e4ef30e28ee1c0803a0801a06e519c6e63ce150198b301cd481cd424507e84d04038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83a03a1000e84603a1440e85d03a18c0e86700",
-  "witness_hex": "fe6444859a5d8920ddfc34fe7be385d39aa16c4ae865c61b00e1a6228dadf7d80000000006719d00e39c11c26deb6efa50701804f7811fd5bc7bb7ebdb74ddb8a68a4d0b0ab8283fff584a91f91d8550c88feb722b0387065919b64613fadae182d01ed08342b3a358423d9ecd75e8fd2492c47b0227a0b3a45836ee4f1a302c4de23b2a11d584132620731d16a47220489b17bb9769774328f4db1a6901733bc685bd9616fc65e994d23747850d8ee00ae8a0e55ffe1552810f3c9bcd6fbff8f8f8f6d24d7e9801bdb17116caba7a860a72b83304123c997ad02d9333b6bef5aacf63ca7c3567028d2ad87c37f863ba61f3560321fe53dd4a681b146dd8bce364fb8378c2af235b966c2b33c900e5c986b300a86e15ab08c0abf8e68cf3afcd7df7c4f683eb5fac63235bd6a6c43ec66d4469073bba6b65a86792a3d52c3f9db1cfb1fbd5ee12ed97d06732ba4041a40207cd68691c3095e9d359f1131036ab4da8c21e845d7e564dd813600a6cbc399a6e50f840071ac2ec1125e088866e54ec3dad6c4dd1c9e1af5f626836affe8f5fbc2372a05c6b7f8218c47075a43bb665dfc0a41c18ee445140",
+  "witness_hex": "6d4fcf66f633e71185b29df44073b54914829d4bc678365c7ce16071293a70830000000006719d00d480ab1e19d722ab16d929d4e7426d551e98b8aa09833f31acb37d5f0ca85f67835706469bcd76b08676ada6ac87580c7eaa10bf6aa2be76227be61517f6290a73335badc77e26f73438291222c712a7cb81e006d6618223521d84935a76ea396b338443fc872d381d70bc8dc59ce1bf4d24c3f1d1f2fdad33f49adbcdb2dbd03cb45d9d64c5a423442aebd1c895a442dcdda4d6569dd955dac98bf0aee088dfbe47290771eddf71d63cb8efb15502de8f26a65e58663679ad795ca7d4e6b79a1e49cab600e0908b3060e27c36c2e9d276fc353cd2cc1dfef3ee0e8277fb8a0acac9ad7376c709473bab38b5d4ce85a9481416af6f5fdd3b7d46051cc62eb4c5bbc1597164982f47f82e8cc7871dd81b850112c92dfe02c3c38842825249bdaf5ce19717c77c0e9e9864ebfaff4fbe762e0d351e6037affb25d0f1686773d8b0dac6d9bd97cfe40f5173a7bdc18e77e4cc6fd557fcefb96b0541f22bd7c4b82041fffbbfa6b773c837aa4669115aadc6fdab0f77d39e833d22fb3bbb77c4eb469800",
   "leaf_index": 1023,
   "witness_input0_bytes": 1181
  },
@@ -305,7 +389,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "c78a7a4a93debd7aeecb3796c11f5755d35217871ad03f5d34e5c93abaa21624",
+  "txid": "06a53d995056f226eac88a5893b74dafda68989ba06276b2cd2950946e5a61ee",
   "confirmed": true,
   "block_height": 114,
   "program_bytes": 647,
@@ -315,7 +399,7 @@
   "cost_bound_milli_wu": 592844,
   "cost_bound_wu": 593,
   "program_hex": "e86a740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa0506cd0283ed3902841c61c8141b90061c6e419871c2c49d50107e458b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171d107186a61f8f0507e40986e41987e410a00e002c8070206a0b780a0e08072488141b8dd3b3a08139766e5f1f97a28039748141b9840395e0a06a03793600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85cc78281985b59b740230083f32a71c71dc07070a9c51b1808f8703070e2050838c48b01b9a30f0f0281910283f34c71c71c71b9af1469c0320401c4e2c72d34640840a0fcdc989b30000000000000000040b066dc8108141b98238e38e41861c71c7e082816927e14108141b9e03bb8583956073c9c9f1477110204e7a3e101cd104e6afb88c102738a9039f640a0dcfaa6c54480102c1aac0420506e7f8dcfe9c70b001cfe20506e806039f10503601c180e16071101c54419f0d4080397e2c8072f80e5efc340341091420c0f31806006820507e81638e38a40a0dc9538e38e3730828481d06a2e4ef30e28ee1c0803a0801a06e519c6e63ce150198b301cd481cd424507e84d04038681c4a171900c41ca80395c6c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff70c0397e07314173200368399d039a90b9ae01c045cde00e060e77c0e83a03a1000e84603a1440e85d03a18c0e8670",
-  "witness_hex": "0062e8844b72d113e10b75fea66d7e18f26ca7bbec38375cbd176d5e243b18db0000000005f5ffef4dad06877b4d19740574275d135b870b10f74a63b5e9d46feaa2faa225ee6b4b734cde93d5583a96fd2d4a609a93025c0fb07c02fe78d6ac8f8ad9e9b4124c1d9822a11b278df54fd96317907e99d8e5a79a18e46988eaff6175b644cd3b45c348d8e9214f5afade3335082ea95d6f4fb9157039d1a0e5067234d16520a7be902a27aca9afc3b2b5896274b8c7b00b53c2a7b636cf49b49ae2483bac048b873997b9b7174a29526d5c8a6c140aaae3de0c782eac78fea5c78d5e78f2f00efee9a8d3c78566e81e93bbfcc2b447e3305a485b1f9a183dd4a49df70f06cf27a388b93e23cedcdd1d081299220f5aceaa526df4aeb5f8981c1928f259b66e970afbce9a465d81fef12ff18eb818cde4cec2e3473d6d0293551c5d601a5f76edd70a7a7f9c27576ec083a8705ea5f8e04446c2c584a03293f05d28f8f1b80d822c8869906252f56efbb7f8a6dbf1be747647d4159c99ca36ed454650a98ccc076a43f474a396bc12246fb810e3cc7f1502c8caf0d5c47d5f9621859c1dd4751db4767400",
+  "witness_hex": "717c1a2cc36122615883c2e32ef3999562bb97246877d5171fe5395e7ec522ae0000000005f5ffef1374f021a7be69c5dcb7c3a9423f902a72eb8aed7592162e80e54068b0e5d34f268075542252f96daffb107447b73e8dae662440834862ce3266f51780ebd68ca1c634c4e03c34337901f4461b1ade8c9411b15e9076e62fee6e2e94826f68554dc3c55329b8195c21116ef47160f5798b9fbf0cfa7c1e58dff5390bd9748c486aa10b42cc27cb41a56353090324d7eda74e1df91d6c1c7d704d0d3158988b0983b371f6279f0cda52028a771a4bbb6ea21dd03b69d7ed9ad90bec2e25eae000b8edbd3014e7918a028f4b9f97224131f9a882b83b29a274515c26315c7dcef3dca3d475596a9efdcd99c24236fd658708cb1293c6a93ce68415d8163a237223344dbbf103c1c4797811cc05e0062384e9ec90d93967e9bd4eafb0970ee34d9fe70809dc7f3423253d743c0cf1020d551ad4a7bec93cd8be2aaf6b6fb797462baf38314d53431b3bee6a5b7073c6bce2c6cf4cbd39306f7632eff70d28a55c872e288bbc1a4d01037f7ad2af2ac53443fd51c47bd96f69023819947636cf8fd5dcc0",
   "leaf_index": 0,
   "witness_input0_bytes": 1179
  },
@@ -323,12 +407,12 @@
   "cmr": "a942d5e18dc1ab1f84725171b1dfb4097be7d01483a3ab5b763a9a4fad6a9cc7",
   "commit_program_bytes": 608,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51200c86eb79eefafdce36c6b73fa03b295f68a8814cd994226639176cf7cc7f99a2",
+  "scriptPubKey": "51209286737b2a7698de1221dabd7b4c9d0dc3523750c3ab3cc557c6b642de9a36de",
   "control_block_bytes": 65,
   "args": {},
   "leaves": 1048576,
   "live_leaves": 3,
-  "root": "6d951956fecf8cfe751ddbc3a017d023c449384d5cba5da17b1fac4f9c15436e",
+  "root": "a3d5e521a524c0b1da3062dd1188b3e083d31e1306e5c47ea6f06783fc580bb9",
   "pool_amount": 300047514
  },
  "depth20/exit_0_leaf_699050": {
@@ -343,7 +427,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "29d0f798da8080c4125eff156bede6d86fa531cc54de0de4e2043732d2d0247b",
+  "txid": "2096a085bc13b8c3c7dbc97476fc8c92d496004dd5dc8e918eb1ec43384d0431",
   "confirmed": true,
   "block_height": 116,
   "program_bytes": 640,
@@ -353,7 +437,7 @@
   "cost_bound_milli_wu": 863548,
   "cost_bound_wu": 864,
   "program_hex": "e878740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa050838c3530fbc506cd0283f043902841c61c8141b90e61c6e451871c2c49d50107e490b6055a8080691b2384da0622c42e01c100d02e05901a8541c80e1a071201c52071685c6402838dc2e3c0141c810b91041c61a987e450a0fc8f30dc9130fc901401c005900e040d416f0141c100e501028371f2767410273126e630fcc58a00e62102837324072f4140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b99d050330b6b36e80460107e68ce38e3b80e0e1538a363011f0e060e1c40a107189160373621e1e0503220507e6d0e38e38e3737a28d38064080389c58e5a68c8108141f9c731366000000000000000008160cdb90210283731271c71c830c38e38fc10502d24fc2821028373dc7770b072ac0e7cb93e28ee220409cfb7c2039a909cd977118204e74d20740220506e8034d8a8900205835580840a0dd0186e80b38e16003a0290283740a01cff8281b00e0c070b038880e2a20cf86a0401cbf1640397c072f7e1a01a0848a1060798c03003410283f4121c71c520506e4a9c71c71b98414240e8431727798714770e0401d05c0d03728ce3731e70a80cc5980e6a40e6a12283f42d8201c340e250b8c80620e5401cae3620508131fba1b5a0b0565f78e1b7dd25f26caef8c0d4b457f55af56123d6ffb8601cbf0398a0b99001b41cce81cd485cd700e022e6f00703073be0742401d09c0742a01d0be0743581d0e20743a8",
-  "witness_hex": "954ba8a28ce60ecceb83e42d55ae823db58dd0d701e6475ce14a10b89d476c790000000005f61ede00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2526b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a718cfe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47f8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c477776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3d89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860ad76b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b189bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84e8e75b4ce5a1120edb60b3fd9efa2c18b2ddab09797b565e428e6d69856430bd5e9093d388070ba10275ec6b64f7aa7414ce9c6078d7e68a895efc8f4ed894a4f123f47d2b14978db2fcdb37c40035b489ab8426bea30a2b0d8681e4de287675f95b12a8729e3a92119dd8c06e61cbb334c85e61cb7531245c8bef3b6baeef62a0",
+  "witness_hex": "a108881589d369148db9bac79e45e4bfadde6b0e38c385c64fb89492de325ea00000000005f61ede00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2526b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a718cfe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47f8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c477776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3d89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860ad76b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b189bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84cbd83677e70d011f85529019862826d401426e14fb8ee9ec26dc36171b4d29a8103a59ce6df71c5a7e738618847a1ce2ea8442b49dc467c39cc02332cfaf27b57182203e16ade9f253f74209e5e359d4b579c367d445f97216b52537079b2417e964fb034b493e587941829e948c6ddb56ae765d2f15760dc26c4fb69818f84d70",
   "leaf_index": 699050,
   "witness_input0_bytes": 1493
  },
@@ -369,7 +453,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "fa10470256c1447b02c8067e45936633c4a606ce15dacf06bfbf58efa585b997",
+  "txid": "06eb84de071e9cfc2cb925143051c97741510363c75f3f9eef7afd185b327e7d",
   "confirmed": true,
   "block_height": 117,
   "program_bytes": 661,
@@ -379,7 +463,7 @@
   "cost_bound_milli_wu": 863548,
   "cost_bound_wu": 864,
   "program_hex": "e874740a1d0284eac81081420c41871c2c5aae40840a0dad061c70b16ab80210283705d588210284da400000000000000000000000000000000000000000000000000000000000000001081439b871c6e20140b120e31061883854838c3530fa050838c3530fbc506cd0283f043902841c61c8141b90e61c6e451871c2c49d50107e490b6055a8080691b2384da0622c4cd96822e16b02030b63bf7737f0c9ce14932567cf6cad2b76c586d6fe2f6bfa4e180709038800e25038a42e2e0141c66171c00a0e3d0b90841c61a987e430a0fc8b30dc8d30fc8c1401c005900e040d416f0141c100e4e1028371d27674102730a6e620fcc38a00e6110283731c072e4140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b999050330b6b36e80460107e67ce38e3b80e0e1538a363011f0e060e1c40a1071891603735a1e1e0503220507e6c0e38e38e3737228d38064080389c58e5a68c8108141f9c331366000000000000000008160cdb90210283730a71c71c830c38e38fc10502d24fc2821028373d47770b072ac0e7bb93e28ee220409cf97c2039a509cd777118204e73d20740020506e7fd362a24008160d56021028374041ba01ce385800e80640a0dd020073f60a06c038301c2c0e22038a8833e1a810072fc5900e5f01cbdf868068212284181e6300c00d040a0fd04071c7148141b92a71c71c6e61050903a0fc5c9de61c51dc3810074150340dca338dcc79c2a033166039a9039a848a0fd0ae08070d038942e3201883950072b8d8814204c7ee86d682c1597de386df7497c9b2bbe30352d15fd56bd5848f5bfee18072fc0e6282e64006d0733a073521735c03808b9bc01c0c1cef81d0880742501d0a00742d81d0ce0743681d0e2",
-  "witness_hex": "17ce35541367f94a32fd28e076221a0f6fb813d1e58e7439f9a955a684f003170000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec371d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2426b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a7188fe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47e8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c077776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3c89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860a976b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b188bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84846a82d2b4a6c4ec15e8c58675940358db35cd73741f6047a8997b12f2eef4161962fa46229cbd34e2b7d2af96a390452fe434c9f2e832c327dec43234383d30e3231b5e466195cffaaba882777a992eba8245162ece75580eec40c507f681e09cb7417ed0bb1dc18ee2d260f7ca0ea0f9485f5b9a778bdc50b5c8e31159ceea20",
+  "witness_hex": "f501f3bffa93642ab16396ba07f0698f392d447fea3cbd13dd4eaec96f8e621d0000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec371d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d307e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f2426b0052694fc42fdff93e6fb5a71d38c3dd7dc5b6ad710eb048c660233137fab0084f66039132cffc1a285c7bdc423733d942cf99e186cdbd66adf9ce572a7188fe426e338f5fff6296cc2423d81680ec36e145a5563770769eeef326c27f4c94808c1f4d78d2540de8ea434ce4b4a8f80514d4481b0813e2cbcc796a9b45a47e8c085674249b43da1b9a31a0e820e81e75f342807b03b6b9e64983217bc2b38e5041a2860dd151d3df3b7d6ce89de1bdf25fc1de9f2cfe1bad1b5d316e31014c077776af0b2a8b7a7bfe786323168e501b5e4dba226f05b3eaec513d700089a09845b1e16bc80adcbe6317444123980fb6ad29f7d6bd0fde1afc58af946a46b3c89a434ae1febd7687eceea21d07f20a2512449d08ce2eee55871cdb9d46c12333999edffde88f84923d1599d009f62621a1014ec28f115d242ea230c289b860a976b6112ae519adc3dd144dc65728886d23cd1aaf4517ed7bf08ea2d2e9420088a0fc1b5d0397f7c8affa6e1de3948403856c802107bb56881c94071b83c6b188bdcdb3293188c9807d808267018684cfece07ac35a42c00f2c79b4003825305d5d5ac004b950b616112986330336852c33f4c3df690d36ad2285b41e78e7eb84846a82d2b4a6c4ec15e8c58675940358db35cd73741f6047a8997b12f2eef41604f432862e9af189d35cd51dfb8889d1e85526e4fb8eba316f8acaa0041551e96d387e04f0790dd93be27f54e75efa74db0474248a89a50a648e4e6a0725b237740a2f2597a0df9f38ad87cd6beb8685fa4823a5715cb717bd3db2039d3461c6f0",
   "leaf_index": 0,
   "witness_input0_bytes": 1514
  },
@@ -387,12 +471,12 @@
   "cmr": "34a14fe0f230a61f1e27b6acc338ba90dcfa2b6028d16f33ff9f8350beb2b139",
   "commit_program_bytes": 565,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "5120a62bb09df5e2595f8da5199ca87ceb3d68d643b11263946676befb9b1d8e7a43",
+  "scriptPubKey": "512043abebe5c231c232705858991e85a81effe147db709820b86c0ca490efdc3ad5",
   "control_block_bytes": 65,
   "args": {},
   "leaves": 16,
   "live_leaves": 1,
-  "root": "23d28f9c60e51f10bfc533b6c07a539862b642c45685673e5394dafeb6268173",
+  "root": "a017e0e5c4902b637726ec5f4ed51cc08c5a6cb4b8b3a69142e3eb16974552b6",
   "pool_amount": 100007919
  },
  "depth4_last_leaf/exit_0_leaf_6": {
@@ -407,7 +491,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001000"
   },
-  "txid": "fc648b4b1ac8c0c9cc71dd02759b43b92234cfb1284e3316659a3ffeb5335e7c",
+  "txid": "a1b88251730691c933159abb63f5b53b0823c25cbbfde4081e6dd18f758ad24f",
   "confirmed": true,
   "block_height": 119,
   "program_bytes": 403,
@@ -417,7 +501,7 @@
   "cost_bound_milli_wu": 259614,
   "cost_bound_wu": 260,
   "program_hex": "e781d028740a13ab2042050831061c70b16ab902102836b41871c2c5aae00840a0dc175620840a13690000000000000000000000000000000000000000000000000000000000000000042050e6e1c71b880502c4838c3531070a907186a61f40a0d9a0507da72050838c39028371f9871b90461c70b12754041f9142d8156a0201a46c8e1368188b10b807040340b816406a15072038681c48071481c5a171900a0e370b8f405072088141b8a13b3a08139566e571f95a28039548141b9680727c140d406f26c00011f0e2f04212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613170b97e0a06616d66dd008c020fcc29c71c7701c1c2a7146c6023e1c0c1c3881420e3122c06e64c3c3c0a06440a0fccb1c71c71c6e67c51a700c81007138b1cb4d190210283f352626cc0000000000000000102c19b72042050c677fd8d16a279d05c56f10fdfb196cacf92062a95aaecf0d9821ec01e62c041890c03003785c147e73c100e23038bc2e340188b904033072940e6c00e6d80e6f00e71c0e74c0e7640e774",
-  "witness_hex": "1465efa449b87a36b08a2bb0462f20c240652f16264ad201b30f860ab07c4ba70000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d327e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f24a2fafcebd514aa87c835e38683ec702d9f271baec3c2eb5dd8648b0f08ac548dcaddebc97b9d39e7acb8d58d04a661f1a9cae99c42b9f20a604b6f8cb83d1af40",
+  "witness_hex": "3e17ec1c8e73bba768f62d2c9e814c2784a6d7bc79ccc677cc25f2a6eae8ee160000000005f5ffef00000000000000000000000000000000000000000000000000000000000000006d2b4c5f0bdcda34b119abccbbcfdf654672ea48e0693121dd7f7cf50c1bd4ec771d9bead24b33cf4792753cdd2d48d7e95941aab088934e7e50ff352480a5d327e1480c30220b2d1fb5dc60cf3c64e78cd6e57f34febbd77e76b4144dc6b3f24746904027d3e3c6d08904f0dbed4e875932c824c5076104d24e2b1ff05edc70447cf6f9e567302148ee9fc8a32f224a6b97b97b76b30b7025a1bda95fb8f867a0",
   "leaf_index": 6,
   "witness_input0_bytes": 740
  },

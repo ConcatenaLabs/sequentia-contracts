@@ -30,6 +30,15 @@ REFUSAL = ("rpc-error", "reject-reason", "block-error")
 OUTCOME = ("expected", "testmempoolaccept", "rpc-error", "confirmed")
 FACT = ("rust_bitmachine_executed", "rust_error", "node_testmempoolaccept", "compile_seconds")
 
+# Programs this repository changed after the baseline run, so that their
+# rows compare two programs rather than two compilers.
+CHANGED = {
+    "s2": (lambda k: "_plain_" in k,
+           "The plain node also checks that each child output carries no nonce, as the "
+           "compact and chain nodes do through the output hash; the 0.4.1 run measured "
+           "the node without that check."),
+}
+
 TESTS = {"s1": "S1 one key", "s1c": "S1 ceilings (annex)", "s1d": "S1 ceilings (witness data)",
          "s2": "S2 tree node", "s3": "S3 custom signature hash", "s4": "S4 state",
          "s5": "S5 leave one", "s6": "S6 relative timelocks", "s7": "S7 oracle"}
@@ -64,6 +73,21 @@ def load_records(directory):
     return res
 
 
+def verdict(entry):
+    """What a refusal or an outcome says, in the terms both runs record: did the
+    mempool refuse, with what reason, and did a block refuse. The harness now
+    starts its nodes with -par=1, so its block errors name the script failure;
+    the baseline's block errors were recorded without it and say only
+    block-validation-failed, so block errors are compared as refused or not."""
+    import re
+    reason = entry.get("reject-reason") or re.sub(r" \(code -?\d+\)$", "", entry.get("rpc-error") or "") or None
+    if entry["kind"] == "refusal":
+        return {"mempool": reason, "block refused": True}
+    refused = entry.get("expected") == "refused" or entry.get("testmempoolaccept") is False
+    return {"mempool": reason if refused else "accepted",
+            "block refused": bool(refused and entry.get("mined") is False)}
+
+
 def fmt(v):
     return "" if v is None else str(v)
 
@@ -82,7 +106,12 @@ def report(base, new, new_version, base_version):
              "`harness/baseline/simplicityhl-%s.json`." % (new_version, base_version, base_version), "",
              "Keys and salts are fresh in every run, so commitment roots differ between runs "
              "and are not compared here; `docs/compiler-roots.md` compares roots for fixed "
-             "inputs. A signature is 64 bytes either way, so sizes are comparable.", ""]
+             "inputs. A signature is 64 bytes either way, so sizes are comparable.", "",
+             "A refusal is compared by its verdict: the mempool's answer and reason, and "
+             "whether a block refused it. This harness starts its nodes with `-par=1`, so a "
+             "block's error names the script failure, and asserts it; the baseline was "
+             "recorded without that option, when a block's error said only "
+             "`block-validation-failed`.", ""]
     summary = []
     for t, title in TESTS.items():
         b, n = base.get(t, {}), new.get(t, {})
@@ -92,19 +121,25 @@ def report(base, new, new_version, base_version):
         spends = [k for k in common if n[k]["kind"] == "spend"]
         progs = [k for k in common if n[k]["kind"] == "program"]
         refusals = [k for k in common if n[k]["kind"] in ("refusal", "outcome")]
-        changed_sizes = [k for k in spends + progs
-                         if any(n[k].get(f) != b[k].get(f) for f in SPEND + PROGRAM)]
-        changed_refusals = [k for k in refusals if n[k] != b[k]]
+        is_changed, why_changed = CHANGED.get(t, (lambda k: False, None))
+        changed_sizes = [k for k in spends + progs if not is_changed(k)
+                         and any(n[k].get(f) != b[k].get(f) for f in SPEND + PROGRAM)]
+        refusals = [k for k in common if n[k]["kind"] in ("refusal", "outcome")
+                    and b[k]["kind"] in ("refusal", "outcome")]
+        changed_refusals = [k for k in refusals if verdict(n[k]) != verdict(b[k])]
         summary.append((title, len(spends), len(progs), len(refusals), len(changed_sizes),
                         len(changed_refusals), sorted(set(n) - set(b)), sorted(set(b) - set(n))))
 
         lines += ["## %s" % title, ""]
+        marked = [k for k in spends + progs if is_changed(k)]
+        if marked:
+            lines += ["Rows marked † compare different programs: %s" % why_changed, ""]
         if progs:
             lines += ["| program | committed bytes, %s | committed bytes, %s | control block |" % (base_version, new_version),
                       "|---|---:|---:|---:|"]
             for k in progs:
-                lines.append("| `%s` | %s | %s%s | %s |" % (
-                    k, fmt(b[k].get("commit_program_bytes")), fmt(n[k].get("commit_program_bytes")),
+                lines.append("| `%s`%s | %s | %s%s | %s |" % (
+                    k, " †" if is_changed(k) else "", fmt(b[k].get("commit_program_bytes")), fmt(n[k].get("commit_program_bytes")),
                     delta(b[k].get("commit_program_bytes"), n[k].get("commit_program_bytes")),
                     fmt(n[k].get("control_block_bytes"))))
             lines.append("")
@@ -114,8 +149,8 @@ def report(base, new, new_version, base_version):
                       "|---|---:|---:|---:|---:|---:|---:|"]
             for k in spends:
                 x, y = b[k], n[k]
-                lines.append("| `%s` | %s | %s%s | %s / %s%s | %s / %s%s | %s / %s%s | %s / %s%s |" % (
-                    k, fmt(x.get("vsize")), fmt(y.get("vsize")), delta(x.get("vsize"), y.get("vsize")),
+                lines.append("| `%s`%s | %s | %s%s | %s / %s%s | %s / %s%s | %s / %s%s | %s / %s%s |" % (
+                    k, " †" if is_changed(k) else "", fmt(x.get("vsize")), fmt(y.get("vsize")), delta(x.get("vsize"), y.get("vsize")),
                     fmt(x.get("program_bytes")), fmt(y.get("program_bytes")),
                     delta(x.get("program_bytes"), y.get("program_bytes")),
                     fmt(x.get("witness_bytes")), fmt(y.get("witness_bytes")),
@@ -126,12 +161,13 @@ def report(base, new, new_version, base_version):
                     delta(x.get("budget_wu"), y.get("budget_wu"))))
             lines.append("")
         if refusals:
-            lines += ["Refusals and outcomes: %d compared, %d identical in every recorded string "
-                      "(mempool error, block error, outcome)." % (len(refusals), len(refusals) - len(changed_refusals)), ""]
+            lines += ["Refusals and outcomes: %d compared, %d with the same verdict (the mempool's "
+                      "answer and reason, and whether a block refused)." % (len(refusals), len(refusals) - len(changed_refusals)), ""]
             if changed_refusals:
                 lines += ["| case | %s | %s |" % (base_version, new_version), "|---|---|---|"]
                 for k in changed_refusals:
-                    lines.append("| `%s` | %s | %s |" % (k, json.dumps(b[k], sort_keys=True), json.dumps(n[k], sort_keys=True)))
+                    lines.append("| `%s` | %s | %s |" % (k, json.dumps(verdict(b[k]), sort_keys=True),
+                                                       json.dumps(verdict(n[k]), sort_keys=True)))
                 lines.append("")
         facts = [k for k in common if (n[k]["kind"] == "fact" and n[k] != b[k])
                  or n[k].get("compile_seconds") is not None]

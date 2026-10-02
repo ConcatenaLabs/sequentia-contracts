@@ -28,6 +28,12 @@ def chain_src(r):
 
 class S2(SimBase, BitcoinTestFramework):
     NAME = "s2"
+    # The plain form checks the child's fields one by one with `assert!` on a
+    # match or a bool; the compact and chain forms compare jet results.
+    BLINDED = {"plain": "Assertion failed", "compact": "Assertion failed inside jet",
+               "chain": "Assertion failed inside jet"}
+    NONCE = {"plain": "Assertion failed", "compact": "Assertion failed inside jet",
+             "chain": "Assertion failed inside jet"}
 
     def set_test_params(self):
         self.chain_params()
@@ -89,43 +95,48 @@ class S2(SimBase, BitcoinTestFramework):
             return self.wallet_sign(t) if extra_in else t
 
         if negatives:
+            # Each refusal names its control: the valid unroll it differs from
+            # in the one property it breaks, accepted by the node.
+            J = "Assertion failed inside jet"
+            ok = unroll(good + [self.fee(RESERVE, self.X_OUT)])
             y = self.wallet_utxo(CHILD, self.Y)
             outs = [self.out(CHILD, spks[0], self.Y_OUT)] + good[1:] + \
                    [self.out(CHILD, self.wallet_spk(), self.X_OUT), self.fee(RESERVE, self.X_OUT)]
-            self.reject(unroll(outs, [y]), tag + "/neg_wrong_asset")
+            ctl = good + [self.out(CHILD, self.wallet_spk(), self.Y_OUT), self.fee(RESERVE, self.X_OUT)]
+            self.reject(unroll(outs, [y]), tag + "/neg_wrong_asset", J, control=unroll(ctl, [y]))
             outs = [self.out(CHILD - 1, spks[0], self.X_OUT)] + good[1:] + [self.fee(RESERVE + 1, self.X_OUT)]
-            self.reject(unroll(outs), tag + "/neg_wrong_value_minus1")
+            self.reject(unroll(outs), tag + "/neg_wrong_value_minus1", J, control=ok)
             x1 = self.wallet_utxo(1000, self.X)
             outs = [self.out(CHILD + 1, spks[0], self.X_OUT)] + good[1:] + [self.fee(RESERVE + 999, self.X_OUT)]
-            self.reject(unroll(outs, [x1]), tag + "/neg_wrong_value_plus1")
+            ctl = good + [self.fee(RESERVE + 1000, self.X_OUT)]
+            self.reject(unroll(outs, [x1]), tag + "/neg_wrong_value_plus1", J, control=unroll(ctl, [x1]))
             outs = [self.out(CHILD, self.p2tr()[0], self.X_OUT)] + good[1:] + [self.fee(RESERVE, self.X_OUT)]
-            self.reject(unroll(outs), tag + "/neg_wrong_script")
+            self.reject(unroll(outs), tag + "/neg_wrong_script", J, control=ok)
             outs = [good[1], good[0]] + good[2:] + [self.fee(RESERVE, self.X_OUT)]
-            self.reject(unroll(outs), tag + "/neg_wrong_index_swap")
+            self.reject(unroll(outs), tag + "/neg_wrong_index_swap", J, control=ok)
             outs = [self.fee(RESERVE, self.X_OUT)] + good
-            self.reject(unroll(outs), tag + "/neg_wrong_index_shift")
-            self.reject(self.blinded_tx(u, prog, P, W, spks, good), tag + "/neg_blinded_child")
+            self.reject(unroll(outs), tag + "/neg_wrong_index_shift", J, control=ok)
+            blinded, explicit = self.blinded_tx(u, prog, P, W, spks, good)
+            self.reject(blinded, tag + "/neg_blinded_child", self.BLINDED[form], control=explicit)
             outs = good[:-1] + [self.fee(RESERVE + CHILD, self.X_OUT)]
-            self.reject(unroll(outs), tag + "/neg_missing_child")
-            # the T1c substitution: child 0 as witness v0 with the 33-byte program P||0x01
+            self.reject(unroll(outs), tag + "/neg_missing_child", J, control=ok)
+            # the T1c substitution: child 0 as witness v0 with the 33-byte program P||0x01.
+            # Relay policy refuses the output script first; the block refuses the covenant.
             bad = bytes([0x00, 0x21]) + spks[0][2:] + b"\x01"
             outs = [self.out(CHILD, bad, self.X_OUT)] + good[1:] + [self.fee(RESERVE, self.X_OUT)]
-            self.reject(unroll(outs), tag + "/neg_v0_33byte_program_substitution")
+            self.reject(unroll(outs), tag + "/neg_v0_33byte_program_substitution", J,
+                        mempool="scriptpubkey", control=ok)
             # an unpruned program (plain form only: it still holds its FAIL nodes)
             if form == "plain":
                 t = self.mktx([u], good + [self.fee(RESERVE, self.X_OUT)])
                 self.sim_satisfy(prog, t, 0, {}, prune=False)
-                self.reject(t, tag + "/neg_unpruned_program")
+                self.reject(t, tag + "/neg_unpruned_program", "Program has FAIL node")
             # child 0 explicit but carrying a nonce (an ECDH pubkey): same asset, value, script
             ck = bytes.fromhex(node.getaddressinfo(node.getnewaddress("", "blech32"))["confidential_key"])
             o0 = self.out(CHILD, spks[0], self.X_OUT)
             o0.nNonce = CTxOutNonce(ck)
             t = unroll([o0] + good[1:] + [self.fee(RESERVE, self.X_OUT)])
-            res = self.accept(t)
-            self.rec(tag + "/probe_explicit_child_with_nonce",
-                     {"testmempoolaccept": res["allowed"], "reject-reason": res.get("reject-reason")})
-            if not res["allowed"]:
-                self.reject(t, tag + "/neg_explicit_child_with_nonce")
+            self.reject(t, tag + "/neg_explicit_child_with_nonce", self.NONCE[form], control=ok)
 
         # positive A: fee from the in-node reserve
         tx = unroll(good + [self.fee(RESERVE, self.X_OUT)])
@@ -174,7 +185,11 @@ class S2(SimBase, BitcoinTestFramework):
         t2.prev = tx.prev
         self.pad(t2)
         self.set_sim_wit(t2, 0, prog, P, W)
-        return self.wallet_sign(t2)
+        # The control: the same inputs and outputs, nothing blinded.
+        explicit = self.mktx([u, x], good + [self.out(5000, chg_spk, self.X_OUT),
+                                             self.fee(RESERVE + 20000, self.X_OUT)])
+        self.set_sim_wit(explicit, 0, prog, P, W)
+        return self.wallet_sign(t2), self.wallet_sign(explicit)
 
 
 if __name__ == "__main__":

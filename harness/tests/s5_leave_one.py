@@ -92,6 +92,7 @@ class S5(SimBase, BitcoinTestFramework):
                                     "root": tree.root.hex(), "pool_amount": total})
         u = self.fund(base.spk, total, self.X)
         cov = base
+        dest = self.wallet_spk()
 
         def exit_tx(u, cov, tree, i, owner_sec=None, amount=None, rem_spk=None, rem_amt=None, rem_asset=None,
                     extra_in=(), extra_outs=(), key=None, pay=None):
@@ -103,7 +104,7 @@ class S5(SimBase, BitcoinTestFramework):
             outs = []
             if rem > 0:
                 outs.append(self.out(rem, nxt.spk if rem_spk is None else rem_spk, rem_asset or self.X_OUT))
-            outs.append(self.out((amts[i] if pay is None else pay) - FEE, self.wallet_spk(), self.X_OUT))
+            outs.append(self.out((amts[i] if pay is None else pay) - FEE, dest, self.X_OUT))
             outs += list(extra_outs) + [self.fee(FEE, self.X_OUT)]
             tx = self.mktx([u] + list(extra_in), outs)
             sig = sign_schnorr(owner_sec or secs[i], self.sim_sighash(cov, tx, 0))
@@ -118,7 +119,9 @@ class S5(SimBase, BitcoinTestFramework):
             meas["leaf_index"] = i
 
             if negatives and n_exit == 0:
-                def neg(label, wb_edit=None, **kw):
+                J = "Assertion failed inside jet"
+
+                def build(wb_edit=None, **kw):
                     t, _, s, _, _ = exit_tx(u, cov, tree, i, **kw)
                     wb = bit_replace(WB, sig, s)
                     if wb_edit:
@@ -126,7 +129,13 @@ class S5(SimBase, BitcoinTestFramework):
                     self.set_sim_wit(t, 0, cov, PB, wb)
                     if kw.get("extra_in"):
                         t = self.wallet_sign(t)
-                    self.reject(t, tag + "/" + label)
+                    return t
+
+                def neg(label, ctl=None, **kw):
+                    """A refused exit, and its control: the valid exit (`tx`), or the
+                    exit built with `ctl` in place of the broken property."""
+                    self.reject(build(**kw), tag + "/" + label, J,
+                                control=tx if ctl is None else build(**ctl))
 
                 A = amts[i]
                 be = lambda v: int(v).to_bytes(8, "big")
@@ -145,13 +154,15 @@ class S5(SimBase, BitcoinTestFramework):
                 neg("neg_remainder_to_other_program", rem_spk=other.spk)
                 # remainder in another asset
                 y = self.wallet_utxo(u.amount - A, self.Y)
+                wy = self.wallet_spk()
                 neg("neg_remainder_in_other_asset", rem_asset=self.Y_OUT, extra_in=[y],
-                    extra_outs=[self.out(u.amount - A, self.wallet_spk(), self.X_OUT)])
+                    extra_outs=[self.out(u.amount - A, wy, self.X_OUT)],
+                    ctl=dict(extra_in=[y], extra_outs=[self.out(u.amount - A, wy, self.Y_OUT)]))
                 # no remainder output at all (everything else to the owner)
-                t = self.mktx([u], [self.out(u.amount - FEE, self.wallet_spk(), self.X_OUT), self.fee(FEE, self.X_OUT)])
+                t = self.mktx([u], [self.out(u.amount - FEE, dest, self.X_OUT), self.fee(FEE, self.X_OUT)])
                 s = sign_schnorr(secs[i], self.sim_sighash(cov, t, 0))
                 self.set_sim_wit(t, 0, cov, PB, bit_replace(WB, sig, s))
-                self.reject(t, tag + "/neg_no_remainder_output")
+                self.reject(t, tag + "/neg_no_remainder_output", J, control=tx)
                 # a stranger signs with the owner's record in the witness
                 neg("neg_signed_by_stranger", owner_sec=generate_privkey())
                 # a stranger puts their OWN key in the witness (record not in the tree)
@@ -172,15 +183,18 @@ class S5(SimBase, BitcoinTestFramework):
                 assert u.spk == nxt.spk
                 cov, tree = nxt, t2
                 if negatives and n_exit == 0:
+                    # The control of both: the next owner's exit from the updated pool.
+                    ctl, W2, _, _, _ = exit_tx(u, cov, tree, exits[1])
+                    self.sim_satisfy(cov, ctl, 0, W2)
                     # the same owner tries to exit AGAIN from the updated pool, with the old path
                     t, _, s, _, _ = exit_tx(u, cov, old_tree, i)
                     self.set_sim_wit(t, 0, cov, PB, bit_replace(WB, sig, s))
-                    self.reject(t, tag + "/neg_double_exit_old_path")
+                    self.reject(t, tag + "/neg_double_exit_old_path", "Assertion failed inside jet", control=ctl)
                     # ... and with the CURRENT path of their (now spent) leaf
                     t, _, s, _, _ = exit_tx(u, cov, tree, i)
                     wb = bit_replace(WB, sig, s)
                     self.set_sim_wit(t, 0, cov, PB, wb)
-                    self.reject(t, tag + "/neg_double_exit_current_path")
+                    self.reject(t, tag + "/neg_double_exit_current_path", "Assertion failed inside jet", control=ctl)
             else:
                 self.rec(tag + "/pool_closed", {"remainder": 0, "outputs": len(tx.vout)})
 

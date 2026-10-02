@@ -43,9 +43,9 @@ class S4(SimBase, BitcoinTestFramework):
         u = self.fund(c0.spk, AMT, self.X)
 
         def extend_tx(u, cin, old, new, out0=None, extra_outs=(), extra_in=(), signer=None, wit_old=None, wit_new=None,
-                      cov_index=0, valid=True, change=True):
+                      cov_index=0, valid=True, change=True, w=None):
             """inputs: covenant (+ wallet fee input [+extra]); outputs: covenant' , policy change, fee."""
-            w = self.wallet_utxo(50_000)
+            w = w or self.wallet_utxo(50_000)
             o = out0 if out0 is not None else self.out(u.amount, self.cov(new).spk, self.X_OUT)
             ins = [u, w] + list(extra_in)
             outs = [o] + list(extra_outs) + ([self.out(49_000, self.wallet_spk(), self.POL_OUT)] if change else []) \
@@ -70,19 +70,26 @@ class S4(SimBase, BitcoinTestFramework):
                                            "witness_bytes": len(WB)})
         valid_tx = self.wallet_sign(tx)
 
-        def neg(label, **kw):
-            """Build a refused extension: the EXTEND program as pruned for the valid
-            spend, with OLD / NEW / SIG re-written in the witness bit stream."""
+        def build(w, kw):
+            """An extension spending `w` for fees: the EXTEND program as pruned for
+            the valid spend, with OLD / NEW / SIG re-written in the witness bit stream."""
+            kw = dict(kw)
             wo, wn = kw.get("wit_old", st0), kw.get("wit_new", kw.get("new", st1))
-            t, _, s = extend_tx(u, c0, st0, kw.pop("new", st1), **kw)
+            t, _, s = extend_tx(u, c0, st0, kw.pop("new", st1), w=w, **kw)
             wb = bit_replace(WB, sig, s)
             if wo != st0:
                 wb = bit_replace(wb, be8(st0), be8(wo))
             if wn != st1:
                 wb = bit_replace(wb, be8(st1), be8(wn))
-            ci = kw.get("cov_index", 0)
-            self.set_sim_wit(t, ci, c0, PB, wb)
-            self.reject(self.wallet_sign(t), "extend/" + label)
+            self.set_sim_wit(t, kw.get("cov_index", 0), c0, PB, wb)
+            return self.wallet_sign(t)
+
+        def neg(label, ctl=None, **kw):
+            """A refused extension, and its control: the valid extension built
+            from the same coins with `ctl` in place of the broken property."""
+            w = self.wallet_utxo(50_000)
+            self.reject(build(w, kw), "extend/" + label, "Assertion failed inside jet",
+                        control=build(w, ctl or {}))
 
         neg("neg_state_lowered", new=st0 - 1)
         neg("neg_state_equal", new=st0)
@@ -91,10 +98,14 @@ class S4(SimBase, BitcoinTestFramework):
         neg("neg_amount_reduced_by_1", out0=self.out(AMT - 1, c1.spk, self.X_OUT),
             extra_outs=[self.out(1, self.wallet_spk(), self.X_OUT)])
         x1 = self.wallet_utxo(1, self.X)
-        neg("neg_amount_increased_by_1", out0=self.out(AMT + 1, c1.spk, self.X_OUT), extra_in=[x1])
+        wx = self.wallet_spk()
+        neg("neg_amount_increased_by_1", out0=self.out(AMT + 1, c1.spk, self.X_OUT), extra_in=[x1],
+            ctl=dict(extra_in=[x1], extra_outs=[self.out(1, wx, self.X_OUT)]))
         y = self.wallet_utxo(AMT, self.Y)
+        wy = self.wallet_spk()
         neg("neg_other_asset_same_amount", out0=self.out(AMT, c1.spk, self.Y_OUT),
-            extra_outs=[self.out(AMT, self.wallet_spk(), self.X_OUT)], extra_in=[y])
+            extra_outs=[self.out(AMT, wy, self.X_OUT)], extra_in=[y],
+            ctl=dict(extra_outs=[self.out(AMT, wy, self.Y_OUT)], extra_in=[y]))
         other = SimProg(src("p2pk.simf"), {"PK": vpub(self.s_x)}, data=be8(st1))
         neg("neg_different_program_same_data_leaf", out0=self.out(AMT, other.spk, self.X_OUT))
         neg("neg_plain_p2tr_of_S", out0=self.out(AMT, bytes(taproot_construct(self.s_x).scriptPubKey), self.X_OUT))
@@ -102,7 +113,8 @@ class S4(SimBase, BitcoinTestFramework):
         # covenant output at the wrong index (input 0, successor at output 1)
         w2 = self.wallet_spk()
         neg("neg_successor_at_other_index", out0=self.out(49_000, w2, self.POL_OUT),
-            extra_outs=[self.out(AMT, c1.spk, self.X_OUT)], change=False)
+            extra_outs=[self.out(AMT, c1.spk, self.X_OUT)], change=False,
+            ctl=dict(extra_outs=[self.out(49_000, w2, self.POL_OUT)], change=False))
         # SWEEP before expiry, lock time = current height (below the committed expiry)
         def sweep_tx(u, cin, state, locktime, signer=None):
             tx = self.mktx([(u, 0xfffffffe)], [self.out(u.amount - 400, self.wallet_spk(), self.X_OUT),
@@ -132,24 +144,28 @@ class S4(SimBase, BitcoinTestFramework):
         self.mine_to(exp0 + 1)                      # the ORIGINAL expiry has passed
         h = node.getblockcount()
         assert exp0 < h < exp2
-        # (i) lock time = the old expiry: final now, but below the committed state
-        tx, W, sig = sweep_tx(u2, c2, st2, exp0)
-        # get a pruned SWEEP program from a valid sweep built for the real expiry
+        # a valid sweep, for the committed expiry, gives the pruned SWEEP program
         txv, Wv, sigv = sweep_tx(u2, c2, st2, exp2)
         rv = self.sim_satisfy(c2, txv, 0, Wv)
         PS, WS = txv.wit.vtxinwit[0].scriptWitness.stack[1], txv.wit.vtxinwit[0].scriptWitness.stack[0]
+        # (i) lock time = the committed expiry, but the chain is not there yet:
+        # refused by the lock time rule itself, before any script runs
+        self.reject(txv, "sweep/neg_before_expiry_nonfinal", "bad-txns-nonfinal", mempool="non-final")
+        # From the committed expiry on, the valid sweep is final and is the
+        # control of every refusal below.
+        self.mine_to(exp2)
+        J = "Assertion failed inside jet"
+        # (ii) lock time = the old expiry, final, but below the committed state
+        tx, W, sig = sweep_tx(u2, c2, st2, exp0)
         self.set_sim_wit(tx, 0, c2, PS, bit_replace(WS, sigv, sig))
-        self.reject(tx, "sweep/neg_locktime_at_original_expiry_after_extension")
-        # (ii) lock time = the committed expiry, but the chain is not there yet
-        self.reject(txv, "sweep/neg_before_expiry_nonfinal")
-        # (iii) claiming the old state in the witness
+        self.reject(tx, "sweep/neg_locktime_at_original_expiry_after_extension", J, control=txv)
+        # (iii) claiming the old state in the witness, with the lock time it allows
         tx, W, sig = sweep_tx(u2, c2, st0, exp0)
         self.set_sim_wit(tx, 0, c2, PS, bit_replace(bit_replace(WS, sigv, sig), be8(st2), be8(st0)))
-        self.reject(tx, "sweep/neg_witness_claims_original_state")
-        self.mine_to(exp2)
+        self.reject(tx, "sweep/neg_witness_claims_original_state", J, control=txv)
         tx, W, sig = sweep_tx(u2, c2, st2, exp2, signer=generate_privkey())
         self.set_sim_wit(tx, 0, c2, PS, bit_replace(WS, sigv, sig))
-        self.reject(tx, "sweep/neg_wrong_signer")
+        self.reject(tx, "sweep/neg_wrong_signer", J, control=txv)
         self.send(txv, "sweep/after_expiry", extra=self.sim_measure(txv, 0, rv))
 
 

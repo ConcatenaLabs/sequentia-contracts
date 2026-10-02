@@ -37,19 +37,21 @@ class S1(SimBase, BitcoinTestFramework):
             return tx, r, msg
 
         u = self.fund(prog.spk, AMT, self.X)
-        # negatives first (the utxo survives)
+        # negatives first (the utxo survives). The control of each is the
+        # owner's spend of the same coin into the same outputs.
+        good, _, _ = spend(u)
         tx, r, _ = spend(u, signer=generate_privkey())
         self.rec("p2pk/neg_wrong_key_local", {"executed": r["executed"], "exec_error": r.get("exec_error")})
-        self.reject(tx, "p2pk/neg_wrong_key")
+        self.reject(tx, "p2pk/neg_wrong_key", "Assertion failed inside jet", control=good)
         # a witness-stack with the wrong CMR
         tx, r, _ = spend(u)
         st = tx.wit.vtxinwit[0].scriptWitness.stack
         tx.wit.vtxinwit[0].scriptWitness.stack = [st[0], st[1][:-1] + bytes([st[1][-1] ^ 0x10]), st[2], st[3]]
-        self.reject(tx, "p2pk/neg_program_bitflip")
+        self.reject(tx, "p2pk/neg_program_bitflip", "Illegal padding in final byte of program")
         # key path attempt on the NUMS key
         tx, r, _ = spend(u)
         self.setwit(tx, 0, [os.urandom(64)])
-        self.reject(tx, "p2pk/neg_keypath_random_sig")
+        self.reject(tx, "p2pk/neg_keypath_random_sig", "Invalid Schnorr signature")
         # positive
         tx, r, msg = spend(u)
         m = self.sim_measure(tx, 0, r)
@@ -65,7 +67,9 @@ class S1(SimBase, BitcoinTestFramework):
         tx, r, _ = spend(u, annex=annex, sign_annex=False)
         self.rec("p2pk/annex8_sig_without_annex_local", {"executed": r.get("executed"),
                                                          "exec_error": r.get("exec_error")})
-        self.reject(tx, "p2pk/annex8_sig_without_annex")
+        signed_over_annex, _, _ = spend(u, annex=annex, sign_annex=True)
+        self.reject(tx, "p2pk/annex8_sig_without_annex", "Assertion failed inside jet",
+                    control=signed_over_annex)
         tx, r, msg = spend(u, annex=annex, sign_annex=True)
         m = self.sim_measure(tx, 0, r)
         m["sighash_all_with_annex"] = msg.hex()

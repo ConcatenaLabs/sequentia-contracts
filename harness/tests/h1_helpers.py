@@ -4,7 +4,10 @@ Every helper is included as source (`// include <name>`). Each program here is
 a keyless covenant, so a negative case reuses the valid spend's pruned program
 and witness and changes only the transaction, or rewrites a witness value at
 bit level where the branches taken stay the same. Every refusal is forced into
-a block with `generateblock`, after the mempool's."""
+a block with `generateblock`, after the mempool's, and asserts the error. The
+error of a failed assertion does not say which assertion failed, so each
+negative names a control: the valid spend it differs from in the one property
+it breaks, which the node accepts."""
 import hashlib
 import os
 import sys
@@ -66,14 +69,25 @@ class H1(SimBase, BitcoinTestFramework):
         good = [self.out(AMOUNT, self.dest, self.X_OUT), self.fee(FEE, self.X_OUT)]
         tx, r = self.keyless(prog, coin, good)
 
+        J = "Assertion failed inside jet"
         bad = self.mktx([coin], [self.out(AMOUNT - 1, self.dest, self.X_OUT), self.fee(FEE + 1, self.X_OUT)])
-        self.reject(self.reuse(prog, bad, r), "output_reader/neg_amount_one_short")
+        self.reject(self.reuse(prog, bad, r), "output_reader/neg_amount_one_short", J, control=tx)
         other = self.wallet_spk()
         bad = self.mktx([coin], [self.out(AMOUNT, other, self.X_OUT), self.fee(FEE, self.X_OUT)])
-        self.reject(self.reuse(prog, bad, r), "output_reader/neg_other_script")
+        self.reject(self.reuse(prog, bad, r), "output_reader/neg_other_script", J, control=tx)
         ycoin = self.fund(prog.spk, AMOUNT + FEE, self.Y)
         bad = self.mktx([ycoin], [self.out(AMOUNT, self.dest, self.Y_OUT), self.fee(FEE, self.Y_OUT)])
-        self.reject(self.reuse(prog, bad, r), "output_reader/neg_coin_of_another_asset")
+        self.reject(self.reuse(prog, bad, r), "output_reader/neg_coin_of_another_asset", J,
+                    control=tx, other_coin=True)
+        # The right asset, amount and script, with a nonce (a blinding pubkey)
+        # on the output: out_require refuses an output that is not plainly explicit.
+        node = self.node
+        ck = bytes.fromhex(node.getaddressinfo(node.getnewaddress("", "blech32"))["confidential_key"])
+        o0 = self.out(AMOUNT, self.dest, self.X_OUT)
+        o0.nNonce = CTxOutNonce(ck)
+        bad = self.mktx([coin], [o0, self.fee(FEE, self.X_OUT)])
+        self.reject(self.reuse(prog, bad, r), "output_reader/neg_output_carries_a_nonce", "Assertion failed",
+                    control=tx)
 
         self.ok_spend(tx, r, "output_reader/spend")
 
@@ -95,15 +109,18 @@ class H1(SimBase, BitcoinTestFramework):
 
         # The output pays one more than the quotient the witness proves.
         bad = self.mktx([coin], [self.out(pay + 1, self.dest, self.X_OUT), self.fee(FEE - 1, self.X_OUT)])
-        self.reject(self.reuse(prog, bad, r), "wide_arith/neg_pays_one_more_than_the_quotient")
+        self.reject(self.reuse(prog, bad, r), "wide_arith/neg_pays_one_more_than_the_quotient",
+                    "Assertion failed inside jet", control=tx)
         # A quotient one too small, paid as such: the remainder reaches the divisor.
         bad = self.mktx([coin], [self.out(pay - 1, self.dest, self.X_OUT), self.fee(FEE + 1, self.X_OUT)])
         w = bit_replace(wit, pay.to_bytes(8, "big"), (pay - 1).to_bytes(8, "big"))
-        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_quotient_one_too_small")
+        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_quotient_one_too_small",
+                    "Assertion failed inside jet", control=tx)
         # A quotient one too large, paid as such: q * c passes the product.
         bad = self.mktx([coin], [self.out(pay + 1, self.dest, self.X_OUT), self.fee(FEE - 1, self.X_OUT)])
         w = bit_replace(wit, pay.to_bytes(8, "big"), (pay + 1).to_bytes(8, "big"))
-        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_quotient_one_too_large")
+        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_quotient_one_too_large",
+                    "Assertion failed", control=tx)
 
         # X + 1: the product rises by PRICE and passes CAP; the output pays the
         # new quotient and the witness proves it, so only the 128-bit cap is broken.
@@ -113,7 +130,8 @@ class H1(SimBase, BitcoinTestFramework):
         bad = self.mktx([coin], [self.out(pay2, self.dest, self.X_OUT), self.fee(pay + FEE - pay2, self.X_OUT)])
         w = bit_replace(wit, X.to_bytes(8, "big"), X2.to_bytes(8, "big"))
         w = bit_replace(w, pay.to_bytes(8, "big"), pay2.to_bytes(8, "big"))
-        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_product_over_the_128_bit_cap")
+        self.reject(self.reuse(prog, bad, r, witness=w), "wide_arith/neg_product_over_the_128_bit_cap",
+                    "Assertion failed", control=tx)
 
         self.ok_spend(tx, r, "wide_arith/spend")
 
@@ -136,19 +154,21 @@ class H1(SimBase, BitcoinTestFramework):
 
         tx = hop(coin, 7)
         r = self.sim_satisfy(at(7), tx, 0, {"STATE": v256(st(7))})
+        good = self.wallet_sign(tx)
+        J = "Assertion failed inside jet"
 
         bad = self.wallet_sign(self.reuse(at(7), hop(coin, 7, out_state=9), r))
-        self.reject(bad, "state/neg_successor_skips_a_state")
+        self.reject(bad, "state/neg_successor_skips_a_state", J, control=good)
         bad = self.wallet_sign(self.reuse(at(7), hop(coin, 7, out_amount=AMT - 1,
                                                       extra_outs=[self.out(1, self.dest, self.X_OUT)]), r))
-        self.reject(bad, "state/neg_successor_one_atom_short")
+        self.reject(bad, "state/neg_successor_one_atom_short", J, control=good)
         # The witness claims state 6 against a data leaf holding 7, and pays the
         # successor of 6, which is 7: only the current-state check can refuse it.
         claim6 = bit_replace(bytes.fromhex(r["witness_hex"]), st(7), st(6))
         bad = self.wallet_sign(self.reuse(at(7), hop(coin, 7, out_state=7), r, witness=claim6))
-        self.reject(bad, "state/neg_witness_names_another_state")
+        self.reject(bad, "state/neg_witness_names_another_state", J, control=good)
 
-        txid = self.ok_spend(self.wallet_sign(tx), r, "state/spend_7_to_8")
+        txid = self.ok_spend(good, r, "state/spend_7_to_8")
         nxt = self.utxo_of(txid, at(8).spk)
         tx2 = hop(nxt, 8)
         r2 = self.sim_satisfy(at(8), tx2, 0, {"STATE": v256(st(8))})
@@ -167,15 +187,20 @@ class H1(SimBase, BitcoinTestFramework):
         tx, r = self.keyless(prog, coin, outs, ins=[(coin, BLOCKS)])
 
         bad = self.mktx([(coin, BLOCKS - 2)], outs)
-        self.reject(self.reuse(prog, bad, r), "relative_lock/neg_own_sequence_below_the_lock")
+        self.reject(self.reuse(prog, bad, r), "relative_lock/neg_own_sequence_below_the_lock",
+                    "Assertion failed inside jet", control=tx)
         bad = self.mktx([(coin, BLOCKS)], outs, version=1)
-        self.reject(self.reuse(prog, bad, r), "relative_lock/neg_version_1_turns_bip68_off")
+        self.reject(self.reuse(prog, bad, r), "relative_lock/neg_version_1_turns_bip68_off",
+                    "Assertion failed inside jet", control=tx)
         # The bypass that defeats the broken jets: this input's lock disabled,
         # an old coin of the spender's own carrying the sequence instead.
         outs2 = [self.out(AMT - FEE, self.dest, self.X_OUT), self.out(50_000, self.wallet_spk(), self.POL_OUT),
                  self.fee(FEE, self.X_OUT)]
         bad = self.mktx([(coin, 0xffffffff), (old, BLOCKS)], outs2)
-        self.reject(self.wallet_sign(self.reuse(prog, bad, r)), "relative_lock/neg_lock_on_another_input")
+        # The control: the same two inputs and outputs, the lock on the coin itself.
+        ctl = self.wallet_sign(self.reuse(prog, self.mktx([(coin, BLOCKS), (old, 0xffffffff)], outs2), r))
+        self.reject(self.wallet_sign(self.reuse(prog, bad, r)), "relative_lock/neg_lock_on_another_input",
+                    "Assertion failed", control=ctl)
 
         self.ok_spend(tx, r, "relative_lock/spend")
 
@@ -206,10 +231,12 @@ class H1(SimBase, BitcoinTestFramework):
 
         bad = self.mktx([coin], outs)
         w = bit_replace(wit, proof[3][0], hashlib.sha256(b"not a node").digest())
-        self.reject(self.reuse(prog, bad, r, witness=w), "merkle/neg_wrong_sibling_at_level_3")
+        self.reject(self.reuse(prog, bad, r, witness=w), "merkle/neg_wrong_sibling_at_level_3",
+                    "Assertion failed inside jet", control=tx)
         bad = self.mktx([coin], outs)
         w = bit_replace(wit, members[index], hashlib.sha256(b"not a member").digest())
-        self.reject(self.reuse(prog, bad, r, witness=w), "merkle/neg_not_a_member")
+        self.reject(self.reuse(prog, bad, r, witness=w), "merkle/neg_not_a_member",
+                    "Assertion failed inside jet", control=tx)
 
         self.ok_spend(tx, r, "merkle/spend_depth_8")
 
@@ -223,9 +250,11 @@ class H1(SimBase, BitcoinTestFramework):
         tx, r = self.keyless(prog, coin, [self.out(AMT - FEE, self.dest, self.X_OUT), self.fee(FEE, self.X_OUT)])
 
         bad = self.mktx([coin], [self.out(AMT - 600, self.dest, self.X_OUT), self.fee(600, self.X_OUT)])
-        self.reject(self.reuse(prog, bad, r), "fee_cap/neg_fee_over_the_cap")
+        self.reject(self.reuse(prog, bad, r), "fee_cap/neg_fee_over_the_cap",
+                    "Assertion failed inside jet", control=tx)
         bad = self.mktx([coin], [self.out(AMT - CAP - 1, self.dest, self.X_OUT), self.fee(CAP + 1, self.X_OUT)])
-        self.reject(self.reuse(prog, bad, r), "fee_cap/neg_fee_one_over_the_cap")
+        self.reject(self.reuse(prog, bad, r), "fee_cap/neg_fee_one_over_the_cap",
+                    "Assertion failed inside jet", control=tx)
 
         self.ok_spend(tx, r, "fee_cap/spend")
 

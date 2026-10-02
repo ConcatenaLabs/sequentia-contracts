@@ -81,6 +81,15 @@ def control_block(tap, name):
     return bytes([leaf.version + tap.negflag]) + tap.internal_pubkey + leaf.merklebranch
 
 
+def reason_matches(expect, text):
+    """Whether `expect` is one whole reason inside a node error: it starts the
+    text or follows '(', ':' or a space, and it ends the text or is followed by
+    ')', ',' or ' (code'. So "Assertion failed" does not match "Assertion
+    failed inside jet"."""
+    import re
+    return re.search(r"(^|[(: ])" + re.escape(expect) + r"($|[),]| \(code)", text or "") is not None
+
+
 def wit_bytes(stack):
     """Serialized size of a witness stack (count + length-prefixed items)."""
     n = 1
@@ -149,6 +158,10 @@ class ChainBase:
             "-con_any_asset_fees=1",
             "-maxtxfee=100.0",
             "-txindex=1",
+            # Check scripts on the validating thread, so that a block refused
+            # for a script names the script error rather than only
+            # `block-validation-failed`; reject() asserts that error.
+            "-par=1",
         ] + list(self.EXTRA)]
         self.R = {}          # results, dumped as JSON
 
@@ -335,63 +348,88 @@ class ChainBase:
         self.rec(label, m)
         return txid
 
-    def reject(self, tx, label, expect=None, consensus=True):
-        """Assert a tx is rejected; record both the testmempoolaccept reason and
-        the exact sendrawtransaction RPC error."""
+    # Block and mempool errors that do not say which check failed. A
+    # negative whose expected error is one of these must come with a control:
+    # a transaction that differs from it only in the property the negative
+    # claims to break, and that the node accepts. Then the refusal is the
+    # claimed property's and no other check's.
+    COARSE = ("Assertion failed", "block-validation-failed")
+
+    def check_control(self, tx, control, label, index=0, other_coin=False, mined=False):
+        """The control is another transaction that spends the same program at
+        input `index` (the same coin there, unless `other_coin`: the property
+        is the coin itself), and the node accepts it: its mempool, or, with
+        `mined`, a block (for a control relay policy refuses as non-standard;
+        it is mined after the negative is refused)."""
+        assert control.serialize() != tx.serialize(), "%s: the control is the negative itself" % label
+        a, b = tx.vin[index].prevout, control.vin[index].prevout
+        same_coin = (a.hash, a.n) == (b.hash, b.n)
+        assert same_coin != other_coin, "%s: the control spends %s coin at input %d" % (
+            label, "the same" if same_coin else "another", index)
+        assert tx.prev[index].spk == control.prev[index].spk, \
+            "%s: the control spends another program at input %d" % (label, index)
+        control.rehash()
+        d = {"txid": control.hash, "same_coin": same_coin, "vsize": self.measure(control)["vsize"]}
+        if mined:
+            self.node.generateblock(self.node.getnewaddress(), [control.serialize().hex()], invalid_call=False)
+            assert self.node.getrawtransaction(control.hash, True).get("confirmations", 0) >= 1, label
+            d["mined"] = True
+            return d
+        res = self.accept(control)
+        assert res["allowed"], "%s: the control is refused: %s" % (label, res.get("reject-reason"))
+        d["testmempoolaccept"] = True
+        return d
+
+    def reject(self, tx, label, expect, mempool=None, control=None, index=0, other_coin=False,
+               control_mined=False):
+        """Assert that the mempool refuses `tx` and that a block forced with
+        `generateblock` refuses it too, each for the expected reason.
+
+        expect   a substring of the block's error. Also of the mempool's,
+                 unless `mempool` names a different one (a policy rule that
+                 refuses before consensus does).
+        control  required when `expect` is coarse (COARSE): a transaction that
+                 differs only in the claimed property and is accepted. It
+                 spends the coin the negative spends at input `index`, or,
+                 with `other_coin`, another coin of the same program. With
+                 `control_mined`, the control is mined after the negative is
+                 refused, instead of being offered to the mempool."""
+        assert isinstance(expect, str) and expect, "%s: reject() needs the expected reason" % label
+        coarse = any(c in expect for c in self.COARSE)
+        assert control is not None or not coarse, \
+            "%s: '%s' does not say which check failed; give a control transaction" % (label, expect)
+        d = {"rejected": True, "expect": expect}
+        if control is not None and not control_mined:
+            d["control"] = self.check_control(tx, control, label, index, other_coin)
         res = self.accept(tx)
         assert not res["allowed"], "%s unexpectedly ACCEPTED" % label
         reason = res.get("reject-reason", "")
-        rpc = None
         try:
             self.node.sendrawtransaction(tx.serialize().hex())
             raise AssertionError("%s unexpectedly broadcast" % label)
         except JSONRPCException as e:
             rpc = "%s (code %s)" % (e.error["message"], e.error["code"])
-        d = {"rejected": True, "reject-reason": reason, "rpc-error": rpc}
-        if consensus:
-            # Bypass mempool policy entirely: ask the node to build a block
-            # containing the raw tx. A consensus-invalid tx makes block
-            # assembly/validation fail; nothing is mined.
-            h0 = self.node.getblockcount()
-            try:
-                self.node.generateblock(self.node.getnewaddress(), [tx.serialize().hex()],
-                                        invalid_call=False)
-                raise AssertionError("%s: tx was MINED via generateblock (policy-only reject)" % label)
-            except JSONRPCException as e:
-                d["block-error"] = "%s (code %s)" % (e.error["message"], e.error["code"])
-            assert self.node.getblockcount() == h0
-        self.log.info("REJECT %-42s %s | block: %s", label, rpc, d.get("block-error"))
-        if expect is not None:
-            assert expect in reason or expect in rpc, (label, reason, rpc)
+        d.update({"reject-reason": reason, "rpc-error": rpc})
+        want_mempool = mempool if mempool is not None else expect
+        assert reason_matches(want_mempool, reason), "%s: mempool says %r, expected %r" % (label, reason, want_mempool)
+        # Bypass relay policy entirely: ask the node to build a block holding
+        # the raw transaction. A consensus-invalid transaction makes block
+        # assembly fail; nothing is mined.
+        h0 = self.node.getblockcount()
+        try:
+            self.node.generateblock(self.node.getnewaddress(), [tx.serialize().hex()],
+                                    invalid_call=False)
+            raise AssertionError("%s: tx was MINED via generateblock (policy-only reject)" % label)
+        except JSONRPCException as e:
+            d["block-error"] = "%s (code %s)" % (e.error["message"], e.error["code"])
+        assert self.node.getblockcount() == h0
+        assert reason_matches(expect, d["block-error"]), "%s: block says %r, expected %r" % (label, d["block-error"], expect)
+        if control is not None and control_mined:
+            d["control"] = self.check_control(tx, control, label, index, other_coin, mined=True)
+        self.log.info("REJECT %-42s block: %s%s", label, d["block-error"],
+                      " (control accepted)" if control is not None else "")
         self.rec(label, d)
         return reason
-
-    def probe(self, tx, label):
-        """Record what the mempool says, without asserting either way."""
-        res = self.accept(tx)
-        d = {"probe": True, "testmempoolaccept": bool(res["allowed"]),
-             "reject-reason": res.get("reject-reason"), "vsize": self.measure(tx)["vsize"]}
-        self.log.info("PROBE %-43s allowed=%s %s", label, d["testmempoolaccept"], d["reject-reason"])
-        self.rec(label, d)
-        return d
-
-    def mine_raw(self, tx, label):
-        """Mine a tx directly into a block (bypassing relay policy). Used to show
-        a tx is consensus-valid even when policy refuses to relay it."""
-        m = self.measure(tx)
-        res = self.accept(tx)
-        m["testmempoolaccept"] = bool(res["allowed"])
-        m["reject-reason"] = res.get("reject-reason")
-        self.node.generateblock(self.node.getnewaddress(), [tx.serialize().hex()], invalid_call=False)
-        tx.rehash()
-        v = self.node.getrawtransaction(tx.hash, True)
-        assert v.get("confirmations", 0) >= 1
-        m["txid"] = tx.hash
-        m["confirmed_via_generateblock"] = True
-        self.log.info("MINED(raw) %-38s vsize=%d policy-allowed=%s (%s)", label, m["vsize"],
-                      m["testmempoolaccept"], m["reject-reason"])
-        self.rec(label, m)
-        return tx.hash
 
     def rec_script(self, label, script, tap=None, name=None):
         d = {"asm": asm(script), "hex": bytes(script).hex(), "bytes": len(bytes(script))}

@@ -62,20 +62,24 @@ class D1(SimBase, BitcoinTestFramework):
             r = self.sim_satisfy(prog, tx, 0, {"PK": vpub(pk), "SIG": vsig(sig)})
             return tx, r, msg, sig
 
+        # The owner's spend is the control of each refusal: the same coin and
+        # outputs, the right key and its signature.
+        good = spend()[0]
+
         # Another key, which signs correctly, in place of the key in the data leaf.
         tx, r, msg, sig = spend()
         st = tx.wit.vtxinwit[0].scriptWitness.stack
         w = bit_replace(st[0], pk, other_pk)
         w = bit_replace(w, sig, sign_schnorr(other_sec, msg))
         self.set_sim_wit(tx, 0, prog, st[1], w)
-        self.reject(tx, "one_key/neg_key_not_in_data_leaf")
+        self.reject(tx, "one_key/neg_key_not_in_data_leaf", "Assertion failed inside jet", control=good)
 
         # The right key, a signature by another.
         tx, r, msg, sig = spend()
         st = tx.wit.vtxinwit[0].scriptWitness.stack
         w = bit_replace(st[0], sig, sign_schnorr(other_sec, msg))
         self.set_sim_wit(tx, 0, prog, st[1], w)
-        self.reject(tx, "one_key/neg_signature_by_another_key")
+        self.reject(tx, "one_key/neg_signature_by_another_key", "Assertion failed inside jet", control=good)
 
         # The owner's spend.
         tx, r, msg, sig = spend()

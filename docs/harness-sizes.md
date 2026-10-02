@@ -4,6 +4,8 @@ Every figure the regtest harness measures, from a run under the pinned compiler 
 
 Keys and salts are fresh in every run, so commitment roots differ between runs and are not compared here; `docs/compiler-roots.md` compares roots for fixed inputs. A signature is 64 bytes either way, so sizes are comparable.
 
+A refusal is compared by its verdict: the mempool's answer and reason, and whether a block refused it. This harness starts its nodes with `-par=1`, so a block's error names the script failure, and asserts it; the baseline was recorded without that option, when a block's error said only `block-validation-failed`.
+
 ## Summary
 
 | test | spends | programs | refusals and outcomes | sizes changed | refusals changed |
@@ -28,7 +30,7 @@ Keys and salts are fresh in every run, so commitment roots differ between runs a
 |---|---:|---:|---:|---:|---:|---:|
 | `p2pk/spend` | 209 | 209 | 44 / 44 | 64 / 64 | 53 / 53 | 762 / 762 |
 
-Refusals and outcomes: 3 compared, 3 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 3 compared, 3 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 Only in the 0.7.2 run: `p2pk/annex8_sig_without_annex`, `p2pk/spend_annex8_signed_over_annex`.
 
@@ -50,16 +52,16 @@ Only in the 0.4.1 run: `p2pk/annex8_reject`, `p2pk/spend_2`.
 | `e3/K295_u8/tx` | 249685 | 249685 | 2146 / 2146 | 0 / 0 | 3992389 / 3992389 | 3992390 / 3992390 |
 | `e3/K296_u8/tx` | 250746 | 250746 | 2151 / 2151 | 0 / 0 | 4005915 / 4005915 | 4000050 / 4000050 |
 
-Refusals and outcomes: 3 compared, 3 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 3 compared, 3 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 Other recorded facts that differ:
 
 | record | 0.4.1 | 0.7.2 |
 |---|---|---|
 | `e0/expects_annex` | {"rust_bitmachine_executed": false, "rust_error": "Jet failed during execution", "node_testmempoolaccept": true} | {"rust_bitmachine_executed": true, "rust_error": null, "node_testmempoolaccept": true} |
-| `e4/N1000/program` | {"compile_seconds": 3.6} | {"compile_seconds": 1.0} |
-| `e4/N4000/program` | {"compile_seconds": 48.8} | {"compile_seconds": 3.6} |
-| `e4/N8100/program` | {"compile_seconds": 195.8} | {"compile_seconds": 6.9} |
+| `e4/N1000/program` | {"compile_seconds": 3.6} | {"compile_seconds": 0.9} |
+| `e4/N4000/program` | {"compile_seconds": 48.8} | {"compile_seconds": 4.0} |
+| `e4/N8100/program` | {"compile_seconds": 195.8} | {"compile_seconds": 8.5} |
 
 ## S1 ceilings (witness data)
 
@@ -73,22 +75,24 @@ Other recorded facts that differ:
 
 ## S2 tree node
 
+Rows marked † compare different programs: The plain node also checks that each child output carries no nonce, as the compact and chain nodes do through the output hash; the 0.4.1 run measured the node without that check.
+
 | program | committed bytes, 0.4.1 | committed bytes, 0.7.2 | control block |
 |---|---:|---:|---:|
-| `r2_plain_with_sweep_leaf/program` | 336 | 336 | 65 |
-| `r2_plain_single_leaf/program` | 336 | 336 | 33 |
+| `r2_plain_with_sweep_leaf/program` † | 336 | 365 (+29) | 65 |
+| `r2_plain_single_leaf/program` † | 336 | 365 (+29) | 33 |
 | `r2_compact_with_sweep_leaf/program` | 139 | 139 | 65 |
 | `r2_compact_single_leaf/program` | 139 | 139 | 33 |
 | `r2_chain_with_sweep_leaf/program` | 126 | 126 | 65 |
 | `r2_chain_single_leaf/program` | 126 | 126 | 33 |
-| `r4_plain_with_sweep_leaf/program` | 442 | 442 | 65 |
-| `r4_plain_single_leaf/program` | 442 | 442 | 33 |
+| `r4_plain_with_sweep_leaf/program` † | 442 | 471 (+29) | 65 |
+| `r4_plain_single_leaf/program` † | 442 | 471 (+29) | 33 |
 | `r4_compact_with_sweep_leaf/program` | 181 | 181 | 65 |
 | `r4_compact_single_leaf/program` | 181 | 181 | 33 |
 | `r4_chain_with_sweep_leaf/program` | 159 | 159 | 65 |
 | `r4_chain_single_leaf/program` | 159 | 159 | 33 |
-| `r8_plain_with_sweep_leaf/program` | 657 | 657 | 65 |
-| `r8_plain_single_leaf/program` | 657 | 657 | 33 |
+| `r8_plain_with_sweep_leaf/program` † | 657 | 687 (+30) | 65 |
+| `r8_plain_single_leaf/program` † | 657 | 687 (+30) | 33 |
 | `r8_compact_with_sweep_leaf/program` | 267 | 267 | 65 |
 | `r8_compact_single_leaf/program` | 267 | 267 | 33 |
 | `r8_chain_with_sweep_leaf/program` | 227 | 227 | 65 |
@@ -96,27 +100,27 @@ Other recorded facts that differ:
 
 | spend | vsize 0.4.1 | vsize 0.7.2 | program B 0.4.1 / 0.7.2 | witness B 0.4.1 / 0.7.2 | cost bound WU 0.4.1 / 0.7.2 | budget WU 0.4.1 / 0.7.2 |
 |---|---:|---:|---:|---:|---:|---:|
-| `r2_plain_with_sweep_leaf/unroll_reserve_fee` | 356 | 356 | 302 / 302 | 0 / 0 | 47 / 47 | 1674 / 1674 |
-| `r2_plain_with_sweep_leaf/unroll_external_fee` | 558 | 558 | 302 / 302 | 0 / 0 | 47 / 47 | 1674 / 1674 |
-| `r2_plain_single_leaf/unroll_reserve_fee` | 348 | 348 | 302 / 302 | 0 / 0 | 47 / 47 | 1546 / 1546 |
+| `r2_plain_with_sweep_leaf/unroll_reserve_fee` † | 356 | 371 (+15) | 302 / 362 (+60) | 0 / 0 | 47 / 56 (+9) | 1674 / 1914 (+240) |
+| `r2_plain_with_sweep_leaf/unroll_external_fee` † | 558 | 573 (+15) | 302 / 362 (+60) | 0 / 0 | 47 / 56 (+9) | 1674 / 1914 (+240) |
+| `r2_plain_single_leaf/unroll_reserve_fee` † | 348 | 363 (+15) | 302 / 362 (+60) | 0 / 0 | 47 / 56 (+9) | 1546 / 1786 (+240) |
 | `r2_compact_with_sweep_leaf/unroll_reserve_fee` | 315 | 315 | 139 / 139 | 0 / 0 | 32 / 32 | 1014 / 1014 |
 | `r2_compact_with_sweep_leaf/unroll_external_fee` | 516 | 516 | 139 / 139 | 0 / 0 | 32 / 32 | 1014 / 1014 |
 | `r2_compact_single_leaf/unroll_reserve_fee` | 307 | 307 | 139 / 139 | 0 / 0 | 32 / 32 | 886 / 886 |
 | `r2_chain_with_sweep_leaf/unroll_reserve_fee` | 312 | 312 | 126 / 126 | 0 / 0 | 18 / 18 | 962 / 962 |
 | `r2_chain_with_sweep_leaf/unroll_external_fee` | 513 | 513 | 126 / 126 | 0 / 0 | 18 / 18 | 962 / 962 |
 | `r2_chain_single_leaf/unroll_reserve_fee` | 304 | 304 | 126 / 126 | 0 / 0 | 18 / 18 | 834 / 834 |
-| `r4_plain_with_sweep_leaf/unroll_reserve_fee` | 540 | 540 | 408 / 408 | 0 / 0 | 93 / 93 | 2098 / 2098 |
-| `r4_plain_with_sweep_leaf/unroll_external_fee` | 741 | 741 | 408 / 408 | 0 / 0 | 93 / 93 | 2098 / 2098 |
-| `r4_plain_single_leaf/unroll_reserve_fee` | 532 | 532 | 408 / 408 | 0 / 0 | 93 / 93 | 1970 / 1970 |
+| `r4_plain_with_sweep_leaf/unroll_reserve_fee` † | 540 | 555 (+15) | 408 / 468 (+60) | 0 / 0 | 93 / 112 (+19) | 2098 / 2338 (+240) |
+| `r4_plain_with_sweep_leaf/unroll_external_fee` † | 741 | 756 (+15) | 408 / 468 (+60) | 0 / 0 | 93 / 112 (+19) | 2098 / 2338 (+240) |
+| `r4_plain_single_leaf/unroll_reserve_fee` † | 532 | 547 (+15) | 408 / 468 (+60) | 0 / 0 | 93 / 112 (+19) | 1970 / 2210 (+240) |
 | `r4_compact_with_sweep_leaf/unroll_reserve_fee` | 482 | 482 | 181 / 181 | 0 / 0 | 63 / 63 | 1182 / 1182 |
 | `r4_compact_with_sweep_leaf/unroll_external_fee` | 684 | 684 | 181 / 181 | 0 / 0 | 63 / 63 | 1182 / 1182 |
 | `r4_compact_single_leaf/unroll_reserve_fee` | 474 | 474 | 181 / 181 | 0 / 0 | 63 / 63 | 1054 / 1054 |
 | `r4_chain_with_sweep_leaf/unroll_reserve_fee` | 477 | 477 | 159 / 159 | 0 / 0 | 33 / 33 | 1094 / 1094 |
 | `r4_chain_with_sweep_leaf/unroll_external_fee` | 678 | 678 | 159 / 159 | 0 / 0 | 33 / 33 | 1094 / 1094 |
 | `r4_chain_single_leaf/unroll_reserve_fee` | 469 | 469 | 159 / 159 | 0 / 0 | 33 / 33 | 966 / 966 |
-| `r8_plain_with_sweep_leaf/unroll_reserve_fee` | 907 | 907 | 623 / 623 | 0 / 0 | 185 / 185 | 2958 / 2958 |
-| `r8_plain_with_sweep_leaf/unroll_external_fee` | 1109 | 1109 | 623 / 623 | 0 / 0 | 185 / 185 | 2958 / 2958 |
-| `r8_plain_single_leaf/unroll_reserve_fee` | 899 | 899 | 623 / 623 | 0 / 0 | 185 / 185 | 2830 / 2830 |
+| `r8_plain_with_sweep_leaf/unroll_reserve_fee` † | 907 | 923 (+16) | 623 / 684 (+61) | 0 / 0 | 185 / 224 (+39) | 2958 / 3202 (+244) |
+| `r8_plain_with_sweep_leaf/unroll_external_fee` † | 1109 | 1124 (+15) | 623 / 684 (+61) | 0 / 0 | 185 / 224 (+39) | 2958 / 3202 (+244) |
+| `r8_plain_single_leaf/unroll_reserve_fee` † | 899 | 915 (+16) | 623 / 684 (+61) | 0 / 0 | 185 / 224 (+39) | 2830 / 3074 (+244) |
 | `r8_compact_with_sweep_leaf/unroll_reserve_fee` | 818 | 818 | 267 / 267 | 0 / 0 | 145 / 145 | 1534 / 1534 |
 | `r8_compact_with_sweep_leaf/unroll_external_fee` | 1020 | 1020 | 267 / 267 | 0 / 0 | 145 / 145 | 1534 / 1534 |
 | `r8_compact_single_leaf/unroll_reserve_fee` | 810 | 810 | 267 / 267 | 0 / 0 | 145 / 145 | 1406 / 1406 |
@@ -124,7 +128,9 @@ Other recorded facts that differ:
 | `r8_chain_with_sweep_leaf/unroll_external_fee` | 1009 | 1009 | 227 / 227 | 0 / 0 | 63 / 63 | 1366 / 1366 |
 | `r8_chain_single_leaf/unroll_reserve_fee` | 800 | 800 | 227 / 227 | 0 / 0 | 63 / 63 | 1238 / 1238 |
 
-Refusals and outcomes: 30 compared, 30 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 30 compared, 30 with the same verdict (the mempool's answer and reason, and whether a block refused).
+
+Only in the 0.7.2 run: `r4_plain_with_sweep_leaf/neg_explicit_child_with_nonce`.
 
 ## S3 custom signature hash
 
@@ -158,7 +164,7 @@ Refusals and outcomes: 30 compared, 30 identical in every recorded string (mempo
 | `loop_m4/spend_coin1` | 574 | 574 | 418 / 418 | 129 / 129 | 272 / 272 | 2654 / 2654 |
 | `fixed_m4/spend_coin1` | 546 | 546 | 304 / 304 | 128 / 128 | 232 / 232 | 2194 / 2194 |
 
-Refusals and outcomes: 76 compared, 76 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 76 compared, 76 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 ## S4 state
 
@@ -172,7 +178,7 @@ Refusals and outcomes: 76 compared, 76 identical in every recorded string (mempo
 | `extend/st1_to_st2_at_index1` | 448 | 448 | 363 / 363 | 81 / 81 | 237 / 237 |  /  |
 | `sweep/after_expiry` | 256 | 256 | 193 / 193 | 73 / 73 | 73 / 73 | 1522 / 1522 |
 
-Refusals and outcomes: 15 compared, 15 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 15 compared, 15 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 ## S5 leave one
 
@@ -196,7 +202,7 @@ Refusals and outcomes: 15 compared, 15 identical in every recorded string (mempo
 | `depth20/exit_1_leaf_0` | 621 | 621 | 661 / 661 | 747 / 747 | 864 / 864 | 6106 / 6106 |
 | `depth4_last_leaf/exit_0_leaf_6` | 349 | 349 | 403 / 403 | 233 / 233 | 260 / 260 | 3010 / 3010 |
 
-Refusals and outcomes: 12 compared, 12 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 12 compared, 12 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 ## S6 relative timelocks
 
@@ -208,7 +214,7 @@ Refusals and outcomes: 12 compared, 12 identical in every recorded string (mempo
 | `program/safe_distance` | 163 | 163 | 33 |
 | `program/safe_duration` | 163 | 163 | 33 |
 
-Refusals and outcomes: 32 compared, 32 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 32 compared, 32 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
 ## S7 oracle
 
@@ -221,5 +227,5 @@ Refusals and outcomes: 32 compared, 32 identical in every recorded string (mempo
 | `liquidate_at_boundary_minus_1` | 317 | 317 | 400 / 400 | 140 / 140 | 198 / 198 | 2498 / 2498 |
 | `liquidate_asset_Y_price_1` | 317 | 317 | 400 / 400 | 140 / 140 | 198 / 198 | 2498 / 2498 |
 
-Refusals and outcomes: 8 compared, 8 identical in every recorded string (mempool error, block error, outcome).
+Refusals and outcomes: 8 compared, 8 with the same verdict (the mempool's answer and reason, and whether a block refused).
 
