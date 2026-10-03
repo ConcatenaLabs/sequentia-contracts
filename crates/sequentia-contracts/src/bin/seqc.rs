@@ -15,9 +15,12 @@
 //!     seqc descriptor seal <dir>   fill in the source hash, root and template hash
 //!     seqc descriptor check <dir>...   validate descriptors and their golden vectors
 //!     seqc descriptor vectors <dir>    rewrite the derived fields of the golden vectors
+//!     seqc descriptor as-v2 <dir>      print a version 1 template as the version 2
+//!                                  template of the same tree
 //!
-//! A template directory holds `descriptor.json`, the program source it names,
-//! and `vectors.json`.
+//! A template directory holds `descriptor.json`, the program sources it names,
+//! and `vectors.json`. Descriptors of version 1 and 2 are both read; each
+//! version has its own vector format.
 //!
 //! `seqc run` request fields:
 //!
@@ -60,7 +63,7 @@ use serde_json::{json, Map, Value};
 fn usage() -> ExitCode {
     eprintln!(
         "usage: seqc version | seqc lint [options] <file>... | seqc run < request.json | seqc expand <file>\n       \
-         seqc descriptor (seal | check | vectors) <template dir>..."
+         seqc descriptor (seal | check | vectors | as-v2) <template dir>..."
     );
     ExitCode::from(2)
 }
@@ -389,28 +392,94 @@ fn write_json(path: &std::path::Path, value: &impl serde::Serialize) -> Result<(
     std::fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))
 }
 
+/// Fills in, for every Simplicity leaf of a version 2 tree, the source hash,
+/// root, compiler and cost bound its source compiles to.
+fn seal_tree(node: &mut Value, dir: &std::path::Path) -> Result<(), String> {
+    use sequentia_contracts::simplicityhl::elements::hashes::{sha256, Hash};
+    let obj = node.as_object_mut().ok_or("a tree node is not an object")?;
+    if let Some(children) = obj.get_mut("branch") {
+        for child in children.as_array_mut().ok_or("a branch is not an array")? {
+            seal_tree(child, dir)?;
+        }
+        return Ok(());
+    }
+    if let Some(leaf) = obj.get_mut("simplicity") {
+        let source = leaf["source"]
+            .as_str()
+            .ok_or("a Simplicity leaf has no source")?;
+        let spath = dir.join(source);
+        let raw =
+            std::fs::read_to_string(&spath).map_err(|e| format!("{}: {e}", spath.display()))?;
+        let text = sequentia_contracts::expand(&raw)?;
+        let program = sequentia_contracts::compile(&text, Default::default())?;
+        leaf["source_sha256"] = hex(sha256::Hash::hash(text.as_bytes()).as_ref()).into();
+        leaf["cmr"] = sequentia_contracts::cmr_hex(&program).into();
+        leaf["compiler"] = json!({"name": "simplicityhl", "version": COMPILER_VERSION});
+        leaf["max_cost_wu"] = sequentia_contracts::descriptor::max_cost_wu(&program)?.into();
+    }
+    Ok(())
+}
+
+fn vectors_version(path: &std::path::Path) -> Result<u64, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let v = sequentia_contracts::descriptor::parse_json(&text)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    v["vectors"]
+        .as_u64()
+        .ok_or_else(|| format!("{}: no vectors version", path.display()))
+}
+
 fn descriptor_one(cmd: &str, dir: &std::path::Path) -> Result<String, String> {
-    use sequentia_contracts::descriptor::{template_hash, Descriptor, Vectors};
+    use sequentia_contracts::descriptor::{template_hash, Descriptor, Vectors, VectorsV2};
     use sequentia_contracts::simplicityhl::elements::hashes::{sha256, Hash};
 
     let dpath = dir.join("descriptor.json");
     let vpath = dir.join("vectors.json");
     let mut d = Descriptor::load(&dpath)?;
+    // Each descriptor version has its vector version.
+    let regenerate = |d: &Descriptor| -> Result<(Value, Value, usize), String> {
+        if d.descriptor == 1 {
+            let v = Vectors::load(&vpath)?;
+            let r = v.regenerate(d)?;
+            let n = r.addresses.len();
+            Ok((json!(v), json!(r), n))
+        } else {
+            if vectors_version(&vpath)? != 2 {
+                return Err(format!(
+                    "{}: a version 2 descriptor has version 2 vectors",
+                    vpath.display()
+                ));
+            }
+            let v = VectorsV2::load(&vpath)?;
+            let r = v.regenerate(d)?;
+            let n = r.addresses.len();
+            Ok((json!(v), json!(r), n))
+        }
+    };
     match cmd {
         "seal" => {
-            let t = d.typed()?;
-            let spath = dir.join(&t.program.source);
-            let raw =
-                std::fs::read_to_string(&spath).map_err(|e| format!("{}: {e}", spath.display()))?;
-            let text = sequentia_contracts::expand(&raw)?;
-            let program = sequentia_contracts::compile(&text, Default::default())?;
-            let program_v = d
-                .template
-                .get_mut("program")
-                .ok_or("template has no program")?;
-            program_v["source_sha256"] = hex(sha256::Hash::hash(text.as_bytes()).as_ref()).into();
-            program_v["cmr"] = sequentia_contracts::cmr_hex(&program).into();
-            program_v["compiler"] = json!({"name": "simplicityhl", "version": COMPILER_VERSION});
+            if d.descriptor == 1 {
+                let t = d.typed()?;
+                let spath = dir.join(&t.program.source);
+                let raw = std::fs::read_to_string(&spath)
+                    .map_err(|e| format!("{}: {e}", spath.display()))?;
+                let text = sequentia_contracts::expand(&raw)?;
+                let program = sequentia_contracts::compile(&text, Default::default())?;
+                let program_v = d
+                    .template
+                    .get_mut("program")
+                    .ok_or("template has no program")?;
+                program_v["source_sha256"] =
+                    hex(sha256::Hash::hash(text.as_bytes()).as_ref()).into();
+                program_v["cmr"] = sequentia_contracts::cmr_hex(&program).into();
+                program_v["compiler"] =
+                    json!({"name": "simplicityhl", "version": COMPILER_VERSION});
+            } else {
+                seal_tree(
+                    d.template.get_mut("tree").ok_or("template has no tree")?,
+                    dir,
+                )?;
+            }
             d.template_hash = template_hash(&d.template);
             d.validate(dir)?;
             write_json(&dpath, &d)?;
@@ -418,29 +487,31 @@ fn descriptor_one(cmd: &str, dir: &std::path::Path) -> Result<String, String> {
         }
         "check" => {
             d.validate(dir)?;
-            let v = Vectors::load(&vpath)?;
-            let regenerated = v.regenerate(&d)?;
-            if regenerated != v {
+            let (v, r, n) = regenerate(&d)?;
+            if r != v {
                 return Err(format!(
                     "{} differs from what the descriptor derives",
                     vpath.display()
                 ));
             }
             Ok(format!(
-                "ok: {} address vectors, template_hash {}",
-                v.addresses.len(),
-                d.template_hash
+                "ok: descriptor version {}, {n} address vectors, template_hash {}",
+                d.descriptor, d.template_hash
             ))
         }
         "vectors" => {
             d.validate(dir)?;
-            let v = Vectors::load(&vpath)?;
-            let regenerated = v.regenerate(&d)?;
-            write_json(&vpath, &regenerated)?;
-            Ok(format!(
-                "wrote {} address vectors",
-                regenerated.addresses.len()
-            ))
+            let (_, r, n) = regenerate(&d)?;
+            write_json(&vpath, &r)?;
+            Ok(format!("wrote {n} address vectors"))
+        }
+        "as-v2" => {
+            let v2 = d.as_v2(dir)?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&v2).map_err(|e| e.to_string())?
+            );
+            Ok("printed the version 2 template".into())
         }
         _ => Err(format!("unknown descriptor command {cmd}")),
     }

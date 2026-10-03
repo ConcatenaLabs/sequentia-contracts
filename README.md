@@ -19,8 +19,8 @@ tests.
 | `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`), each with a Simplex project that imports a dependency |
 | `parity/` | The parity gate between the Simplicity libraries a project builds with (the C library and the Rust jet table) and the node's |
 | `helpers/` | Shared SimplicityHL helpers, included as source: output reader, wide arithmetic, state, relative lock, Merkle fold, fee cap |
-| `templates/` | Contract templates: each a program, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
-| `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler |
+| `templates/` | Contract templates: each its programs, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
+| `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler, and in `mirrors/fixtures/` the files every reader is checked against |
 | `harness/` | The regtest harness: a Sequentia node with Simplicity active, the tests that run programs on it, and their records |
 | `docs/` | `descriptor.md` specifies contract descriptors and golden vectors; `helpers.md` documents the helpers and their measured costs. Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
 | `tools/compiler-roots/` | Compiles a set of programs under SimplicityHL 0.4.1 and the pinned compiler in one binary and compares their roots |
@@ -63,43 +63,62 @@ explorer and the registry can each tell what an output is and what spending it
 does, by recomputing its script rather than parsing a program.
 [`docs/descriptor.md`](docs/descriptor.md) is the specification.
 
-Templates use the fixed-root layout: the program takes no compile-time
-parameter, so its commitment root is one constant, and the parameters sit in a
-hidden data leaf beside it. An instance's address is then one hash and one curve
-tweak away from its parameters, which is all the mirrors in `mirrors/` need:
+A descriptor describes the output's taproot tree: Simplicity leaves, tapscript
+leaves and hidden data leaves, each named, and each way to spend it. A program
+takes no compile-time parameter, so its commitment root is one constant, and its
+parameters sit in a data leaf beside it; a tapscript leaf is a script with the
+parameters put in place. Storage slots, values that change from coin to coin,
+sit in data leaves too. An instance's address is then one hash per leaf and one
+curve tweak away from its values, which is all the mirrors in `mirrors/` need:
 
 ```python
 import sequentia_address                  # mirrors/python
-d = sequentia_address.loads(open("templates/one_key/descriptor.json").read())
-sequentia_address.derive(d, {"PK": "<32-byte x-only key, hex>"})["address"]["sequentia-testnet"]
+d = sequentia_address.loads(open("templates/one_key_exit/descriptor.json").read())
+x = sequentia_address.derive(d, {"PK": "<hex>", "EXIT_KEY": "<hex>", "EXIT_DELAY": "00400002"})
+x["address"]["sequentia-testnet"], x["leaves"]["exit"]["control_block"]
 ```
 
 ```js
 import { parseDescriptor, derive } from './mirrors/js/sequentia-address.mjs';
 const descriptor = parseDescriptor(text);
-derive(descriptor, { PK: '<hex>' }).address['sequentia-testnet'];
+derive(descriptor, { PK: '<hex>', EXIT_KEY: '<hex>', EXIT_DELAY: '00400002' }).address['sequentia-testnet'];
 ```
 
 ```go
 import sequentiaaddress "github.com/ConcatenaLabs/sequentia-contracts/mirrors/go"
 descriptor, err := sequentiaaddress.ParseDescriptor(raw)
-derived, err := sequentiaaddress.Derive(descriptor, map[string]string{"PK": "<hex>"})
+derived, err := sequentiaaddress.DeriveTree(descriptor, params, slots)
 ```
 
-Each reader refuses a descriptor with a field the specification does not list,
-a number that is not an integer below 2^53, hex that is not exactly its width,
-or a key path the template does not declare, so that no two readers take one
-file for two templates.
+Each derivation gives every leaf's hash, the control block that spends each
+Simplicity and tapscript leaf, each tapscript with its values in place, and the
+output key, script and address, so a spend can be built from the descriptor
+alone. A descriptor of the single-program layout (`"descriptor": 1`,
+`templates/one_key`) is read as the two-leaf tree it is.
 
-Each template directory holds the program, `descriptor.json` and `vectors.json`.
-The Rust crate, the three mirrors and CI all check every template's vectors, so
-the four implementations agree on every address.
+Each reader refuses a descriptor with a field the specification does not list or
+a field named twice, a number that is not an integer below 2^53, hex that is not
+exactly its width, text that is not printable ASCII, a tree that breaks a rule of
+the specification, or a key path or leaf that no path declares, so that no two
+readers take one file for two templates. `mirrors/fixtures/refusals.json` holds a
+case for each rule, and the Rust crate and all three mirrors must refuse every
+case for its reason.
+
+Each template directory holds its programs, `descriptor.json` and
+`vectors.json`. The Rust crate, the three mirrors and CI all check every
+template's vectors, so the four implementations agree on every address and
+control block.
 
 ```sh
 cargo run --bin seqc -- descriptor seal templates/<t>      # after editing a template
 cargo run --bin seqc -- descriptor vectors templates/<t>   # after adding a vector
 cargo run --bin seqc -- descriptor check templates/<t>
 ```
+
+| Template | What |
+|---|---|
+| `templates/one_key` | One key, held in the data leaf beside the program (the single-program layout) |
+| `templates/one_key_exit` | The one-key program and its data leaf, beside a tapscript exit leaf that a second key spends after a relative delay |
 
 ## Lints
 
@@ -250,6 +269,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | `s7` | An oracle-signed price checked with 128-bit products |
 | `h1` | Every helper in a program that uses it: spent, and each violation refused |
 | `d1` | The one-key template, paid at the address the Python mirror derives from its descriptor, and spent; another key and another key's signature refused |
+| `d2` | The `one_key_exit` tree, paid at a golden vector's address and spent by each leaf from its descriptor alone: the wrong key or chain and the wrong control block refused on the Simplicity leaf; the exit refused before its delay, with a short or disabled lock, in version 1 and with the other key; each leaf's signature refused on the other under one key |
 | `s1c`, `s1d` | The budget to the byte, the annex cap, program size and cost ceilings, budget bought with witness data |
 
 Each test writes `harness/records/<id>.json`: for every spend the program and
