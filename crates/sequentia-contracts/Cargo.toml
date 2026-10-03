@@ -8,5 +8,7 @@ publish = false
 [dependencies]
 simplicityhl = "=0.7.2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# unbounded_depth: a tree of depth 128 nests about 260 levels of JSON, past
+# serde_json's own limit of 128; parse_json enforces MAX_JSON_DEPTH instead.
+serde_json = { version = "1", features = ["unbounded_depth"] }
 toml = { version = "0.8", default-features = false, features = ["parse"] }

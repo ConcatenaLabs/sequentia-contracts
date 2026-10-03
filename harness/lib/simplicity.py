@@ -316,3 +316,41 @@ class SimBase(ChainBase):
         else:
             assert not res["allowed"] and reason_matches(expect, res.get("reject-reason")), (label, expect, d)
         return d
+
+
+class TreeLeaf:
+    """A Simplicity leaf of a descriptor instance, placed in its tree: the
+    program is compiled from the source the descriptor names, and the control
+    block is the one the address mirror derived. It spends like a SimProg."""
+
+    def __init__(self, source, cmr, control_block, args=None):
+        self.source = source
+        self.args = args or {}
+        self.allow_banned = False
+        r = seqc({"source": source, "args": self.args})
+        self.cmr = bytes.fromhex(r["cmr"])
+        assert self.cmr == bytes(cmr), "the source compiles to %s, the descriptor says %s" % (r["cmr"], bytes(cmr).hex())
+        self.cb = bytes(control_block)
+        self.commit_bytes = r["commit_program_bytes"]
+
+
+def load_template(name):
+    """A template's descriptor (read by the Python mirror), its vectors, and the
+    text of each Simplicity leaf's source with its includes resolved, checked
+    against the descriptor's source hash."""
+    sys.path.insert(0, os.path.join(REPO_ROOT, "mirrors", "python"))
+    import sequentia_address
+    base = os.path.join(REPO_ROOT, "templates", name)
+    with open(os.path.join(base, "descriptor.json")) as f:
+        d = sequentia_address.loads(f.read())
+    with open(os.path.join(base, "vectors.json")) as f:
+        v = json.load(f)
+    sources = {}
+    model = sequentia_address.model(d)
+    for (kind, leaf, body), _ in sequentia_address._leaves(model["tree"]):
+        if kind == "simplicity":
+            p = subprocess.run([SEQC, "expand", os.path.join(base, body["source"])], capture_output=True, check=True)
+            text = p.stdout.decode()
+            assert sha256(text.encode()).hex() == body["source_sha256"], leaf
+            sources[leaf] = (text, body)
+    return sequentia_address, d, v, sources

@@ -53,6 +53,11 @@ obvious from the code. Node and consensus conventions live in the
 - **The mirrors must stay compiler-free.** Python, JavaScript and Go derive an
   address with the standard library only, so any service can recognise a
   contract. Do not add a dependency to them.
+- **The four readers refuse the same files.** A rule a descriptor reader applies
+  goes into the Rust crate and all three mirrors together, with a case in
+  `mirrors/fixtures/refusals.json` that names the reason; every reader's tests
+  run every case. A rule in one reader alone lets two readers take one file for
+  two templates.
 
 ## Working in this repository
 

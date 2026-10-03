@@ -68,8 +68,8 @@ scale such as 10^8 cannot use it directly.
 | `state_script_hash(state) -> u256` | The script hash of this same program holding `state` |
 | `state_require_successor(i, state)` | Output `i` is this program holding `state` |
 
-One 32-byte slot in the data leaf, as in the fixed-root layout of
-[descriptors](descriptor.md). The successor is built from this input's own leaf
+One 32-byte slot in the data leaf, which a version 2
+[descriptor](descriptor.md) records as a storage slot. The successor is built from this input's own leaf
 and internal key, so no constant names the program.
 
 ### `relative_lock`

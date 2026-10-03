@@ -1,17 +1,21 @@
-// Package sequentiaaddress derives the address of a fixed-root contract
-// descriptor's instance with no compiler.
+// Package sequentiaaddress derives the address of a contract descriptor's
+// instance with no compiler.
 //
-// A version 1 descriptor's output is
+// A version 2 descriptor describes a taproot tree of Simplicity leaves
+// (version 0xbe), tapscript leaves (0xc4) and hidden data leaves; an
+// instance's output is its parameters and slots put in place in that tree,
+// then one curve tweak. A version 1 descriptor is the tree
 //
 //	P2TR(internal_key, TapBranch(TapLeaf_0xbe(CMR), H_TapData(param_bytes)))
 //
-// so an instance's address takes one hash and one curve tweak. The package uses
-// only the standard library. docs/descriptor.md is the specification.
+// and is read as that version 2 tree. The package uses only the standard
+// library. docs/descriptor.md is the specification.
 package sequentiaaddress
 
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -20,7 +24,10 @@ import (
 	"sort"
 )
 
-const leafVersionSimplicity = 0xbe
+const (
+	leafVersionSimplicity = 0xbe
+	leafVersionTapscript  = 0xc4
+)
 
 var widths = map[string]int{"u8": 1, "u16": 2, "u32": 4, "u64": 8, "u128": 16, "u256": 32, "Pubkey": 32}
 
@@ -40,33 +47,23 @@ func mustHex(s string) *big.Int {
 	return n
 }
 
-// Descriptor is the part of a descriptor file address derivation reads. Read
-// one with ParseDescriptor, which checks the whole file.
+// Descriptor is a descriptor file, read and checked by ParseDescriptor.
 type Descriptor struct {
-	Template     json.RawMessage `json:"template"`
-	TemplateHash string          `json:"template_hash"`
-	Chains       []Chain         `json:"chains"`
+	Version      int
+	Template     json.RawMessage
+	TemplateHash string
+	Chains       []Chain
+	model        *model
+	template     map[string]any
 }
 
 // Chain names a chain and its bech32 prefix.
 type Chain struct {
-	Name      string `json:"name"`
-	Bech32HRP string `json:"bech32_hrp"`
+	Name      string
+	Bech32HRP string
 }
 
-type template struct {
-	Layout      string `json:"layout"`
-	InternalKey string `json:"internal_key"`
-	Program     struct {
-		CMR string `json:"cmr"`
-	} `json:"program"`
-	Params []struct {
-		Name string `json:"name"`
-		Type string `json:"type"`
-	} `json:"params"`
-}
-
-// Derived is everything an instance's output is made of.
+// Derived is everything a version 1 instance's output is made of.
 type Derived struct {
 	ParamBytes      string            `json:"param_bytes"`
 	DataLeaf        string            `json:"data_leaf"`
@@ -79,24 +76,51 @@ type Derived struct {
 	Address         map[string]string `json:"address"`
 }
 
+// LeafVector is one leaf of a derived output: its hash, and the control block
+// of a Simplicity or tapscript leaf, the script of a tapscript leaf, or the
+// bytes of a data leaf.
+type LeafVector struct {
+	Hash         string `json:"hash"`
+	ControlBlock string `json:"control_block,omitempty"`
+	Script       string `json:"script,omitempty"`
+	Data         string `json:"data,omitempty"`
+}
+
+// TreeDerived is everything an instance's output is made of, for a tree of any shape.
+type TreeDerived struct {
+	Leaves          map[string]LeafVector `json:"leaves"`
+	MerkleRoot      string                `json:"merkle_root"`
+	Tweak           string                `json:"tweak"`
+	OutputKey       string                `json:"output_key"`
+	OutputKeyParity int                   `json:"output_key_parity"`
+	ScriptPubKey    string                `json:"script_pubkey"`
+	Address         map[string]string     `json:"address"`
+}
+
 func sha(b []byte) []byte {
 	h := sha256.Sum256(b)
 	return h[:]
 }
 
+func cat(parts ...[]byte) []byte {
+	var out []byte
+	for _, p := range parts {
+		out = append(out, p...)
+	}
+	return out
+}
+
 // Tagged is BIP340's tagged hash.
 func Tagged(tag string, msg []byte) []byte {
 	t := sha([]byte(tag))
-	return sha(append(append(append([]byte{}, t...), t...), msg...))
+	return sha(cat(t, t, msg))
 }
 
 // CanonicalJSON writes a value with object keys sorted and no whitespace.
-// Descriptors are printable ASCII.
+// Templates are printable ASCII.
 func CanonicalJSON(raw []byte) (string, error) {
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.UseNumber()
-	var v any
-	if err := dec.Decode(&v); err != nil {
+	v, err := decodeNumbers(raw)
+	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
@@ -207,6 +231,9 @@ func mul(k *big.Int, pt *point) *point {
 }
 
 func liftX(x *big.Int) (*point, error) {
+	if x.Cmp(fieldP) >= 0 {
+		return nil, errors.New("not a point")
+	}
 	c := modP(new(big.Int).Add(new(big.Int).Exp(x, big.NewInt(3), fieldP), big.NewInt(7)))
 	e := new(big.Int).Rsh(new(big.Int).Add(fieldP, big.NewInt(1)), 2)
 	y := new(big.Int).Exp(c, e, fieldP)
@@ -269,46 +296,156 @@ func SegwitV1Address(hrp string, program []byte) string {
 	return out
 }
 
-// Derive computes an instance's output from its parameter values (hex, by name).
-func Derive(d Descriptor, params map[string]string) (*Derived, error) {
-	if err := checkTemplate(d.Template, d.TemplateHash); err != nil {
-		return nil, err
+// ScriptNum is a minimal push of v as a script number.
+func ScriptNum(v uint64) []byte {
+	if v == 0 {
+		return []byte{0x00}
 	}
-	var t template
-	if err := json.Unmarshal(d.Template, &t); err != nil {
-		return nil, err
+	if v <= 16 {
+		return []byte{byte(0x50 + v)}
 	}
-	if len(params) != len(t.Params) {
-		return nil, fmt.Errorf("%d parameters given, the template has %d", len(params), len(t.Params))
+	var b []byte
+	for x := v; x > 0; x >>= 8 {
+		b = append(b, byte(x))
 	}
-	var data []byte
-	for _, p := range t.Params {
-		value, ok := params[p.Name]
-		if !ok {
-			return nil, fmt.Errorf("parameter %s is missing", p.Name)
+	if b[len(b)-1]&0x80 != 0 {
+		b = append(b, 0)
+	}
+	return append([]byte{byte(len(b))}, b...)
+}
+
+func compactSize(n int) []byte {
+	switch {
+	case n < 0xfd:
+		return []byte{byte(n)}
+	case n <= 0xffff:
+		return []byte{0xfd, byte(n), byte(n >> 8)}
+	default:
+		b := make([]byte, 5)
+		b[0] = 0xfe
+		binary.LittleEndian.PutUint32(b[1:], uint32(n))
+		return b
+	}
+}
+
+type scriptLeaf struct {
+	name    string
+	version byte
+	script  []byte
+}
+
+type found struct {
+	name string
+	path [][]byte
+}
+
+// DeriveTree computes an instance's output from its parameter and slot values
+// (hex, by name): every leaf's hash and control block, script or data, the
+// Merkle root, the tweak, the output key and its parity, the scriptPubKey and
+// the address on each chain. It reads a descriptor of either version.
+func DeriveTree(d Descriptor, params, slots map[string]string) (*TreeDerived, error) {
+	m := d.model
+	if m == nil {
+		return nil, errors.New("read the descriptor with ParseDescriptor")
+	}
+	if !sameNames(params, m.params) {
+		return nil, fmt.Errorf("parameters given %v, the template has %v", keys(params), names(m.params))
+	}
+	if !sameNames(slots, m.slots) {
+		return nil, fmt.Errorf("slots given %v, the template has %v", keys(slots), names(m.slots))
+	}
+	values := map[string]string{}
+	for k, v := range params {
+		values[k] = v
+	}
+	for k, v := range slots {
+		values[k] = v
+	}
+	leaves := map[string]LeafVector{}
+	var scripts []scriptLeaf
+	var walk func(n *node) ([]byte, []found, error)
+	walk = func(n *node) ([]byte, []found, error) {
+		if n.kind == "branch" {
+			a, la, err := walk(n.a)
+			if err != nil {
+				return nil, nil, err
+			}
+			b, lb, err := walk(n.b)
+			if err != nil {
+				return nil, nil, err
+			}
+			lo, hi := a, b
+			if bytes.Compare(lo, hi) > 0 {
+				lo, hi = hi, lo
+			}
+			h := Tagged("TapBranch/elements", cat(lo, hi))
+			var out []found
+			for _, f := range la {
+				out = append(out, found{f.name, append(append([][]byte{}, f.path...), b)})
+			}
+			for _, f := range lb {
+				out = append(out, found{f.name, append(append([][]byte{}, f.path...), a)})
+			}
+			return h, out, nil
 		}
-		v, err := unhex(value, widths[p.Type])
-		if err != nil {
-			return nil, fmt.Errorf("parameter %s: %v", p.Name, err)
+		switch n.kind {
+		case "data":
+			var data []byte
+			for _, v := range n.values {
+				b, err := m.value(values, v)
+				if err != nil {
+					return nil, nil, err
+				}
+				data = append(data, b...)
+			}
+			h := Tagged("TapData", data)
+			leaves[n.name] = LeafVector{Hash: hex.EncodeToString(h), Data: hex.EncodeToString(data)}
+			return h, nil, nil
+		case "simplicity":
+			cmr, err := unhex(n.cmr, 32)
+			if err != nil {
+				return nil, nil, err
+			}
+			return scriptLeafHash(n.name, leafVersionSimplicity, cmr, leaves, &scripts)
+		default:
+			var script []byte
+			for _, it := range n.items {
+				switch it.k {
+				case "bytes":
+					script = append(script, it.b...)
+				case "push":
+					b, err := m.value(values, it.p)
+					if err != nil {
+						return nil, nil, err
+					}
+					script = append(append(script, byte(len(b))), b...)
+				default:
+					b, err := m.value(values, it.p)
+					if err != nil {
+						return nil, nil, err
+					}
+					script = append(script, ScriptNum(new(big.Int).SetBytes(b).Uint64())...)
+				}
+			}
+			return scriptLeafHash(n.name, leafVersionTapscript, script, leaves, &scripts)
 		}
-		data = append(data, v...)
 	}
-	cmr, err := unhex(t.Program.CMR, 32)
+	root, paths, err := walk(m.tree)
 	if err != nil {
 		return nil, err
 	}
-	dataLeaf := Tagged("TapData", data)
-	programLeaf := Tagged("TapLeaf/elements", append([]byte{leafVersionSimplicity, byte(len(cmr))}, cmr...))
-	lo, hi := dataLeaf, programLeaf
-	if bytes.Compare(lo, hi) > 0 {
-		lo, hi = hi, lo
+	for i := range scripts {
+		for j := i + 1; j < len(scripts); j++ {
+			if scripts[i].version == scripts[j].version && bytes.Equal(scripts[i].script, scripts[j].script) {
+				return nil, fmt.Errorf("leaves %s and %s are one script at one leaf version", scripts[i].name, scripts[j].name)
+			}
+		}
 	}
-	root := Tagged("TapBranch/elements", append(append([]byte{}, lo...), hi...))
-	internal, err := unhex(t.InternalKey, 32)
+	internal, err := unhex(m.internalKey, 32)
 	if err != nil {
 		return nil, err
 	}
-	tweak := Tagged("TapTweak/elements", append(append([]byte{}, internal...), root...))
+	tweak := Tagged("TapTweak/elements", cat(internal, root))
 	p, err := liftX(new(big.Int).SetBytes(internal))
 	if err != nil {
 		return nil, err
@@ -317,19 +454,98 @@ func Derive(d Descriptor, params map[string]string) (*Derived, error) {
 	q := add(p, mul(k, &point{genX, genY}))
 	outputKey := make([]byte, 32)
 	q.x.FillBytes(outputKey)
+	parity := int(q.y.Bit(0))
+	versions := map[string]byte{}
+	for _, s := range scripts {
+		versions[s.name] = s.version
+	}
+	for _, f := range paths {
+		l := leaves[f.name]
+		l.ControlBlock = hex.EncodeToString(cat([]byte{versions[f.name] | byte(parity)}, internal, cat(f.path...)))
+		leaves[f.name] = l
+	}
 	address := map[string]string{}
 	for _, c := range d.Chains {
 		address[c.Name] = SegwitV1Address(c.Bech32HRP, outputKey)
 	}
-	return &Derived{
-		ParamBytes:      hex.EncodeToString(data),
-		DataLeaf:        hex.EncodeToString(dataLeaf),
-		ProgramLeaf:     hex.EncodeToString(programLeaf),
+	return &TreeDerived{
+		Leaves:          leaves,
 		MerkleRoot:      hex.EncodeToString(root),
 		Tweak:           hex.EncodeToString(tweak),
 		OutputKey:       hex.EncodeToString(outputKey),
-		OutputKeyParity: int(q.y.Bit(0)),
+		OutputKeyParity: parity,
 		ScriptPubKey:    "5120" + hex.EncodeToString(outputKey),
 		Address:         address,
 	}, nil
+}
+
+func scriptLeafHash(name string, version byte, script []byte, leaves map[string]LeafVector, scripts *[]scriptLeaf) ([]byte, []found, error) {
+	h := Tagged("TapLeaf/elements", cat([]byte{version}, compactSize(len(script)), script))
+	*scripts = append(*scripts, scriptLeaf{name, version, script})
+	l := LeafVector{Hash: hex.EncodeToString(h)}
+	if version == leafVersionTapscript {
+		l.Script = hex.EncodeToString(script)
+	}
+	leaves[name] = l
+	return h, []found{{name, nil}}, nil
+}
+
+// Derive computes a version 1 instance's output from its parameter values
+// (hex, by name), in the fields of a version 1 vector.
+func Derive(d Descriptor, params map[string]string) (*Derived, error) {
+	if d.Version != 1 {
+		return nil, fmt.Errorf("descriptor version %d is not 1; use DeriveTree", d.Version)
+	}
+	x, err := DeriveTree(d, params, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+	var data []byte
+	for _, p := range d.model.params {
+		b, err := unhex(params[p.name], widths[p.ty])
+		if err != nil {
+			return nil, fmt.Errorf("parameter %s: %v", p.name, err)
+		}
+		data = append(data, b...)
+	}
+	return &Derived{
+		ParamBytes:      hex.EncodeToString(data),
+		DataLeaf:        x.Leaves[v1DataLeaf].Hash,
+		ProgramLeaf:     x.Leaves[v1ProgramLeaf].Hash,
+		MerkleRoot:      x.MerkleRoot,
+		Tweak:           x.Tweak,
+		OutputKey:       x.OutputKey,
+		OutputKeyParity: x.OutputKeyParity,
+		ScriptPubKey:    x.ScriptPubKey,
+		Address:         x.Address,
+	}, nil
+}
+
+func sameNames(given map[string]string, fields []field) bool {
+	if len(given) != len(fields) {
+		return false
+	}
+	for _, f := range fields {
+		if _, ok := given[f.name]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func keys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func names(fs []field) []string {
+	out := make([]string, 0, len(fs))
+	for _, f := range fs {
+		out = append(out, f.name)
+	}
+	return out
 }
