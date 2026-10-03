@@ -110,5 +110,27 @@
       "genesis": null,
       "bech32_hrp": "ert"
     }
-  ]
+  ],
+  "measured": {
+    "source": "harness/records/d2.json",
+    "spend": {
+      "transaction": "one input, one output and a fee output, all explicit, by the Simplicity leaf",
+      "vsize": 247,
+      "weight": 987,
+      "program_bytes": 102,
+      "witness_bytes": 96,
+      "cost_bound_wu": 72,
+      "budget_wu": 1378
+    },
+    "exit": {
+      "transaction": "the same, by the tapscript leaf once the delay has passed",
+      "vsize": 207,
+      "weight": 828,
+      "witness_stack_items_bytes": [
+        64,
+        40,
+        65
+      ]
+    }
+  }
 }
