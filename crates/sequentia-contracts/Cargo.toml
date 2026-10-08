@@ -11,4 +11,7 @@ serde = { version = "1", features = ["derive"] }
 # unbounded_depth: a tree of depth 128 nests about 260 levels of JSON, past
 # serde_json's own limit of 128; parse_json enforces MAX_JSON_DEPTH instead.
 serde_json = { version = "1", features = ["unbounded_depth"] }
+# BIP340 for price attestations (attestation.rs). The version every other
+# dependency already resolves, so it adds no crate.
+secp256k1 = { version = "=0.29.1", features = ["hashes", "rand"] }
 toml = { version = "0.8", default-features = false, features = ["parse"] }
