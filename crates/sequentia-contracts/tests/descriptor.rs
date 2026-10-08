@@ -303,3 +303,95 @@ fn vectors_cover_every_order_of_every_branch_with_both_parities() {
         );
     }
 }
+
+/// Each Simplicity leaf's source, with its includes resolved, by source name:
+/// what a wallet is handed alongside a descriptor.
+fn expanded_sources(dir: &Path, d: &Descriptor) -> BTreeMap<String, String> {
+    let mut out = BTreeMap::new();
+    for (leaf, _) in d.model().unwrap().tree.leaves() {
+        if let Node::Simplicity { program, .. } = leaf {
+            let raw = std::fs::read_to_string(dir.join(&program.source)).unwrap();
+            out.insert(
+                program.source.clone(),
+                sequentia_contracts::expand(&raw).unwrap(),
+            );
+        }
+    }
+    out
+}
+
+#[test]
+fn every_template_validates_from_its_sources_as_text() {
+    for dir in descriptor_dirs() {
+        let d = Descriptor::load(&dir.join("descriptor.json")).unwrap();
+        let sources = expanded_sources(&dir, &d);
+        assert!(!sources.is_empty(), "{}", dir.display());
+        d.validate_sources(&sources)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()));
+    }
+}
+
+#[test]
+fn validating_from_text_refuses_what_validating_from_files_refuses() {
+    let (dir, d) = load("templates/faucet_drip");
+    let good = expanded_sources(&dir, &d);
+    let name = "faucet_drip.simf".to_string();
+
+    let e = d.validate_sources(&BTreeMap::new()).unwrap_err();
+    assert!(
+        e.contains("no text given for the source faucet_drip.simf"),
+        "{e}"
+    );
+
+    // The source as stored, its includes not resolved: not the text the hash names.
+    let raw = std::fs::read_to_string(dir.join(&name)).unwrap();
+    let e = d
+        .validate_sources(&BTreeMap::from([(name.clone(), raw)]))
+        .unwrap_err();
+    assert!(
+        e.contains("the source with its includes resolved hashes to"),
+        "{e}"
+    );
+
+    // One changed byte.
+    let edited = good[&name].replacen("assert!(jet::eq_32(jet::current_index(), 0));", "", 1);
+    assert_ne!(edited, good[&name]);
+    let e = d
+        .validate_sources(&BTreeMap::from([(name.clone(), edited)]))
+        .unwrap_err();
+    assert!(e.contains("source_sha256 is f6b1bc9c"), "{e}");
+
+    // A descriptor whose root is not what the text compiles to, resealed.
+    let mut text = std::fs::read_to_string(dir.join("descriptor.json")).unwrap();
+    text = text.replace(
+        "5251ec00d9799dbcdb31da4534f25ef9960321f195e2e24ef7125c46f24b972a",
+        "0000000000000000000000000000000000000000000000000000000000000001",
+    );
+    let mut forged = Descriptor::parse(&text).unwrap();
+    forged.template_hash = template_hash(&forged.template);
+    let e = forged.validate_sources(&good).unwrap_err();
+    assert!(e.contains("the source compiles to 5251ec00"), "{e}");
+}
+
+#[test]
+fn a_resolved_source_compiles_without_a_file_system() {
+    let e = sequentia_contracts::compile_expanded(
+        "// include output_reader\nfn main() {}\n",
+        simplicityhl::Arguments::default(),
+    )
+    .unwrap_err();
+    assert!(
+        e.contains("the source still includes a helper (// include output_reader)"),
+        "{e}"
+    );
+    let p =
+        sequentia_contracts::compile_expanded("fn main() {}\n", simplicityhl::Arguments::default())
+            .unwrap();
+    assert_eq!(
+        sequentia_contracts::cmr_hex(&p),
+        sequentia_contracts::cmr_hex(
+            &sequentia_contracts::compile("fn main() {}\n", simplicityhl::Arguments::default())
+                .unwrap()
+        )
+    );
+}

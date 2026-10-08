@@ -111,6 +111,26 @@ pub fn compile(source: &str, arguments: Arguments) -> Result<CompiledProgram, St
     template(source)?.instantiate(arguments, false)
 }
 
+/// Compile a source whose helper includes are already resolved (`seqc
+/// expand`'s output), without debug symbols, for the Elements jet set. It
+/// reads no file, so it runs where there is no file system, such as a browser.
+/// A line that still names a helper is refused rather than left as a comment,
+/// since the program would then not be the one its source hash describes.
+pub fn compile_expanded(source: &str, arguments: Arguments) -> Result<CompiledProgram, String> {
+    if let Some(line) = source
+        .lines()
+        .find(|l| l.trim_end().starts_with(INCLUDE_DIRECTIVE))
+    {
+        return Err(format!(
+            "the source still includes a helper ({}); give it with its includes resolved",
+            line.trim_end()
+        ));
+    }
+    TemplateProgram::new(source, Box::new(ElementsJetHinter::new()))
+        .map_err(|d| d.to_string())?
+        .instantiate(arguments, false)
+}
+
 /// Arguments that give every parameter of `template` its all-zero value.
 ///
 /// The jets a program calls do not depend on its parameter values, so a

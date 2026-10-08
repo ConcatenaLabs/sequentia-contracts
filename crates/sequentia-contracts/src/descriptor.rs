@@ -1322,6 +1322,36 @@ impl Descriptor {
     /// # Errors
     /// The first check that fails.
     pub fn validate(&self, dir: &Path) -> Result<(), String> {
+        self.validate_with(&mut |source| {
+            let path = dir.join(source);
+            let raw =
+                std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            crate::expand(&raw)
+        })
+    }
+
+    /// [`Descriptor::validate`] with no file system: `sources` maps each
+    /// Simplicity leaf's `source` name to its text with the helper includes
+    /// already resolved, exactly what `seqc expand` prints and what
+    /// `source_sha256` hashes. This is how a wallet or a browser, which has no
+    /// directory and no helpers, checks a template it was handed: the same
+    /// checks, the same compiler, the same refusals.
+    ///
+    /// # Errors
+    /// The first check that fails; a source missing from `sources` is one.
+    pub fn validate_sources(&self, sources: &BTreeMap<String, String>) -> Result<(), String> {
+        self.validate_with(&mut |source| {
+            sources
+                .get(source)
+                .cloned()
+                .ok_or_else(|| format!("no text given for the source {source}"))
+        })
+    }
+
+    fn validate_with(
+        &self,
+        read: &mut dyn FnMut(&str) -> Result<String, String>,
+    ) -> Result<(), String> {
         if !DESCRIPTOR_VERSIONS.contains(&self.descriptor) {
             return Err(format!(
                 "descriptor version {} is not 1 or 2",
@@ -1355,7 +1385,7 @@ impl Descriptor {
         }
         for (leaf, _) in model.tree.leaves() {
             if let Node::Simplicity { name, program } = leaf {
-                check_simplicity_leaf(dir, program, self.descriptor == 2)
+                check_simplicity_leaf(read, program, self.descriptor == 2)
                     .map_err(|e| format!("leaf {name}: {e}"))?;
             }
         }
@@ -1479,7 +1509,11 @@ pub fn max_cost_wu(program: &simplicityhl::CompiledProgram) -> Result<u64, Strin
     Ok(milli.div_ceil(1000))
 }
 
-fn check_simplicity_leaf(dir: &Path, p: &SimplicityLeaf, v2: bool) -> Result<(), String> {
+fn check_simplicity_leaf(
+    read: &mut dyn FnMut(&str) -> Result<String, String>,
+    p: &SimplicityLeaf,
+    v2: bool,
+) -> Result<(), String> {
     use simplicityhl::parse::ParseFromStr;
     use simplicityhl::types::ResolvedType;
 
@@ -1494,9 +1528,7 @@ fn check_simplicity_leaf(dir: &Path, p: &SimplicityLeaf, v2: bool) -> Result<(),
             p.compiler.name, p.compiler.version
         ));
     }
-    let path = dir.join(&p.source);
-    let raw = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    let text = crate::expand(&raw)?;
+    let text = read(&p.source)?;
     let source_hash = hex(sha256::Hash::hash(text.as_bytes()).as_ref());
     if source_hash != p.source_sha256 {
         return Err(format!(
@@ -1504,7 +1536,8 @@ fn check_simplicity_leaf(dir: &Path, p: &SimplicityLeaf, v2: bool) -> Result<(),
             p.source_sha256
         ));
     }
-    let program = compile(&text, simplicityhl::Arguments::default())
+    // The text is already resolved: compiling it reads no helper file.
+    let program = crate::compile_expanded(&text, simplicityhl::Arguments::default())
         .map_err(|e| format!("the source does not compile without parameters: {e}"))?;
     let cmr = cmr_hex(&program);
     if cmr != p.cmr {
