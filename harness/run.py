@@ -39,6 +39,7 @@ TESTS = [
     ("h1", "h1_helpers", "The shared helpers, each accepted and refused"),
     ("f1", "f1_faucet_drip", "The faucet drip covenant: drips, every violation refused, and the recovery"),
     ("o1", "o1_attestation", "One price attestation (format 2) through a Simplicity leaf and a tapscript leaf"),
+    ("o2", "o2_beacon", "Fresh attestations: a beacon coin, its rotation, and old attestations refused after it"),
 ]
 CEILINGS = [
     ("s1c", "s1_ceiling_annex", "Budget threshold, annex cap, program size, consensus cost cap"),
@@ -65,7 +66,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, s1c, s1d); default all but s1c and s1d")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "
