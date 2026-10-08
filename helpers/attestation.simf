@@ -52,3 +52,30 @@ fn att_digest(key: u256, base: u256, quote: u256, price: u64, precision: u8, tim
 fn att_verify(key: Pubkey, base: u256, quote: u256, price: u64, precision: u8, time: u32, beacon: u256, sig: Signature) {
     jet::bip_0340_verify((key, att_digest(key, base, quote, price, precision, time, beacon)), sig);
 }
+
+/* SHA256 of `OP_1 <beacon>`: the output script an attestation's beacon names,
+ * in the form jet::input_script_hash returns. */
+fn att_beacon_script_hash(beacon: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, beacon);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* The attestation's beacon is live: input `at` of this transaction spends an
+ * explicit coin of `beacon_asset` (the oracle's beacon asset, internal byte
+ * order) from the output script `beacon` names. The oracle moves every coin of
+ * that asset to a new script when it rotates, and only its key can, so an
+ * attestation naming an old beacon has no coin to point at. A zero beacon
+ * names no script that can hold one. */
+fn att_beacon_check(beacon: u256, beacon_asset: u256, at: u32) {
+    assert!(jet::eq_256(att_beacon_script_hash(beacon), unwrap(jet::input_script_hash(at))));
+    let asset: u256 = unwrap_right::<(u1, u256)>(unwrap(jet::input_asset(at)));
+    assert!(jet::eq_256(asset, beacon_asset));
+}
+
+/* att_verify, and the beacon it names is live at input `at`. */
+fn att_verify_fresh(key: Pubkey, base: u256, quote: u256, price: u64, precision: u8, time: u32, beacon: u256, sig: Signature, beacon_asset: u256, at: u32) {
+    att_verify(key, base, quote, price, precision, time, beacon, sig);
+    att_beacon_check(beacon, beacon_asset, at);
+}

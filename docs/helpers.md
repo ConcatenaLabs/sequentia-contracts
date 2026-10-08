@@ -112,6 +112,9 @@ one, or requires the fee to be paid in the asset it holds.
 |---|---|
 | `att_digest(key, base, quote, price, precision, time, beacon) -> u256` | The tagged hash a format-2 price attestation is signed over |
 | `att_verify(key, base, quote, price, precision, time, beacon, sig)` | `sig` is `key`'s format-2 attestation of exactly these fields |
+| `att_beacon_script_hash(beacon) -> u256` | SHA256 of `OP_1 <beacon>`, the form `jet::input_script_hash` returns |
+| `att_beacon_check(beacon, beacon_asset, at)` | Input `at` spends an explicit coin of `beacon_asset` from the output script `beacon` names: the attestation's beacon is live |
+| `att_verify_fresh(key, base, quote, price, precision, time, beacon, sig, beacon_asset, at)` | `att_verify` and `att_beacon_check` together |
 | `att_le16`, `att_le32`, `att_le64` | Reverse the bytes of an integer |
 
 The format belongs to [`sequentia-oracle`](https://github.com/ConcatenaLabs/sequentia-oracle)
@@ -120,8 +123,16 @@ quote asset ids, price, precision, time and beacon, signed with BIP340 over its
 tagged hash (tag `Sequentia/oracle/price`). Integers are little-endian in the
 message, so the helper reverses `price` and `time` before hashing them; asset
 ids are in internal byte order. A contract fixes the key, the pair, the
-precision and the beacon as parameters and takes the price and the time from
-the witness, so an attestation of anything else fails the signature check.
+precision as parameters and takes the price and the time from the witness, so
+an attestation of anything else fails the signature check. A contract that
+does not check freshness pins the beacon too (a zero one, for a signer without
+a beacon); a contract that does takes the beacon from the witness and pins the
+oracle's **beacon asset** instead, and `att_beacon_check` requires the
+transaction to spend a coin of that asset from the script the attestation
+names. The oracle moves every such coin to a new script when it rotates, so an
+attestation signed before a rotation has no coin to point at
+(sequentia-oracle `doc/format.md`, "The beacon", defines the script and the
+rule).
 `crates/sequentia-contracts/src/attestation.rs` is the Rust reader of the same
 format, and `vectors/attestations.json` is a copy of the oracle repository's
 golden vectors, pinned by `vectors/PIN.json`, which the Rust tests reproduce
@@ -141,6 +152,33 @@ through a Simplicity leaf and through a tapscript leaf of the same output.
 |---|---|
 | Simplicity | The witness price or time not the signed one; a genuine attestation dated before `NOT_BEFORE`, or at or above `STRIKE`; the same oracle's attestation of another pair; another key's attestation of the same fields; the oracle's format-1 signature of the same observation; the oracle's key over the same fields with version byte 1. All `Assertion failed inside jet` |
 | Tapscript | The same eight: `Invalid Schnorr signature` for the six signature cases, `Script failed an OP_VERIFY operation` for the early and the high one. The whole format-1 record, its 8-byte timestamp with its signature, and a time pushed as 5 bytes (`Arithmetic opcode error`); a price pushed as 9 bytes (`Arithmetic opcodes expect 8 bytes operands`) |
+
+The beacon is proven by harness test `o2`: a contract opened while the beacon
+is at B1, the beacon rotated to B2 with the oracle's rotation signature, and the
+attestation naming B1 refused afterwards in a forced block against an accepted
+control naming B2, by a Simplicity leaf and a tapscript leaf of the same
+output. `o2` runs on the golden vectors (key A's beacon in epochs 0 and 1) or on
+a set a running signer wrote after a real rotation (`O2_SET=<file>`;
+sequentia-oracle's `tools/o2_set.py` makes one). The tapscript leaf does not
+take the beacon from the witness: it reads the program of the coin at the
+named input with `OP_INSPECTINPUTSCRIPTPUBKEY` and puts it into the message,
+after `OP_INSPECTINPUTASSET` has shown that coin is the explicit beacon asset.
+
+| `o2`, the contract in `harness/programs/attestation_fresh.simf` | Accepted spend | Program | Witness | Cost bound | Budget |
+|---|---|---|---|---|---|
+| Simplicity leaf: the attestation, its beacon live at input 1, `time >= NOT_BEFORE`, `price < STRIKE`, the owner's signature; the beacon coin recreated at output 2 | 579 vB | 804 B | 176 B | 366 WU | 4,386 WU |
+| Tapscript leaf (310 B) doing the same | 440 vB | | | | |
+| The beacon's rotation, two coins B1 to B2 and a wallet fee input | 664 vB | | | | |
+
+The beacon script's leaves are 28 B (recreate) and 167 B (rotate); a rotation
+input's witness is 333 B.
+
+| Spend | Refused, each in the mempool and in a forced block, with an accepted control |
+|---|---|
+| Simplicity, before the rotation | A coin of another asset paid to B1; an attestation with a zero beacon (the same observation by the same key); the beacon index pointing at the contract's own coin. All `Assertion failed inside jet` |
+| Tapscript, before the rotation | The same three: `Script failed an OP_EQUALVERIFY operation` for the foreign coin and the wrong index, `Invalid Schnorr signature` for the zero beacon |
+| Both, after the rotation | The B1 attestation with the live B2 coin (`Assertion failed inside jet`; tapscript `Invalid Schnorr signature`); with a coin of another asset paid to B1 after the rotation (`Assertion failed inside jet`; `Script failed an OP_EQUALVERIFY operation`); with the B1 coin it named, now spent (`bad-txns-inputs-missingorspent`) |
+| The beacon script | Recreated to another script, or with another asset at it; two beacon coins with one recreated output (input 1 owns output 2); the rotation signature with the coin paid elsewhere (`Script failed an OP_EQUALVERIFY operation`); with another destination in the witness, by another key, an attestation signature in its place, the old rotation used to move B2's coins back to B1 or on to a third program (`Invalid Schnorr signature`) |
 
 A tapscript leaf that builds the message with `OP_CAT` must fix the width of
 each field it takes from the witness; the leaf does it with the 64-bit

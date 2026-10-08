@@ -1,0 +1,19 @@
+/* O2: a contract that settles on a fresh format-2 price attestation.
+ *
+ * As O1 (attestation_check.simf), except that the beacon is not a parameter:
+ * the attestation names it, the witness carries it, and the transaction must
+ * spend a coin of the oracle's BEACON_ASSET from the output script it names,
+ * at input witness::BEACON_AT. The contract pins the beacon asset, not one
+ * beacon, so it accepts the oracle's attestations across every rotation, and
+ * each one only while its beacon's coins are where it says.
+ */
+// include attestation
+
+fn main() {
+    let price: u64 = witness::PRICE;
+    let time: u32 = witness::TIME;
+    att_verify_fresh(param::ORACLE, param::BASE, param::QUOTE, price, param::PRECISION, time, witness::BEACON, witness::ORACLE_SIG, param::BEACON_ASSET, witness::BEACON_AT);
+    assert!(jet::le_32(param::NOT_BEFORE, time));
+    assert!(jet::lt_64(price, param::STRIKE));
+    jet::bip_0340_verify((param::OWNER, jet::sig_all_hash()), witness::OWNER_SIG);
+}
