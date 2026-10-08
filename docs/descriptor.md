@@ -265,7 +265,10 @@ JavaScript mirror (`parseDescriptor`, `derive`) and the Go mirror
 The Rust crate's `validate` also compiles each Simplicity leaf's source with the
 pinned compiler, and refuses a source hash, compiler, root, witness list or cost
 bound that the source does not give, a source that fails the lints, and a budget
-other than Sequentia's.
+other than Sequentia's. `validate_sources` makes the same checks with no file
+system: it takes each leaf's source text with its includes already resolved
+(what `seqc expand` prints, and what `source_sha256` hashes), which is how a
+wallet in a browser checks a template it was handed.
 
 ## Instances
 
