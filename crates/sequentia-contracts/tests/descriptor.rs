@@ -395,3 +395,32 @@ fn a_resolved_source_compiles_without_a_file_system() {
         )
     );
 }
+
+#[test]
+fn a_resolved_source_lints_as_its_unresolved_source_does() {
+    for dir in descriptor_dirs() {
+        let d = Descriptor::load(&dir.join("descriptor.json")).unwrap();
+        for (name, text) in expanded_sources(&dir, &d) {
+            let raw = std::fs::read_to_string(dir.join(&name)).unwrap();
+            let (a, b) = (
+                sequentia_contracts::lint::lint_source(&raw),
+                sequentia_contracts::lint::lint_expanded(&text),
+            );
+            assert!(b.is_clean(), "{name}: {:?}", b.findings);
+            assert_eq!(
+                (a.compiled, a.cmr, a.findings),
+                (b.compiled, b.cmr, b.findings),
+                "{name}"
+            );
+        }
+    }
+    // A text that still names a helper is not taken for the program it would include.
+    let r = sequentia_contracts::lint::lint_expanded("// include output_reader\nfn main() {}\n");
+    assert!(!r.compiled);
+    assert!(r.compile_error.unwrap().contains("still includes a helper"));
+    // A banned jet is found in a resolved text as in any other.
+    let r = sequentia_contracts::lint::lint_expanded(
+        "fn main() { let a: u256 = jet::lbtc_asset(); assert!(jet::eq_256(a, a)); }\n",
+    );
+    assert!(!r.is_clean());
+}

@@ -1543,7 +1543,7 @@ fn check_simplicity_leaf(
     if cmr != p.cmr {
         return Err(format!("cmr is {}, the source compiles to {cmr}", p.cmr));
     }
-    let report = crate::lint::lint_source(&text);
+    let report = crate::lint::lint_expanded(&text);
     if !report.is_clean() {
         return Err(format!("the source fails the lints: {:?}", report.findings));
     }
