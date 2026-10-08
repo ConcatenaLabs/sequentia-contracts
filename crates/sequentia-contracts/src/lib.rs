@@ -117,18 +117,24 @@ pub fn compile(source: &str, arguments: Arguments) -> Result<CompiledProgram, St
 /// A line that still names a helper is refused rather than left as a comment,
 /// since the program would then not be the one its source hash describes.
 pub fn compile_expanded(source: &str, arguments: Arguments) -> Result<CompiledProgram, String> {
-    if let Some(line) = source
-        .lines()
-        .find(|l| l.trim_end().starts_with(INCLUDE_DIRECTIVE))
-    {
-        return Err(format!(
-            "the source still includes a helper ({}); give it with its includes resolved",
-            line.trim_end()
-        ));
-    }
+    refuse_includes(source)?;
     TemplateProgram::new(source, Box::new(ElementsJetHinter::new()))
         .map_err(|d| d.to_string())?
         .instantiate(arguments, false)
+}
+
+/// Refuses a source that still names a helper: it is not resolved.
+pub(crate) fn refuse_includes(source: &str) -> Result<(), String> {
+    match source
+        .lines()
+        .find(|l| l.trim_end().starts_with(INCLUDE_DIRECTIVE))
+    {
+        Some(line) => Err(format!(
+            "the source still includes a helper ({}); give it with its includes resolved",
+            line.trim_end()
+        )),
+        None => Ok(()),
+    }
 }
 
 /// Arguments that give every parameter of `template` its all-zero value.

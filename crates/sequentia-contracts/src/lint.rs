@@ -186,6 +186,37 @@ pub fn lint_source(source: &str) -> Report {
     report
 }
 
+/// [`lint_source`] for a source whose helper includes are already resolved
+/// (`seqc expand`'s output): it reads no helper file, so it runs where there
+/// is no file system, and a build of it carries no path of the machine that
+/// built it. A line that still names a helper fails the compiled layer.
+pub fn lint_expanded(source: &str) -> Report {
+    let mut report = Report {
+        findings: scan_source(source),
+        ..Report::default()
+    };
+    // Compiled as `lint_source` compiles it, each parameter at its zero value,
+    // from the text as given.
+    let compiled = crate::refuse_includes(source)
+        .and_then(|()| {
+            simplicityhl::TemplateProgram::new(
+                source,
+                Box::new(simplicityhl::ast::ElementsJetHinter::new()),
+            )
+            .map_err(|d| d.to_string())
+        })
+        .and_then(|t| t.instantiate(crate::zero_arguments(&t), false));
+    match compiled {
+        Ok(program) => {
+            report.compiled = true;
+            report.cmr = Some(crate::cmr_hex(&program));
+            report.findings.extend(scan_compiled(&program.commit()));
+        }
+        Err(e) => report.compile_error = Some(e),
+    }
+    report
+}
+
 /// Lint one program the way Simplex builds it.
 ///
 /// `entry` is compiled with `deps` and every unstable feature enabled, as

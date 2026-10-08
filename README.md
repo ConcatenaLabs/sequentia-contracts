@@ -162,7 +162,9 @@ seqc lint --dep vendor=path/to/vendor/simf program.simf   # one program, depende
 dependencies by path or by git (installed by `simplex install` under `deps/`),
 followed transitively. It lints every `.simf` file under the source directory
 that declares `fn main`. The library form is `lint::lint_with_deps`, for a
-build that already holds the dependency map.
+build that already holds the dependency map, and `lint::lint_expanded` for a
+source whose helper includes are already resolved (`seqc expand`'s output),
+which reads no file and so also runs in a browser.
 
 A fragment that is not a program on its own, such as a helper or a template
 with placeholders, cannot compile alone; `--source-only` accepts it on the
