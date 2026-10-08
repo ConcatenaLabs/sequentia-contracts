@@ -1,0 +1,19 @@
+/* O1: a contract that settles on a format-2 price attestation.
+ *
+ * The coin may be taken by OWNER when ORACLE attested a price of BASE in QUOTE
+ * at PRECISION, with no beacon, that is under STRIKE and dated no earlier than
+ * NOT_BEFORE. The price and the time come from the witness; every other field
+ * of the message is a parameter, so an attestation of another pair, another
+ * precision or by another key cannot satisfy it. The tapscript leaf beside it
+ * in the harness checks the same attestation the same way.
+ */
+// include attestation
+
+fn main() {
+    let price: u64 = witness::PRICE;
+    let time: u32 = witness::TIME;
+    att_verify(param::ORACLE, param::BASE, param::QUOTE, price, param::PRECISION, time, param::BEACON, witness::ORACLE_SIG);
+    assert!(jet::le_32(param::NOT_BEFORE, time));
+    assert!(jet::lt_64(price, param::STRIKE));
+    jet::bip_0340_verify((param::OWNER, jet::sig_all_hash()), witness::OWNER_SIG);
+}

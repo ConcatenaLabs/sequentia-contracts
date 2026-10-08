@@ -106,6 +106,50 @@ asset, and a fee paid in another asset was accepted under a cap of 500 on
 regtest. A keyless path that must bound every fee caps each asset it lets pay
 one, or requires the fee to be paid in the asset it holds.
 
+### `attestation`
+
+| Function | Does |
+|---|---|
+| `att_digest(key, base, quote, price, precision, time, beacon) -> u256` | The tagged hash a format-2 price attestation is signed over |
+| `att_verify(key, base, quote, price, precision, time, beacon, sig)` | `sig` is `key`'s format-2 attestation of exactly these fields |
+| `att_le16`, `att_le32`, `att_le64` | Reverse the bytes of an integer |
+
+The format belongs to [`sequentia-oracle`](https://github.com/ConcatenaLabs/sequentia-oracle)
+(`doc/format.md` there): a 142-byte message of version, signer key, base and
+quote asset ids, price, precision, time and beacon, signed with BIP340 over its
+tagged hash (tag `Sequentia/oracle/price`). Integers are little-endian in the
+message, so the helper reverses `price` and `time` before hashing them; asset
+ids are in internal byte order. A contract fixes the key, the pair, the
+precision and the beacon as parameters and takes the price and the time from
+the witness, so an attestation of anything else fails the signature check.
+`crates/sequentia-contracts/src/attestation.rs` is the Rust reader of the same
+format, and `vectors/attestations.json` is a copy of the oracle repository's
+golden vectors, pinned by `vectors/PIN.json`, which the Rust tests reproduce
+byte for byte.
+
+It is proven by harness test `o1` rather than `h1`: one attestation spent
+through a Simplicity leaf and through a tapscript leaf of the same output.
+`o1` runs on the golden vectors, or on a set a running signer wrote
+(`O1_SET=<file>`; the oracle repository's runbook says how to make one).
+
+| `o1`, the contract in `harness/programs/attestation_check.simf` | Accepted spend | Program | Witness | Cost bound | Budget |
+|---|---|---|---|---|---|
+| Simplicity leaf: the attestation, `time >= NOT_BEFORE`, `price < STRIKE`, the owner's signature | 373 vB | 590 B | 140 B | 319 WU | 3,386 WU |
+| Tapscript leaf (300 B) doing the same | 293 vB | | | | |
+
+| Leaf | Refused, each in the mempool and in a forced block, with an accepted control |
+|---|---|
+| Simplicity | The witness price or time not the signed one; a genuine attestation dated before `NOT_BEFORE`, or at or above `STRIKE`; the same oracle's attestation of another pair; another key's attestation of the same fields; the oracle's format-1 signature of the same observation; the oracle's key over the same fields with version byte 1. All `Assertion failed inside jet` |
+| Tapscript | The same eight: `Invalid Schnorr signature` for the six signature cases, `Script failed an OP_VERIFY operation` for the early and the high one. The whole format-1 record, its 8-byte timestamp with its signature, and a time pushed as 5 bytes (`Arithmetic opcode error`); a price pushed as 9 bytes (`Arithmetic opcodes expect 8 bytes operands`) |
+
+A tapscript leaf that builds the message with `OP_CAT` must fix the width of
+each field it takes from the witness; the leaf does it with the 64-bit
+comparison, which takes exactly 8 bytes, and `OP_LE32TOLE64`, which takes
+exactly 4. It pushes the precision byte as `OP_1` to `OP_16` where it lies in
+that range (minimal push), and as the byte `0x00` for precision 0, never as
+`OP_0`, which pushes nothing. A second vector, native bitcoin priced in US
+dollars at precision 0, is spent through both leaves too.
+
 ## Proof and cost
 
 | Helper, as used in its test program | Accepted spend | Program | Witness | Cost bound | Budget |

@@ -18,7 +18,8 @@ tests.
 | `crates/sequentia-contracts/` | The Rust crate. It pins SimplicityHL exactly (see `Cargo.toml`) and re-exports it, together with `simplicity` and `elements`, so no other repository names the compiler itself. It holds the lints and the `seqc` command line |
 | `lints/fixtures/` | Programs the lints must refuse (`reject/`) and pass (`accept/`), each with a Simplex project that imports a dependency |
 | `parity/` | The parity gate between the Simplicity libraries a project builds with (the C library and the Rust jet table) and the node's |
-| `helpers/` | Shared SimplicityHL helpers, included as source: output reader, wide arithmetic, state, relative lock, Merkle fold, fee cap |
+| `helpers/` | Shared SimplicityHL helpers, included as source: output reader, wide arithmetic, state, relative lock, Merkle fold, fee cap, price attestation |
+| `vectors/` | `attestations.json`, the price-attestation golden vectors of [`sequentia-oracle`](https://github.com/ConcatenaLabs/sequentia-oracle), pinned by `PIN.json`; the crate's `attestation` module reproduces them byte for byte |
 | `templates/` | Contract templates: each its programs, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
 | `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler, and in `mirrors/fixtures/` the files every reader is checked against |
 | `harness/` | The regtest harness: a Sequentia node with Simplicity active, the tests that run programs on it, and their records |
@@ -269,6 +270,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | `s6` | The broken relative-lock jets bypassed by a second, old input; the safe form refusing the bypass |
 | `s7` | An oracle-signed price checked with 128-bit products |
 | `h1` | Every helper in a program that uses it: spent, and each violation refused |
+| `o1` | One format-2 price attestation accepted by a Simplicity leaf and by a tapscript leaf of the same output; a wrong price, time, pair or key, an attestation too early or above the strike, a version byte of 1, and the format-1 signature of the same observation refused in each, and the whole format-1 record refused by the tapscript leaf |
 | `f1` | The faucet drip covenant, from its descriptor: two drips in a row and a drip in the second tier, the recovery after its delay, and every violation refused: early, a short or disabled lock and the lock moved to another input, above the tier or a forged larger tier, the drip in another asset or back into the covenant, the successor to another script, key or asset or short by 1,000 atoms, a fee over the cap, another key's or another drip's signature, a reserve of another asset, two reserves sharing one successor, and the recovery early, with a short lock or signed by the faucet key |
 | `d1` | The one-key template, paid at the address the Python mirror derives from its descriptor, and spent; another key and another key's signature refused |
 | `d2` | The `one_key_exit` tree, paid at a golden vector's address and spent by each leaf from its descriptor alone: the wrong key or chain and the wrong control block refused on the Simplicity leaf; the exit refused before its delay, with a short or disabled lock, in version 1 and with the other key; each leaf's signature refused on the other under one key |

@@ -1,0 +1,7 @@
+{
+ "_note": "vectors/attestations.json is a copy of this file of sequentia-oracle at this commit. Replace it only with a newer copy from that repository, and update both fields; the Rust tests check the hash.",
+ "repository": "https://github.com/ConcatenaLabs/sequentia-oracle",
+ "path": "vectors/attestations.json",
+ "commit": "22165d77ea59fa703db96ad7d5360df7a0ccbfa6",
+ "sha256": "59e02007b44114786fd5150cbd0dc651e497b712c7e9e8ec9b2ffee462c900c7"
+}

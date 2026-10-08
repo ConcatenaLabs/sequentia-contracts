@@ -8,6 +8,7 @@
 //! It also carries the lints that refuse the jets which are wrong on this
 //! chain (see [`lint`]).
 
+pub mod attestation;
 pub mod descriptor;
 pub mod lint;
 pub mod simplex;
