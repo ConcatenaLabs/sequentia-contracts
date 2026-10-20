@@ -737,3 +737,89 @@ export function poolSplitPayouts(numerators, denom, capBp, collected, withheld) 
   if (paid > net) throw new Error('the rows are owed more than the claim holds');
   return [net - paid, ...shares];
 }
+
+// ---- The Pignus vault, version 2 (templates/pignus_vault) -------------------
+// Amounts and prices are BigInts or decimal strings; precisions and ratios are
+// numbers. Every comparison is the program's, made exactly.
+
+export const PIGNUS_MAX_PRECISION = 18;
+const M64 = (1n << 64n) - 1n;
+
+function pignusUnit(precision) {
+  if (!Number.isInteger(precision) || precision < 0 || precision > 255) throw new Error('precision out of range');
+  if (precision > PIGNUS_MAX_PRECISION) throw new Error('precision above 18');
+  return 10n ** BigInt(precision);
+}
+
+function pignusAmount(x, name, bits = 64n) {
+  const v = BigInt(x);
+  if (v < 0n || v >= 1n << bits) throw new Error(`${name} out of range`);
+  return v;
+}
+
+// Whether a vault is healthy at `price` (price / 10^precision debt atoms per
+// collateral atom): collateral * price * 10,000 >= LIQ_BP * debt * 10^precision.
+export function pignusVaultHealthy(collateral, debt, price, precision, liqBp) {
+  const u = pignusUnit(precision);
+  return pignusAmount(collateral, 'collateral') * pignusAmount(price, 'price') * 10000n
+    >= pignusAmount(liqBp, 'liq_bp', 32n) * pignusAmount(debt, 'debt') * u;
+}
+
+// The most collateral a liquidation that repays `repaid` may keep, saturated
+// to 64 bits: the largest s with s * price * 10,000 <= repaid * BONUS_BP * 10^precision.
+export function pignusVaultMaxSeizure(repaid, price, precision, bonusBp) {
+  const u = pignusUnit(precision);
+  const p = pignusAmount(price, 'price');
+  if (p === 0n) throw new Error('price out of range');
+  const s = (pignusAmount(repaid, 'repaid') * pignusAmount(bonusBp, 'bonus_bp', 32n) * u) / (p * 10000n);
+  return s > M64 ? M64 : s;
+}
+
+// The most a liquidation before maturity may repay: the largest r <= debt such
+// that repaying r - 1, at the most the liquidator may seize for it, leaves the
+// vault below TARGET_BP. 0n when no r is allowed.
+export function pignusVaultMaxRepay(collateral, debt, price, precision, targetBp, bonusBp) {
+  const u = pignusUnit(precision);
+  const d = pignusAmount(debt, 'debt');
+  const t = pignusAmount(targetBp, 'target_bp', 32n);
+  const b = pignusAmount(bonusBp, 'bonus_bp', 32n);
+  const gap = t * d * u - pignusAmount(collateral, 'collateral') * pignusAmount(price, 'price') * 10000n;
+  if (d === 0n || gap <= 0n) return 0n;
+  if (t <= b) return d;
+  const step = u * (t - b);
+  const r = (gap + step - 1n) / step;
+  return r < d ? r : d;
+}
+
+// A liquidation as templates/pignus_vault rules it, checked in the program's
+// order. `paid` is what output 2k+1 pays the lender; `kept` is the successor's
+// collateral when `paid` is below the debt, else what output 2k returns to the
+// borrower. Throws naming the first check that refuses.
+export function pignusVaultLiquidation({ collateral, debt, lastTime, time, price, precision, liqBp, targetBp,
+  bonusBp, paid, kept, matured }) {
+  const c = pignusAmount(collateral, 'collateral');
+  const d = pignusAmount(debt, 'debt');
+  const pr = pignusAmount(price, 'price');
+  const p = pignusAmount(paid, 'paid');
+  const k = pignusAmount(kept, 'kept');
+  const liq = pignusAmount(liqBp, 'liq_bp', 32n);
+  const t = pignusAmount(targetBp, 'target_bp', 32n);
+  const b = pignusAmount(bonusBp, 'bonus_bp', 32n);
+  if (pignusAmount(time, 'time', 32n) <= pignusAmount(lastTime, 'last_time', 32n)) {
+    throw new Error("attestation not newer than the vault's last");
+  }
+  const u = pignusUnit(precision);
+  if (p === 0n) throw new Error('nothing paid to the lender');
+  const full = p >= d;
+  const r = full ? d : p;
+  const value = c * pr * 10000n;
+  if (!matured) {
+    if (value >= liq * d * u) throw new Error('the vault is healthy at this price');
+    if (value + (r - 1n) * t * u >= t * d * u + (r - 1n) * b * u) throw new Error('repays beyond the target');
+  }
+  if (k > c) throw new Error('keeps more than the collateral');
+  const seized = c - k;
+  if (seized * pr * 10000n > r * b * u) throw new Error('seizes more than the price allows');
+  if (!full && (d - r) * liq * u > k * pr * 10000n) throw new Error('leaves the vault unhealthy');
+  return { repaid: r, seized, closes: full, debtAfter: full ? 0n : d - r, lastTimeAfter: Number(time) };
+}

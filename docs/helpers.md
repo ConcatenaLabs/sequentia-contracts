@@ -60,6 +60,24 @@ Division is verified, not computed: `q * c <= a * b < (q + 1) * c`. The jet
 that fits in 64 bits, and returns all ones otherwise, so dividing by an ordinary
 scale such as 10^8 cannot use it directly.
 
+### `wide_arith192`
+
+| Function | Does |
+|---|---|
+| `w192_mul3(a, b, c) -> (u64, u64, u64)` | The full 192-bit product of three `u64`, most significant limb first |
+| `w192_add(a, b)` | Refuses a sum that does not fit in 192 bits |
+| `w192_lt(a, b)`, `w192_le(a, b)`, `w192_lt_bit(a, b)` | 192-bit comparisons, taking no branch on the values |
+| `w192_pow10(p) -> u64` | `10^p` for `p <= 18`, refusing a larger `p` |
+
+A comparison of an amount times a price times a ratio needs more than 128 bits:
+`2^64 * 2^63 * 2^32` is 2^159. The comparisons are built from bit jets rather
+than `match`, so a program pruned for one spend follows the same path on any
+other values, and a comparison that fails does so at the assertion that uses
+it, which is what lets a negative test reuse its control's pruned program. The
+Pignus vault (`templates/pignus_vault`) uses them, and harness test `l1`
+proves them there, at amounts up to 2^64 - 1 on the abstract machine; they
+have no `h1` program of their own.
+
 ### `state`
 
 | Function | Does |

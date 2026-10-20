@@ -3,6 +3,7 @@ the refusals every reader must make (mirrors/fixtures/refusals.json)."""
 import glob
 import json
 import os
+import re
 import sys
 import unittest
 
@@ -222,6 +223,33 @@ class PoolSplit(unittest.TestCase):
                     sa.pool_split_payouts(*args)
             else:
                 self.assertEqual([str(x) for x in sa.pool_split_payouts(*args)], p["outputs"], p["name"])
+
+
+class PignusVault(unittest.TestCase):
+    def test_liquidation_rule_agrees_with_its_vectors(self):
+        v = json.loads(read(os.path.join(ROOT, "templates", "pignus_vault", "rules.json")))
+        self.assertTrue(v["healthy"] and v["max_seizure"] and v["max_repay"] and v["liquidation"])
+        for e in v["healthy"]:
+            self.assertEqual(sa.pignus_vault_healthy(int(e["collateral"]), int(e["debt"]), int(e["price"]),
+                                                     e["precision"], e["liq_bp"]), e["healthy"], e["name"])
+        for e in v["max_seizure"]:
+            self.assertEqual(str(sa.pignus_vault_max_seizure(int(e["repaid"]), int(e["price"]), e["precision"],
+                                                             e["bonus_bp"])), e["max_seizure"], e["name"])
+        for e in v["max_repay"]:
+            self.assertEqual(str(sa.pignus_vault_max_repay(int(e["collateral"]), int(e["debt"]), int(e["price"]),
+                                                           e["precision"], e["target_bp"], e["bonus_bp"])),
+                             e["max_repay"], e["name"])
+        for e in v["liquidation"]:
+            args = (int(e["collateral"]), int(e["debt"]), e["last_time"], e["time"], int(e["price"]), e["precision"],
+                    e["liq_bp"], e["target_bp"], e["bonus_bp"], int(e["paid"]), int(e["kept"]), e["matured"])
+            if "refused" in e:
+                with self.assertRaisesRegex(ValueError, "^" + re.escape(e["refused"]) + "$"):
+                    sa.pignus_vault_liquidation(*args)
+            else:
+                out = sa.pignus_vault_liquidation(*args)
+                want = e["result"]
+                self.assertEqual({k: str(out[k]) if k in ("repaid", "seized", "debt_after") else out[k] for k in want},
+                                 want, e["name"])
 
 
 if __name__ == "__main__":

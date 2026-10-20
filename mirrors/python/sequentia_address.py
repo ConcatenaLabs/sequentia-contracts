@@ -697,3 +697,94 @@ def pool_split_payouts(numerators, denom, cap_bp, collected, withheld):
     if sum(shares) > net:
         raise ValueError("the rows are owed more than the claim holds")
     return [net - sum(shares)] + shares
+
+
+# ---- The Pignus vault, version 2 (templates/pignus_vault) -------------------
+
+PIGNUS_MAX_PRECISION = 18
+
+
+def _pignus_ranges(**values):
+    for name, v in values.items():
+        width = 8 if name == "precision" else 32 if name.endswith("_bp") or name.endswith("time") else 64
+        if not isinstance(v, int) or isinstance(v, bool) or not 0 <= v < 1 << width:
+            raise ValueError("%s out of range" % name)
+
+
+def pignus_vault_healthy(collateral, debt, price, precision, liq_bp):
+    """Whether a vault is healthy at `price` (price / 10^precision debt atoms
+    per collateral atom): collateral * price * 10,000 >= LIQ_BP * debt *
+    10^precision, the comparison templates/pignus_vault makes at 192 bits."""
+    _pignus_ranges(collateral=collateral, debt=debt, price=price, precision=precision, liq_bp=liq_bp)
+    if precision > PIGNUS_MAX_PRECISION:
+        raise ValueError("precision above 18")
+    return collateral * price * 10000 >= liq_bp * debt * 10 ** precision
+
+
+def pignus_vault_max_seizure(repaid, price, precision, bonus_bp):
+    """The most collateral a liquidation that repays `repaid` may keep:
+    the largest s with s * price * 10,000 <= repaid * BONUS_BP * 10^precision,
+    saturated to 64 bits (no coin holds more)."""
+    _pignus_ranges(repaid=repaid, price=price, precision=precision, bonus_bp=bonus_bp)
+    if precision > PIGNUS_MAX_PRECISION:
+        raise ValueError("precision above 18")
+    if price == 0:
+        raise ValueError("price out of range")
+    return min(repaid * bonus_bp * 10 ** precision // (price * 10000), (1 << 64) - 1)
+
+
+def pignus_vault_max_repay(collateral, debt, price, precision, target_bp, bonus_bp):
+    """The most a liquidation before maturity may repay: the largest r <= debt
+    such that repaying r - 1, at the most the liquidator may seize for it,
+    leaves the vault below TARGET_BP, i.e. collateral * price * 10,000 +
+    (r - 1) * TARGET_BP * u < TARGET_BP * debt * u + (r - 1) * BONUS_BP * u,
+    u = 10^precision. 0 when no r is allowed."""
+    _pignus_ranges(collateral=collateral, debt=debt, price=price, precision=precision,
+                   target_bp=target_bp, bonus_bp=bonus_bp)
+    if precision > PIGNUS_MAX_PRECISION:
+        raise ValueError("precision above 18")
+    u = 10 ** precision
+    gap = target_bp * debt * u - collateral * price * 10000
+    if debt == 0 or gap <= 0:
+        return 0
+    if target_bp <= bonus_bp:
+        return debt
+    step = u * (target_bp - bonus_bp)
+    return min(debt, -(-gap // step))
+
+
+def pignus_vault_liquidation(collateral, debt, last_time, time, price, precision, liq_bp, target_bp,
+                             bonus_bp, paid, kept, matured):
+    """A liquidation as templates/pignus_vault rules it, checked in the
+    program's order. `paid` is what output 2k+1 pays the lender; `kept` is the
+    successor's collateral when `paid` is below the debt, else what output 2k
+    returns to the borrower. Returns the repaid debt, the seizure and the next
+    state, or raises ValueError naming the first check that refuses."""
+    _pignus_ranges(collateral=collateral, debt=debt, last_time=last_time, time=time, price=price,
+                   precision=precision, liq_bp=liq_bp, target_bp=target_bp, bonus_bp=bonus_bp,
+                   paid=paid, kept=kept)
+    if time <= last_time:
+        raise ValueError("attestation not newer than the vault's last")
+    if precision > PIGNUS_MAX_PRECISION:
+        raise ValueError("precision above 18")
+    if paid == 0:
+        raise ValueError("nothing paid to the lender")
+    u = 10 ** precision
+    full = paid >= debt
+    r = debt if full else paid
+    value = collateral * price * 10000
+    if not matured:
+        if value >= liq_bp * debt * u:
+            raise ValueError("the vault is healthy at this price")
+        if value + (r - 1) * target_bp * u >= target_bp * debt * u + (r - 1) * bonus_bp * u:
+            raise ValueError("repays beyond the target")
+    if kept > collateral:
+        raise ValueError("keeps more than the collateral")
+    seized = collateral - kept
+    if seized * price * 10000 > r * bonus_bp * u:
+        raise ValueError("seizes more than the price allows")
+    if not full and (debt - r) * liq_bp * u > kept * price * 10000:
+        raise ValueError("leaves the vault unhealthy")
+    return {"repaid": r, "seized": seized, "closes": full,
+            "debt_after": 0 if full else debt - r, "last_time_after": time}
+
