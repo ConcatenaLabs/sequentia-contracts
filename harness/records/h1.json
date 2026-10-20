@@ -2,25 +2,25 @@
  "whitelist": {
   "bitcoin": 100000000,
   "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000,
-  "426e0a29f00f3622c930da219902fcc4845061105322de9f89fcacc90e29d0f3": 100000000
+  "8f4d2f8083c8d35b4a1c70b86feacc44461565d44518f7c74a372c6fac6503f1": 100000000
  },
  "output_reader/program": {
-  "cmr": "799100f0571dc8a8a389a8e78f4feb2d145a9e110efb4f7940dbc76fad677f2b",
+  "cmr": "c1c8f7b7101dd7643677e59f0688c1bb9befc7943ef1ef780886ce340e8a6df2",
   "commit_program_bytes": 483,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51201e5fbe43af40c7b0a13942a7b856e719a5e0875aec92b38161381e84c766f89b",
+  "scriptPubKey": "51200f5776f38a38b7585bfdce25064d16b4324bad34648b8724fcd11a04260066b2",
   "control_block_bytes": 33,
   "args": {
    "ASSET": "0x37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
    "AMOUNT": "10000000",
-   "SPK_HASH": "0xef1e55bec142ad34dfa88d321a688a934c3888d299135e09cc800a09f59405f8"
+   "SPK_HASH": "0xf4a64bb78b77ecd1478ef2dcb086509f56cd52e584c0e5abe619257d1c7d696c"
   }
  },
  "output_reader/neg_amount_one_short": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "3b1d163da16c54cab96b2c22a218bc331e84d82689b813625b9dff9c10724ad8",
+   "txid": "0a58c966a9192ea8a58c33ab1c86a197885aaa7ba57f90461d3b052cfa1ba631",
    "same_coin": true,
    "vsize": 284,
    "testmempoolaccept": true
@@ -29,14 +29,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.0] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 1effca38ea4bca45b9a4c890903b5f9161a842e2550f7d8c5aaf4f86ab3071e8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9660ffc7132c7ed3f6f39a388cf1124d73650039e12a876c918dd3dd1875cdaf failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "output_reader/neg_other_script": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "3b1d163da16c54cab96b2c22a218bc331e84d82689b813625b9dff9c10724ad8",
+   "txid": "0a58c966a9192ea8a58c33ab1c86a197885aaa7ba57f90461d3b052cfa1ba631",
    "same_coin": true,
    "vsize": 284,
    "testmempoolaccept": true
@@ -45,14 +45,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on ed6d57404fb6f1e0e9bc83b70fa32ced7978f487ceaf1febb8d96a12346e80f8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 211c9243f24ec65c8ee58fd57d30c8101e55bf3cebdf9b855d05d07791bd67f0 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "output_reader/neg_coin_of_another_asset": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "3b1d163da16c54cab96b2c22a218bc331e84d82689b813625b9dff9c10724ad8",
+   "txid": "0a58c966a9192ea8a58c33ab1c86a197885aaa7ba57f90461d3b052cfa1ba631",
    "same_coin": false,
    "vsize": 284,
    "testmempoolaccept": true
@@ -61,14 +61,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 8cb3cf9cbc15252d24e5dcd3a73047bdee9e5c4d1d1ff5a91034ac721c1d27b0 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on b9d542f14c5144cb6a00579a9dca2e89546ab0b98005157d4b5c2d2268f18d0b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "output_reader/neg_output_carries_a_nonce": {
   "rejected": true,
   "expect": "Assertion failed",
   "control": {
-   "txid": "3b1d163da16c54cab96b2c22a218bc331e84d82689b813625b9dff9c10724ad8",
+   "txid": "0a58c966a9192ea8a58c33ab1c86a197885aaa7ba57f90461d3b052cfa1ba631",
    "same_coin": true,
    "vsize": 284,
    "testmempoolaccept": true
@@ -77,7 +77,7 @@
   "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on e8b84d50ce9bffb1da8121cf34f8fc86fd23da08bfb57ff8f40aebecb0e523f5 failed with mempool-script-verify-flag-failed (Assertion failed)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 863ed7c73c38cebfec5bb8c6fbb9a13473f06899831152d835fc09a323dce804 failed with mempool-script-verify-flag-failed (Assertion failed)"
   ]
  },
  "output_reader/spend": {
@@ -92,7 +92,7 @@
    "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "3b1d163da16c54cab96b2c22a218bc331e84d82689b813625b9dff9c10724ad8",
+  "txid": "0a58c966a9192ea8a58c33ab1c86a197885aaa7ba57f90461d3b052cfa1ba631",
   "confirmed": true,
   "block_height": 107,
   "program_bytes": 409,
@@ -101,7 +101,7 @@
   "budget_wu": 1974,
   "cost_bound_milli_wu": 52561,
   "cost_bound_wu": 53,
-  "program_hex": "e6a93f0e060840a10618814373837d4117120671d935311563277b133e5c2a486b72ed4ccb3ccde95b1c35bfa0c0d031099a0e30e40a10607701804c8fbc4c4140de070b03880270e37073136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c022c8000000001a4268b3000000000098968006c5a7bc7956fb050ab4d37ea234c869a22a4d30e2234a644d782732002827d65017e01b82a16441867c34030212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a06206909b8dc7c8141b8f03c7c050989b8e8e40a0dc721e430142627d87e1e71df0d408424506e48878800a06617010b701c000e12071081c5c40a0dc9d30fc9f30e1600390c07214dc9a38c3d38559b720401c8e3f2b8e30f4e1501c970392c7e457c348391c424508303c8c030034122c8929a2206bfd458330327e3b3ab62d007ea5fbbd7f181d4ba63491d5869369b3a5978300c40d0039549141f9940403841228031170d0198b89c069171900d60e3c03960139810378b97803808398800",
+  "program_hex": "e6a93f0e060840a10618814373837d4117120671d935311563277b133e5c2a486b72ed4ccb3ccde95b1c35bfa0c0d031099a0e30e40a10607701804c8fbc4c4140de070b03880270e37073136937510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50040b066dd008c022c8000000001a4268b3000000000098968006c5a7d2992ede2ddfb3451e3bcb72c219427d5b354b96130396af986495f471f5a5b01b82a16441867c34030212286744339c859e7ff6f8d33f9afa73734e1c908684feedc8c4d0a6112d3bf3613174181a06206909b8dc7c8141b8f03c7c050989b8e8e40a0dc721e430142627d87e1e71df0d408424506e48878800a06617010b701c000e12071081c5c40a0dc9d30fc9f30e1600390c07214dc9a38c3d38559b720401c8e3f2b8e30f4e1501c970392c7e457c348391c424508303c8c030034122c8929a2206bfd458330327e3b3ab62d007ea5fbbd7f181d4ba63491d5869369b3a5978300c40d0039549141f9940403841228031170d0198b89c069171900d60e3c03960139810378b97803808398800",
   "witness_hex": "",
   "witness_input0_bytes": 481
  },
@@ -125,7 +125,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "3fc411662e3d9e5ade46f4aae9abe46f9a3aec020a24138f5a4846871327df87",
+   "txid": "702672a4920d0fef4d08ff485c603f9e4ed6097efe7ae0cf986630cab21d7e8e",
    "same_coin": true,
    "vsize": 315,
    "testmempoolaccept": true
@@ -134,14 +134,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 23c3c5dbb78ce81da078bc58de4776f84799a0612e816a7c016ab33ab8084c22 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 78070b9690537eb1dfbbf41991d261b7311d689e4369de63c585fa682463e903 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "wide_arith/neg_quotient_one_too_small": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "3fc411662e3d9e5ade46f4aae9abe46f9a3aec020a24138f5a4846871327df87",
+   "txid": "702672a4920d0fef4d08ff485c603f9e4ed6097efe7ae0cf986630cab21d7e8e",
    "same_coin": true,
    "vsize": 315,
    "testmempoolaccept": true
@@ -150,14 +150,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 695059a5a1055a10edf0232ca071aac639d6237a739c3601d10d34ea2195e516 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 44e3a87fa62da6167b7925216b0575f47bebe9097c122afbc1e12b329d314aac failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "wide_arith/neg_quotient_one_too_large": {
   "rejected": true,
   "expect": "Assertion failed",
   "control": {
-   "txid": "3fc411662e3d9e5ade46f4aae9abe46f9a3aec020a24138f5a4846871327df87",
+   "txid": "702672a4920d0fef4d08ff485c603f9e4ed6097efe7ae0cf986630cab21d7e8e",
    "same_coin": true,
    "vsize": 315,
    "testmempoolaccept": true
@@ -166,14 +166,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 23c3c5dbb78ce81da078bc58de4776f84799a0612e816a7c016ab33ab8084c22 failed with mempool-script-verify-flag-failed (Assertion failed)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 78070b9690537eb1dfbbf41991d261b7311d689e4369de63c585fa682463e903 failed with mempool-script-verify-flag-failed (Assertion failed)"
   ]
  },
  "wide_arith/neg_product_over_the_128_bit_cap": {
   "rejected": true,
   "expect": "Assertion failed",
   "control": {
-   "txid": "3fc411662e3d9e5ade46f4aae9abe46f9a3aec020a24138f5a4846871327df87",
+   "txid": "702672a4920d0fef4d08ff485c603f9e4ed6097efe7ae0cf986630cab21d7e8e",
    "same_coin": true,
    "vsize": 315,
    "testmempoolaccept": true
@@ -182,7 +182,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 23c3c5dbb78ce81da078bc58de4776f84799a0612e816a7c016ab33ab8084c22 failed with mempool-script-verify-flag-failed (Assertion failed)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 78070b9690537eb1dfbbf41991d261b7311d689e4369de63c585fa682463e903 failed with mempool-script-verify-flag-failed (Assertion failed)"
   ]
  },
  "wide_arith/spend": {
@@ -197,7 +197,7 @@
    "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "3fc411662e3d9e5ade46f4aae9abe46f9a3aec020a24138f5a4846871327df87",
+  "txid": "702672a4920d0fef4d08ff485c603f9e4ed6097efe7ae0cf986630cab21d7e8e",
   "confirmed": true,
   "block_height": 109,
   "program_bytes": 517,
@@ -223,7 +223,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "4da05f05ac22eadf080693e6ca46a0d7b8c08a45344f936e77f4a138c7ec640c",
+   "txid": "16ba2b3371cd24b1df4af74bc8e5b041bb3869a7f553cfe87cae4f3b5e013b01",
    "same_coin": true,
    "vsize": 472,
    "testmempoolaccept": true
@@ -232,14 +232,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on ce75291a130d8537901f2e76a0752bc0ea47df0a2448e4ee93d219fdad459416 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 1b76b17ede46fbbb81d0fb681e395306b8227af0972edbf0273a63bbe4f61369 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "state/neg_successor_one_atom_short": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "4da05f05ac22eadf080693e6ca46a0d7b8c08a45344f936e77f4a138c7ec640c",
+   "txid": "16ba2b3371cd24b1df4af74bc8e5b041bb3869a7f553cfe87cae4f3b5e013b01",
    "same_coin": true,
    "vsize": 472,
    "testmempoolaccept": true
@@ -248,14 +248,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9611030dbf94a27a8f71d3a4f372467c3681d405aa5177d951b5fbb92b5bac74 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 1d433f84b46248762c3b18629d0b7173f91cee2a55d2bd825c2fce08e74c4322 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "state/neg_witness_names_another_state": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "4da05f05ac22eadf080693e6ca46a0d7b8c08a45344f936e77f4a138c7ec640c",
+   "txid": "16ba2b3371cd24b1df4af74bc8e5b041bb3869a7f553cfe87cae4f3b5e013b01",
    "same_coin": true,
    "vsize": 472,
    "testmempoolaccept": true
@@ -264,7 +264,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 369faa339e5de0d24f4d4b130c1a7118ac8a7f283886d4cefa3b8f55a7eda2de failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on de50fa508bf41501ce45fd98190249f5e4bc8fee74e4b93fef7b42d3f63b47de failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "state/spend_7_to_8": {
@@ -279,7 +279,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "4da05f05ac22eadf080693e6ca46a0d7b8c08a45344f936e77f4a138c7ec640c",
+  "txid": "16ba2b3371cd24b1df4af74bc8e5b041bb3869a7f553cfe87cae4f3b5e013b01",
   "confirmed": true,
   "block_height": 115,
   "program_bytes": 509,
@@ -304,7 +304,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00001000"
   },
-  "txid": "1580b8c1bbe7538aaf643fe7e71e7018c95434dc49d1cbb38ebeb5bd715bcf84",
+  "txid": "e6eae92dbbb99bc4c83bd0e685c3befaab642a2f30e4bd103873fa049d20cd12",
   "confirmed": true,
   "block_height": 117,
   "program_bytes": 509,
@@ -331,7 +331,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "89aee2769c4f25e51579b2502b6c337c916e8191358d68972d91259f0ba880f4",
+   "txid": "8a9b732da98705be78a089dab098f10110a430c40b1ff4b3ad44d0dc89796f57",
    "same_coin": true,
    "vsize": 216,
    "testmempoolaccept": true
@@ -340,14 +340,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on c6b2dbab8ca66b9bac030e297d46ec66ad51c569efa2c8c28b7f1ee270d84970 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 232c49330f76bc993eb015d9b95e94df31accadb9401c826ea1c0b078c702886 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "relative_lock/neg_version_1_turns_bip68_off": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "89aee2769c4f25e51579b2502b6c337c916e8191358d68972d91259f0ba880f4",
+   "txid": "8a9b732da98705be78a089dab098f10110a430c40b1ff4b3ad44d0dc89796f57",
    "same_coin": true,
    "vsize": 216,
    "testmempoolaccept": true
@@ -356,14 +356,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 0cb4d8f480cd2fcfa1d1cb4cb1440f0df28789058501a87c4d2f15dd3cfee3ae failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on b919bec50d4f1b3de56a5809fae008e830950058b10c6f1906627c08ddf2366f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "relative_lock/neg_lock_on_another_input": {
   "rejected": true,
   "expect": "Assertion failed",
   "control": {
-   "txid": "e5f4edc0f25b1c11ed808e31fe401a68b0e2628b79c88785cb4237e8329eaae0",
+   "txid": "51b287dc0db312637e20e30001e2593e1b9e809f8d235d363d6208dc88fba723",
    "same_coin": true,
    "vsize": 351,
    "testmempoolaccept": true
@@ -372,7 +372,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on bdac6f7d29a8836f0d884f197d96b38616c0568db447d3d87ffdc5b5af2626f6 failed with mempool-script-verify-flag-failed (Assertion failed)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 18308027af2068747b42d4efc4f8a7bc8d50f97c690bd8216d97c6b8f84fd88c failed with mempool-script-verify-flag-failed (Assertion failed)"
   ]
  },
  "relative_lock/spend": {
@@ -387,7 +387,7 @@
    "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "89aee2769c4f25e51579b2502b6c337c916e8191358d68972d91259f0ba880f4",
+  "txid": "8a9b732da98705be78a089dab098f10110a430c40b1ff4b3ad44d0dc89796f57",
   "confirmed": true,
   "block_height": 125,
   "program_bytes": 136,
@@ -416,7 +416,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "002e253793f6f9488d32193a6e53f2090a2e8c5a2d09679d24eb2e4a5e6f12f7",
+   "txid": "241a891da6f9ad2798f0bc9f2f98dd8b925c17c7baf6e4acd9913a63ec57975b",
    "same_coin": true,
    "vsize": 310,
    "testmempoolaccept": true
@@ -425,14 +425,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 002e253793f6f9488d32193a6e53f2090a2e8c5a2d09679d24eb2e4a5e6f12f7 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 241a891da6f9ad2798f0bc9f2f98dd8b925c17c7baf6e4acd9913a63ec57975b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "merkle/neg_not_a_member": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "002e253793f6f9488d32193a6e53f2090a2e8c5a2d09679d24eb2e4a5e6f12f7",
+   "txid": "241a891da6f9ad2798f0bc9f2f98dd8b925c17c7baf6e4acd9913a63ec57975b",
    "same_coin": true,
    "vsize": 310,
    "testmempoolaccept": true
@@ -441,7 +441,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 002e253793f6f9488d32193a6e53f2090a2e8c5a2d09679d24eb2e4a5e6f12f7 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 241a891da6f9ad2798f0bc9f2f98dd8b925c17c7baf6e4acd9913a63ec57975b failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "merkle/spend_depth_8": {
@@ -456,7 +456,7 @@
    "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00001000"
   },
-  "txid": "002e253793f6f9488d32193a6e53f2090a2e8c5a2d09679d24eb2e4a5e6f12f7",
+  "txid": "241a891da6f9ad2798f0bc9f2f98dd8b925c17c7baf6e4acd9913a63ec57975b",
   "confirmed": true,
   "block_height": 127,
   "program_bytes": 224,
@@ -484,7 +484,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "e6f9e04c7f0b3b0e550c1dec41a5682866b634504fa6fc90d86fbff0cb0f9b61",
+   "txid": "926db51f1afa130ffb5e9b0b5bf9ca7a15bc4bc5963b6a66b52078a7fbdf85b4",
    "same_coin": true,
    "vsize": 199,
    "testmempoolaccept": true
@@ -493,14 +493,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on d0d35bd81201f47d8dc0c04b24999163636fc9501adefe0e6c43ebfb387813ed failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 289e851fc0e78df196aa5dfe49c9af1c67400ce41e5905689cec71761366f16f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "fee_cap/neg_fee_one_over_the_cap": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "e6f9e04c7f0b3b0e550c1dec41a5682866b634504fa6fc90d86fbff0cb0f9b61",
+   "txid": "926db51f1afa130ffb5e9b0b5bf9ca7a15bc4bc5963b6a66b52078a7fbdf85b4",
    "same_coin": true,
    "vsize": 199,
    "testmempoolaccept": true
@@ -509,7 +509,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 94f78e71c8e7d28ecaa8b0116ef01dae02b8a6750d54dcf06d88e8d875508c50 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on cf27943fc6198c1ab35d807bf3e290ac84ef02a0d95f95a8af0baa5a004c1e00 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "fee_cap/spend": {
@@ -524,7 +524,7 @@
    "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00000300"
   },
-  "txid": "e6f9e04c7f0b3b0e550c1dec41a5682866b634504fa6fc90d86fbff0cb0f9b61",
+  "txid": "926db51f1afa130ffb5e9b0b5bf9ca7a15bc4bc5963b6a66b52078a7fbdf85b4",
   "confirmed": true,
   "block_height": 129,
   "program_bytes": 71,
@@ -549,7 +549,7 @@
    "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
    "value": "0.00000600"
   },
-  "txid": "c66389a26f5bc3a59bd635835e739b4925b14e772e6c6622471fe3181d3efd95",
+  "txid": "eaa1c88e92fc51b00ac1dae2e51709806936833fa56d436d6fbd4ba7e49cec8c",
   "confirmed": true,
   "block_height": 132,
   "program_bytes": 71,

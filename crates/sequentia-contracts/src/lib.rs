@@ -12,6 +12,7 @@ pub mod attestation;
 pub mod descriptor;
 pub mod lint;
 pub mod pool;
+pub mod sale;
 pub mod simplex;
 pub mod vault;
 

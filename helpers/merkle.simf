@@ -40,3 +40,20 @@ fn merkle_root_8(leaf: u256, proof: [(u256, bool); 8]) -> u256 {
 fn merkle_root_16(leaf: u256, proof: [(u256, bool); 16]) -> u256 {
     array_fold::<merkle_step, 16>(proof, leaf)
 }
+
+/* One level of an update: the running nodes of the old and the new tree,
+ * hashed with one shared sibling on its side. */
+fn merkle_update_step(step: (u256, bool), nodes: (u256, u256)) -> (u256, u256) {
+    let (sibling, sibling_is_left): (u256, bool) = step;
+    let (old, new): (u256, u256) = nodes;
+    match sibling_is_left {
+        true => (merkle_node(sibling, old), merkle_node(sibling, new)),
+        false => (merkle_node(old, sibling), merkle_node(new, sibling)),
+    }
+}
+
+/* The roots before and after one leaf of a 16-level tree changes: one proof
+ * folds both, so every other leaf is the same in the two trees. */
+fn merkle_update_16(old_leaf: u256, new_leaf: u256, proof: [(u256, bool); 16]) -> (u256, u256) {
+    array_fold::<merkle_update_step, 16>(proof, (old_leaf, new_leaf))
+}
