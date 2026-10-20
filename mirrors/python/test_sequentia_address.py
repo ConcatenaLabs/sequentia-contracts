@@ -208,5 +208,21 @@ class TheVectorsCatchMistakes(unittest.TestCase):
         self.assertEqual(sa.script_num(0x400002), b"\x03\x02\x00\x40")
 
 
+class PoolSplit(unittest.TestCase):
+    def test_table_hash_and_payouts_agree_with_their_vectors(self):
+        t = json.loads(read(os.path.join(ROOT, "templates", "pool_split", "tables.json")))
+        self.assertTrue(t["entries"] and t["payouts"])
+        for e in t["entries"]:
+            rows = [(bytes.fromhex(r["script"]), r["numerator"]) for r in e["rows"]]
+            self.assertEqual(sa.pool_split_table(rows).hex(), e["table"], e["name"])
+        for p in t["payouts"]:
+            args = (p["numerators"], p["denom"], p["withhold_cap_bp"], int(p["collected"]), int(p["withheld"]))
+            if "refused" in p:
+                with self.assertRaisesRegex(ValueError, p["refused"]):
+                    sa.pool_split_payouts(*args)
+            else:
+                self.assertEqual([str(x) for x in sa.pool_split_payouts(*args)], p["outputs"], p["name"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,177 @@
+{
+  "descriptor": 2,
+  "template": {
+    "budget": {
+      "max": 4000050,
+      "offset": 50,
+      "per_witness_byte": 4
+    },
+    "internal_key": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "name": "sequentia/pool-split",
+    "params": [
+      {
+        "label": "Share table: SHA256 over the rows, each a script hash and its numerator",
+        "name": "TABLE",
+        "role": "hash",
+        "type": "u256"
+      },
+      {
+        "label": "Denominator of every row's numerator",
+        "name": "DENOM",
+        "role": "number",
+        "type": "u32"
+      },
+      {
+        "label": "Most a claim may keep back for its fee and its claimer, in basis points of what it collects",
+        "name": "WITHHOLD_CAP_BP",
+        "role": "number",
+        "type": "u16"
+      }
+    ],
+    "paths": [
+      {
+        "effect": "Spends this coin as input 0, with every other coin of this script in the transaction, all in one asset and explicit. Of what they hold, at most WITHHOLD_CAP_BP / 10000 is kept back for the fee and the claimer; of the rest, each row i of TABLE from 1 is paid exactly floor(rest * numerator / DENOM) at output i, and row 0, the pool's own, is paid what remains at output 0, rounding included. Anyone can claim.",
+        "leaf": "claim",
+        "name": "claim",
+        "who": "anyone"
+      },
+      {
+        "effect": "Spends this coin beside a claim: it must not be input 0, and input 0 must be a coin of this same script and asset, whose claim counts this coin.",
+        "leaf": "follow",
+        "name": "follow",
+        "who": "anyone"
+      }
+    ],
+    "slots": [],
+    "summary": "A staking pool's payout script: anyone can claim its coins into fixed shares of a table, exact to the atom, in whatever asset they hold.",
+    "tree": {
+      "branch": [
+        {
+          "branch": [
+            {
+              "leaf": "claim",
+              "simplicity": {
+                "cmr": "8c96dacbfde0955116e8c46cd96c70bffc6df018d570491c1986b2487c4503e0",
+                "compiler": {
+                  "name": "simplicityhl",
+                  "version": "0.7.2"
+                },
+                "max_cost_wu": 30397,
+                "source": "pool_split.simf",
+                "source_sha256": "380c98559df54869c93174c8c839509e423ca71f8b415f4c2d34e960231dc9a8",
+                "witness": [
+                  {
+                    "name": "DENOM",
+                    "source": "param:DENOM",
+                    "type": "u32"
+                  },
+                  {
+                    "name": "ROWS",
+                    "source": "spender",
+                    "type": "List<(u256, u32), 64>"
+                  },
+                  {
+                    "name": "WITHHELD",
+                    "source": "spender",
+                    "type": "u64"
+                  },
+                  {
+                    "name": "WITHHOLD_CAP_BP",
+                    "source": "param:WITHHOLD_CAP_BP",
+                    "type": "u16"
+                  }
+                ]
+              }
+            },
+            {
+              "data": [
+                "TABLE",
+                "DENOM",
+                "WITHHOLD_CAP_BP"
+              ],
+              "leaf": "params"
+            }
+          ]
+        },
+        {
+          "leaf": "follow",
+          "tapscript": [
+            "cd926900cacdca7b888800c8cdc87b8887"
+          ]
+        }
+      ]
+    },
+    "version": 1
+  },
+  "template_hash": "8808db749829226dfb58e1fd1e36637bde53cab668769b3954367ec6af9f085f",
+  "chains": [
+    {
+      "name": "sequentia-testnet",
+      "genesis": "ddd11d54c87a2bd94400fd31ce05d8e1110bb4b78e7103f738342086fc4ea92e",
+      "bech32_hrp": "tb"
+    },
+    {
+      "name": "elementsregtest",
+      "genesis": null,
+      "bech32_hrp": "ert"
+    }
+  ],
+  "measured": {
+    "source": "harness/records/p1.json",
+    "claim_one_coin": {
+      "transaction": "one coin, three rows (P2WPKH, P2TR, P2PKH), the fee from what the claim withholds",
+      "vsize": 931,
+      "weight": 3722,
+      "program_bytes": 2216,
+      "witness_bytes": 123,
+      "cost_wu": 957,
+      "budget_wu": 9950
+    },
+    "claim_two_coins": {
+      "transaction": "two coins, the second by the follow leaf, three rows",
+      "vsize": 988,
+      "weight": 3951,
+      "program_bytes": 2193,
+      "witness_bytes": 123,
+      "cost_wu": 1089,
+      "budget_wu": 9858
+    },
+    "claim_10_rows": {
+      "transaction": "one coin, 10 rows",
+      "vsize": 1564,
+      "weight": 6254,
+      "program_bytes": 2260,
+      "witness_bytes": 375,
+      "cost_wu": 2364,
+      "budget_wu": 11142
+    },
+    "claim_20_rows": {
+      "transaction": "one coin, 20 rows",
+      "vsize": 2442,
+      "weight": 9768,
+      "program_bytes": 2274,
+      "witness_bytes": 735,
+      "cost_wu": 4361,
+      "budget_wu": 12638
+    },
+    "claim_63_rows": {
+      "transaction": "one coin, 63 rows",
+      "vsize": 6217,
+      "weight": 24868,
+      "program_bytes": 2324,
+      "witness_bytes": 2283,
+      "cost_wu": 12964,
+      "budget_wu": 19030
+    },
+    "claim_70_coins": {
+      "transaction": "70 coins, three rows: the cost outgrows the witness's budget, and an annex pads it",
+      "vsize": 5255,
+      "weight": 21020,
+      "program_bytes": 2075,
+      "witness_bytes": 123,
+      "cost_wu": 9590,
+      "budget_wu": 9590,
+      "annex_padding_bytes": 49
+    }
+  }
+}

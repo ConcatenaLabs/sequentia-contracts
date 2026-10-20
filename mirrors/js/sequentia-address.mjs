@@ -699,3 +699,41 @@ export function derive(descriptor, params, slots = {}) {
   }
   return { ...x, address };
 }
+
+// ---- The pool split covenant (templates/pool_split, pool_split_tap3) -------
+
+export const POOL_SPLIT_MAX_ROWS = 63;
+
+// The TABLE parameter of templates/pool_split: SHA256 over the rows in order,
+// each the SHA256 of its scriptPubKey then its numerator as 4 big-endian bytes.
+// `rows` is [[scriptPubKey bytes, numerator]].
+export function poolSplitTable(rows) {
+  const parts = [];
+  for (const [script, num] of rows) {
+    if (!Number.isInteger(num) || num < 0 || num >= 2 ** 32) throw new Error('a numerator is a 32-bit number');
+    const n = Buffer.alloc(4);
+    n.writeUInt32BE(num);
+    parts.push(createHash('sha256').update(Buffer.from(script)).digest(), n);
+  }
+  return createHash('sha256').update(Buffer.concat(parts)).digest();
+}
+
+// What a claim pays each row, row 0 first, as BigInts: of `collected`, at most
+// capBp / 10,000 is withheld; each row from 1 gets floor(net * numerator /
+// denom) of net = collected - withheld, and row 0 the rest. Throws for a claim
+// the covenant refuses. Amounts are BigInts.
+export function poolSplitPayouts(numerators, denom, capBp, collected, withheld) {
+  const D = BigInt(denom);
+  const cap = BigInt(capBp);
+  const S = BigInt(collected);
+  const W = BigInt(withheld);
+  if (D <= 0n || D >= 1n << 32n || cap < 0n || cap >= 1n << 16n) throw new Error('denominator or cap out of range');
+  if (S < 0n || S >= 1n << 64n || W < 0n || W >= 1n << 64n) throw new Error('amount out of range');
+  if (W * 10000n > S * cap) throw new Error('withheld over the cap');
+  if (W > S) throw new Error('withheld over what is collected');
+  const net = S - W;
+  const shares = numerators.slice(1).map((n) => (net * BigInt(n)) / D);
+  const paid = shares.reduce((a, b) => a + b, 0n);
+  if (paid > net) throw new Error('the rows are owed more than the claim holds');
+  return [net - paid, ...shares];
+}

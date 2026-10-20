@@ -1,0 +1,763 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
+ },
+ "simplicity/instance": {
+  "template": "sequentia/pool-split",
+  "address": "ert1pg28fyw4atfpummv6yn32f9u5mnw3qdydegujp38t5eyd79kj9ysqcd4enz",
+  "params": {
+   "TABLE": "2d7669e0117b7905b43dd0c8a6d3a02545c251aa0b8630706c4cac01a6d16337",
+   "DENOM": "00002710",
+   "WITHHOLD_CAP_BP": "0064"
+  },
+  "script_pubkey": "5120428e923abd5a43cded9a24e2a49794dcdd10348dca3920c4eba648df16d22920",
+  "rows": [
+   {
+    "label": "pool",
+    "script": "00146be96893b55f8c576612edbab5e9f8ac5ab80c2e",
+    "numerator": 500
+   },
+   {
+    "label": "alice (P2TR)",
+    "script": "51206337ae924d3d381fcc7eec8f2e3995d19834aa265c4bf347e4b7b9830160f53a",
+    "numerator": 6000
+   },
+   {
+    "label": "bob (P2PKH)",
+    "script": "76a91490bbed8c5579d41e8f1d5bcd2b4f994f75a50a5f88ac",
+    "numerator": 3500
+   }
+  ]
+ },
+ "simplicity/neg_wrong_share_one_atom": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7",
+   "same_coin": true,
+   "vsize": 931,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on b61ad88056c47c1b7387b0908b416fb506ecc7b179a0b74ea93204d6d88d4835 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
+  "tool": "wrong share: output 0 (pool) pays 6172700, and the rule gives 6172701"
+ },
+ "simplicity/neg_rows_swapped": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7",
+   "same_coin": true,
+   "vsize": 931,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 860abf8a4d44b37c2940587a98f05a162bdd55d28942751367b58a8a88ede0fe failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
+  "tool": "output 1 pays another script than alice (P2TR)'s"
+ },
+ "simplicity/neg_row_output_with_a_nonce": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7",
+   "same_coin": true,
+   "vsize": 931,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 93f94e93f94c3ea7707ca1f62778d1fead402f4f74b4e51b87ae896cccece6b0 failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ],
+  "tool": "output 1 (alice (P2TR)) is not explicit in the claimed asset with no nonce"
+ },
+ "simplicity/neg_witness_names_another_withheld": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7",
+   "same_coin": true,
+   "vsize": 931,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "simplicity/neg_withheld_one_atom_over_the_cap": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "236cf15acc2bfaf6530122be3cea998563ef72dbfe6828ff6fced3de376088f6",
+   "same_coin": true,
+   "vsize": 997,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 95f9f26528c45ca8ae0827282684de3d89b2b61ac5e62f0eae0df3594aef1d62 failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ],
+  "tool": "withheld over the cap: 1234568 of 123456789 collected, and the cap allows 1234567 (100 bp)"
+ },
+ "simplicity/tool_refuses_to_build_over_the_cap": {
+  "refused": "withheld over the cap: the fee 2991 and the claimer's 1231577 come to 1234568 of b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23, and the cap allows 1234567 of the 123456789 collected (100 bp)"
+ },
+ "simplicity/neg_follower_value_taken": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "4bebfed4de4d63f197b531a862ad77aab9d6ae68ab9cca32da1dc1b76f0a0417",
+   "same_coin": true,
+   "vsize": 988,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 5d25bb4026d79e234f06b9b715e65a28ba3d4d343e18d334bac713e4420d4a70 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
+  "tool": "withheld over the cap: 50002965 of 173456790 collected, and the cap allows 1734567 (100 bp)"
+ },
+ "simplicity/neg_follower_in_another_asset": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "4bebfed4de4d63f197b531a862ad77aab9d6ae68ab9cca32da1dc1b76f0a0417",
+   "same_coin": false,
+   "vsize": 988,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 37c1a184f5a45479ff7f8199dee7987c8f5b02d5231c064d3037cdbb891630f7 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ],
+  "tool": "input 1 is a coin of the pool in another asset, or confidential"
+ },
+ "simplicity/neg_follow_leaf_at_input_0": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "simplicity/neg_follow_beside_a_foreign_input_0": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 23caadc0c32a54fcea4d90ba839fe613de66788c1838271bffa710cbb09a32a1 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "simplicity/claim_one_coin": {
+  "size": 2795,
+  "vsize": 931,
+  "weight": 3722,
+  "nin": 1,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00002793",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00002793"
+  },
+  "txid": "fa49664778134fbc74ec334d71e1be0650ac32ab6bf5f24ae3a7010979dd2da7",
+  "confirmed": true,
+  "block_height": 107,
+  "collected": 123456789,
+  "withheld": 2793,
+  "cap": 1234567,
+  "payouts": [
+   6172701,
+   74072397,
+   43208898
+  ],
+  "coins": 1,
+  "cost_wu": 957,
+  "budget_wu": 9950,
+  "annex_pad": null,
+  "program_bytes": 2216,
+  "witness_bytes": 123,
+  "witness_input0_bytes": 2475
+ },
+ "simplicity/claim_two_coins": {
+  "size": 2901,
+  "vsize": 988,
+  "weight": 3951,
+  "nin": 2,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00002964",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00002964"
+  },
+  "txid": "3df799d903a15512604000b1518cc4dd45705d3c9ed36d8fe420258b47df8a09",
+  "confirmed": true,
+  "block_height": 108,
+  "collected": 83333334,
+  "withheld": 2964,
+  "cap": 833333,
+  "payouts": [
+   4166519,
+   49998222,
+   29165629
+  ],
+  "coins": 2,
+  "cost_wu": 1089,
+  "budget_wu": 9858,
+  "annex_pad": null,
+  "program_bytes": 2193,
+  "witness_bytes": 123,
+  "witness_input0_bytes": 2452
+ },
+ "simplicity/claim_in_another_asset": {
+  "size": 2901,
+  "vsize": 988,
+  "weight": 3951,
+  "nin": 2,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00002964",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "value": "0.00002964"
+  },
+  "txid": "c0629ac651f5e79776cfc804c5f4749d1d4c31adab5f76cd4d031c431d137387",
+  "confirmed": true,
+  "block_height": 110,
+  "collected": 9999999,
+  "withheld": 2964,
+  "cap": 99999,
+  "payouts": [
+   499852,
+   5998221,
+   3498962
+  ],
+  "coins": 2,
+  "cost_wu": 1089,
+  "budget_wu": 9858,
+  "annex_pad": null,
+  "program_bytes": 2193,
+  "witness_bytes": 123,
+  "witness_input0_bytes": 2452
+ },
+ "tapscript/instance": {
+  "template": "sequentia/pool-split-tap3",
+  "address": "ert1phxcvsjn2pgnksm82jvhgwxsfdmesrla0er9t4spqkd548agdd5pscwerty",
+  "params": {
+   "ROW0_SCRIPT": "3c8d61e8b92b2d703ebdc48dd07706e62c91ca38ebf9791df320d732a20139c1",
+   "ROW1_SCRIPT": "acd145ff2237061ceffad4d7fce9f9f8b1edfe31d5f41b4629950167f4f51098",
+   "ROW1_NUM": "00001770",
+   "ROW2_SCRIPT": "8dcfd0f07b8320b294a564df2567c879ad3fa013dc3981fad795ca419c5675ec",
+   "ROW2_NUM": "00000dac",
+   "DENOM": "00002710",
+   "WITHHOLD_CAP_BP": "0064"
+  },
+  "script_pubkey": "5120b9b0c84a6a0a27686cea932e871a096ef301ffafc8cabac020b36953f50d6d03",
+  "rows": [
+   {
+    "label": "pool",
+    "script": "00146be96893b55f8c576612edbab5e9f8ac5ab80c2e",
+    "numerator": 500
+   },
+   {
+    "label": "alice (P2TR)",
+    "script": "51206337ae924d3d381fcc7eec8f2e3995d19834aa265c4bf347e4b7b9830160f53a",
+    "numerator": 6000
+   },
+   {
+    "label": "bob (P2PKH)",
+    "script": "76a91490bbed8c5579d41e8f1d5bcd2b4f994f75a50a5f88ac",
+    "numerator": 3500
+   }
+  ]
+ },
+ "tapscript/neg_wrong_share_one_atom": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6",
+   "same_coin": true,
+   "vsize": 490,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 193206f40722d445ef043cfcc613f92b878d412369f3311498d6ae08652aed6a failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ],
+  "tool": "wrong share: output 0 (pool) pays 6172766, and the rule gives 6172767"
+ },
+ "tapscript/neg_rows_swapped": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6",
+   "same_coin": true,
+   "vsize": 490,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 01099bdfd8f725b45163c1670a05e51a25d7c88ba1412b2a86932532577030a3 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ],
+  "tool": "output 1 pays another script than alice (P2TR)'s"
+ },
+ "tapscript/neg_row_output_with_a_nonce": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6",
+   "same_coin": true,
+   "vsize": 490,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 56f2076dac28910acec5a1c33d7bb02ab858ed818a30e81c68b7b4e47bc0ee6b failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ],
+  "tool": "output 1 (alice (P2TR)) is not explicit in the claimed asset with no nonce"
+ },
+ "tapscript/neg_witness_names_another_withheld": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6",
+   "same_coin": true,
+   "vsize": 490,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "tapscript/neg_withheld_one_atom_over_the_cap": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "control": {
+   "txid": "268fa17b229559663c33e1b347dd06984f3dbca9a3d7d8d2eb69d6495bd531b0",
+   "same_coin": true,
+   "vsize": 557,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 73ddf65099c51e4d4f5a6e11ea44ba864b32f656cbaa3d783ec2c2f97a77304d failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ],
+  "tool": "withheld over the cap: 1234568 of 123456789 collected, and the cap allows 1234567 (100 bp)"
+ },
+ "tapscript/tool_refuses_to_build_over_the_cap": {
+  "refused": "withheld over the cap: the fee 1671 and the claimer's 1232897 come to 1234568 of b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23, and the cap allows 1234567 of the 123456789 collected (100 bp)"
+ },
+ "tapscript/neg_follower_value_taken": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "84a895e85d000b31df96250c6b60320073ddd78fac85f63dd0db82cb411567ab",
+   "same_coin": true,
+   "vsize": 553,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 61892033ef29bb10ad3bebbf091f72929f81c7bf7c92013c33ba013e56226ded failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ],
+  "tool": "withheld over the cap: 50001660 of 173456790 collected, and the cap allows 1734567 (100 bp)"
+ },
+ "tapscript/neg_follower_in_another_asset": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "control": {
+   "txid": "84a895e85d000b31df96250c6b60320073ddd78fac85f63dd0db82cb411567ab",
+   "same_coin": false,
+   "vsize": 553,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 5ec0fbf28671e72ab154a528e918dcdfc5b576d07ac5c925ac35eb41028e9e76 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ],
+  "tool": "input 1 is a coin of the pool in another asset, or confidential"
+ },
+ "tapscript/neg_follow_leaf_at_input_0": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "tapscript/neg_follow_beside_a_foreign_input_0": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 77feb8638b7d9d55684aa0a31900ebb1144058bb5795b84031de410dcdc4faa6 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "tapscript/claim_one_coin": {
+  "size": 1032,
+  "vsize": 490,
+  "weight": 1959,
+  "nin": 1,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001470",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00001470"
+  },
+  "txid": "329497f22a9309c043f2edf840c12082f90954d3343e04b714a0630fa01cbcf6",
+  "confirmed": true,
+  "block_height": 113,
+  "collected": 123456789,
+  "withheld": 1470,
+  "cap": 1234567,
+  "payouts": [
+   6172767,
+   74073191,
+   43209361
+  ],
+  "coins": 1,
+  "script_bytes": 633,
+  "witness_stack_items_bytes": [
+   8,
+   633,
+   65
+  ],
+  "witness_input0_bytes": 712
+ },
+ "tapscript/claim_two_coins": {
+  "size": 1161,
+  "vsize": 553,
+  "weight": 2211,
+  "nin": 2,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00001659",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00001659"
+  },
+  "txid": "7901d5768fa5bc63e1287fcff17d62f46000aa3640a9aec524440de142304255",
+  "confirmed": true,
+  "block_height": 114,
+  "collected": 83333334,
+  "withheld": 1659,
+  "cap": 833333,
+  "payouts": [
+   4166584,
+   49999005,
+   29166086
+  ],
+  "coins": 2,
+  "script_bytes": 633,
+  "witness_stack_items_bytes": [
+   8,
+   633,
+   65
+  ],
+  "witness_input0_bytes": 712
+ },
+ "simplicity/claim_10_rows": {
+  "size": 3662,
+  "vsize": 1564,
+  "weight": 6254,
+  "nin": 1,
+  "nout": 11,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00004692",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00004692"
+  },
+  "txid": "1305427639ebf9bc25266954a02e61634b7b354af507b5212a2b8f8097238427",
+  "confirmed": true,
+  "block_height": 116,
+  "collected": 1000000000,
+  "withheld": 4692,
+  "cap": 10000000,
+  "payouts": [
+   99999538,
+   99999530,
+   99999530,
+   99999530,
+   99999530,
+   99999530,
+   99999530,
+   99999530,
+   99999530,
+   99999530
+  ],
+  "coins": 1,
+  "cost_wu": 2364,
+  "budget_wu": 11142,
+  "annex_pad": null,
+  "program_bytes": 2260,
+  "witness_bytes": 375,
+  "witness_input0_bytes": 2773
+ },
+ "simplicity/claim_20_rows": {
+  "size": 4836,
+  "vsize": 2442,
+  "weight": 9768,
+  "nin": 1,
+  "nout": 21,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00007326",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00007326"
+  },
+  "txid": "38e53b1d1ff5c140ccc58b4acc22639815e7a26e7715c33d5512f13f7960d777",
+  "confirmed": true,
+  "block_height": 118,
+  "collected": 1000000000,
+  "withheld": 7326,
+  "cap": 10000000,
+  "payouts": [
+   49999647,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633,
+   49999633
+  ],
+  "coins": 1,
+  "cost_wu": 4361,
+  "budget_wu": 12638,
+  "annex_pad": null,
+  "program_bytes": 2274,
+  "witness_bytes": 735,
+  "witness_input0_bytes": 3147
+ },
+ "simplicity/claim_63_rows": {
+  "size": 9874,
+  "vsize": 6217,
+  "weight": 24868,
+  "nin": 1,
+  "nout": 64,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00018651",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00018651"
+  },
+  "txid": "e79ae35cd45c76af04b858dbb56128370157a2e186e20875d724f29a64654077",
+  "confirmed": true,
+  "block_height": 120,
+  "collected": 1000000000,
+  "withheld": 18651,
+  "cap": 10000000,
+  "payouts": [
+   15872771,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719,
+   15872719
+  ],
+  "coins": 1,
+  "cost_wu": 12964,
+  "budget_wu": 19030,
+  "annex_pad": null,
+  "program_bytes": 2324,
+  "witness_bytes": 2283,
+  "witness_input0_bytes": 4745
+ },
+ "tapscript/neg_nine_inputs": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 36f480223842cf23817be8c1744fa4ecfa6eaeac86071af753932fa7453059f6 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "tapscript/claim_eight_coins": {
+  "size": 1935,
+  "vsize": 931,
+  "weight": 3723,
+  "nin": 8,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00002793",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00002793"
+  },
+  "txid": "08e4bca36f8d3fc7c8a169c4605970499fb0902485702ad891a7e9c8f3c8edfc",
+  "confirmed": true,
+  "block_height": 122,
+  "collected": 8000028,
+  "withheld": 2793,
+  "cap": 80000,
+  "payouts": [
+   399862,
+   4798341,
+   2799032
+  ],
+  "coins": 8,
+  "script_bytes": 633,
+  "witness_stack_items_bytes": [
+   8,
+   633,
+   65
+  ],
+  "witness_input0_bytes": 712
+ },
+ "simplicity/neg_70_coins_padding_one_byte_short": {
+  "rejected": true,
+  "expect": "Program's execution cost could exceed budget",
+  "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
+  "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 0a75ebeeeee37dc08e85b851d748b4bed6e1391f9dc80d586cb14b3f2cc7c759 failed with mempool-script-verify-flag-failed (Program's execution cost could exceed budget)"
+  ]
+ },
+ "simplicity/claim_70_coins": {
+  "size": 11606,
+  "vsize": 5255,
+  "weight": 21020,
+  "nin": 70,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00015765",
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "value": "0.00015765"
+  },
+  "txid": "0a75ebeeeee37dc08e85b851d748b4bed6e1391f9dc80d586cb14b3f2cc7c759",
+  "confirmed": true,
+  "block_height": 124,
+  "collected": 70002415,
+  "withheld": 15765,
+  "cap": 700024,
+  "payouts": [
+   3499333,
+   41991990,
+   24495327
+  ],
+  "coins": 70,
+  "cost_wu": 9590,
+  "budget_wu": 9590,
+  "annex_pad": 49,
+  "program_bytes": 2075,
+  "witness_bytes": 123,
+  "witness_input0_bytes": 2385
+ }
+}

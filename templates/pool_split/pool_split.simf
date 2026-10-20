@@ -1,0 +1,159 @@
+/* The pool split covenant: a staking pool's payout script that anyone can claim
+ * into fixed shares, exact to the atom, in whatever asset the reward was paid.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapBranch(TapLeaf_0xbe(CMR), H_TapData(params)),
+ *                          TapLeaf_0xc4(follow)))
+ *
+ * This program is the Simplicity leaf, the claim. Its parameters sit in the
+ * data leaf beside it, in this order: the hash of the share table, the
+ * denominator, and the withhold cap. The table is a list of rows, each the
+ * SHA256 of a scriptPubKey and that script's numerator; its hash is SHA256 over
+ * the rows in order, each the 32-byte script hash then the numerator as 4
+ * big-endian bytes. The spender gives the rows in the witness, and the program
+ * hashes them and checks the hash, with the other parameters, against the data
+ * leaf, which consensus has bound to the output through the control block.
+ *
+ * A claim spends this script's coins in one asset and pays them out:
+ *   input 0     a coin of this script, spent by this leaf; every other input of
+ *               this script is spent by the follow leaf, which requires the same
+ *               script and the same asset as input 0, so all of them are summed
+ *               here into `collected`;
+ *   withheld    the claim keeps back at most WITHHOLD_CAP_BP / 10,000 of what it
+ *               collects, for its fee and its claimer; the spender names it;
+ *   output i    for each row i from 1, exactly floor(net * numerator_i / DENOM)
+ *               of the asset to row i's script, explicitly and with no nonce,
+ *               where net is collected less withheld;
+ *   output 0    row 0, the pool's own row, gets what is left of net: its own
+ *               share and every rounding remainder.
+ * Outputs after the rows are free: they can only carry value the claimer
+ * brought, because the rows and the withheld amount account for all of it.
+ * Nobody signs: any member, or anyone, can claim.
+ */
+// include output_reader
+// include wide_arith
+
+/* The data leaf's hash over the parameters, in the template's order. */
+fn params_tapdata(table: u256, denom: u32, cap_bp: u16) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, table);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, denom);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, cap_bp);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a + b; refuses a sum that does not fit in 64 bits. */
+fn plus(a: u64, b: u64) -> u64 {
+    let (carry, s): (bool, u64) = jet::add_64(a, b);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    s
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* floor(net * num / denom), given (q, r) = (net / denom, net % denom). The
+ * product is split as q * num + floor(r * num / denom), which is exact
+ * because q * num is a whole number: q * num <= net when num <= denom, and
+ * r * num < 2^64 because r < denom < 2^32 and num < 2^32. A row whose
+ * numerator exceeds the denominator makes q * num overflow and is refused. */
+fn share(qr: (u64, u64), denom: u64, num: u32) -> u64 {
+    let (q, r): (u64, u64) = qr;
+    let (hi, lo): (u64, u64) = <u128>::into(jet::multiply_64(q, <(u32, u32)>::into((0, num))));
+    assert!(jet::eq_64(hi, 0));
+    let (r_hi, r_lo): (u32, u32) = <u64>::into(r);
+    assert!(jet::eq_32(r_hi, 0));
+    let (q2, r2): (u64, u64) = jet::div_mod_64(jet::multiply_32(r_lo, num), denom);
+    plus(lo, q2)
+}
+
+/* One step of the scan over the inputs: input i, while i < the input count,
+ * adds its amount to the sum when its script is this one. Such an input must
+ * hold the asset, explicitly. */
+fn scan_step(sum: u64, ctx: (u256, u256, u32), i: u8) -> Either<u64, u64> {
+    let (here, asset, count): (u256, u256, u32) = ctx;
+    let idx: u32 = <(u16, u16)>::into((0, <(u8, u8)>::into((0, i))));
+    match jet::lt_32(idx, count) {
+        false => Left(sum),
+        true => match jet::eq_256(unwrap(jet::input_script_hash(idx)), here) {
+            false => Right(sum),
+            true => {
+                let (a, v): (Asset1, Amount1) = unwrap(jet::input_amount(idx));
+                let id: u256 = match a {
+                    Left(blinded: (u1, u256)) => panic!(),
+                    Right(explicit: u256) => explicit,
+                };
+                let value: u64 = match v {
+                    Left(blinded: (u1, u256)) => panic!(),
+                    Right(explicit: u64) => explicit,
+                };
+                assert!(jet::eq_256(id, asset));
+                Right(plus(sum, value))
+            },
+        },
+    }
+}
+
+/* One row of the table: hash it, and for every row but row 0 require its
+ * output. The accumulator carries the asset, (net / denom, net % denom) and
+ * the denominator, then the row index, the sum paid to rows 1 and up, the
+ * table hash so far and row 0's script. */
+fn row_step(row: (u256, u32), acc: ((u256, (u64, u64), u64), (u32, u64, Ctx8, u256))) -> ((u256, (u64, u64), u64), (u32, u64, Ctx8, u256)) {
+    let (script, num): (u256, u32) = row;
+    let (fixed, state): ((u256, (u64, u64), u64), (u32, u64, Ctx8, u256)) = acc;
+    let (asset, qr, denom): (u256, (u64, u64), u64) = fixed;
+    let (i, paid, ctx, pool): (u32, u64, Ctx8, u256) = state;
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, script);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, num);
+    let (carry, next): (bool, u32) = jet::increment_32(i);
+    match jet::is_zero_32(i) {
+        true => (fixed, (next, paid, ctx, script)),
+        false => {
+            let s: u64 = share(qr, denom, num);
+            out_require(i, asset, s, script);
+            (fixed, (next, plus(paid, s), ctx, pool))
+        },
+    }
+}
+
+fn main() {
+    let denom: u32 = witness::DENOM;
+    let cap_bp: u16 = witness::WITHHOLD_CAP_BP;
+    let withheld: u64 = witness::WITHHELD;
+    assert!(jet::lt_32(0, denom));
+
+    // The leader: this coin is input 0, and its asset is the claim's asset.
+    assert!(jet::eq_32(jet::current_index(), 0));
+    let (asset, own): (u256, u64) = in_explicit_current();
+    let here: u256 = jet::current_script_hash();
+
+    // Every input of this script, input 0 included, summed.
+    let collected: u64 = match for_while::<scan_step>(0, (here, asset, jet::num_inputs())) {
+        Left(sum: u64) => sum,
+        Right(sum: u64) => panic!(),
+    };
+
+    // The withheld amount is at most the cap: withheld * 10,000 <= collected * cap.
+    let cap: u64 = <(u32, u32)>::into((0, <(u16, u16)>::into((0, cap_bp))));
+    assert!(wide_le(jet::multiply_64(withheld, 10000), jet::multiply_64(collected, cap)));
+    let net: u64 = minus(collected, withheld);
+
+    // The rows, each paid its share of net; row 0 checked after.
+    let d: u64 = <(u32, u32)>::into((0, denom));
+    let start: ((u256, (u64, u64), u64), (u32, u64, Ctx8, u256)) =
+        ((asset, jet::div_mod_64(net, d), d), (0, 0, jet::sha_256_ctx_8_init(), 0x0000000000000000000000000000000000000000000000000000000000000000));
+    let (fixed, state): ((u256, (u64, u64), u64), (u32, u64, Ctx8, u256)) = fold::<row_step, 64>(witness::ROWS, start);
+    let (count, paid, ctx, pool): (u32, u64, Ctx8, u256) = state;
+    assert!(jet::lt_32(0, count));
+
+    // The table and the parameters are the data leaf's.
+    assert!(jet::eq_256(params_tapdata(jet::sha_256_ctx_8_finalize(ctx), denom, cap_bp), unwrap(jet::tappath(0))));
+
+    // Row 0, the pool: the rest of net.
+    out_require(0, asset, minus(net, paid), pool);
+}
