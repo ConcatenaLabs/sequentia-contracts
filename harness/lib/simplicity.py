@@ -271,10 +271,11 @@ class SimBase(ChainBase):
         return out
 
     def reject(self, tx, label, expect, mempool=None, control=None, index=0, other_coin=False,
-               control_mined=False):
+               control_mined=False, other_state=False):
         pos = self._logpos()
         reason = ChainBase.reject(self, tx, label, expect, mempool=mempool, control=control,
-                                  index=index, other_coin=other_coin, control_mined=control_mined)
+                                  index=index, other_coin=other_coin, control_mined=control_mined,
+                                  other_state=other_state)
         d = self.R[label]
         d["block-log"] = [l for l in self._logsince(pos) if "ConnectBlock" in l or "CheckInputScripts" in l][:2]
         self.rec(label, d)

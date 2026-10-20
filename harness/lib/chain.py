@@ -355,19 +355,30 @@ class ChainBase:
     # claimed property's and no other check's.
     COARSE = ("Assertion failed", "block-validation-failed")
 
-    def check_control(self, tx, control, label, index=0, other_coin=False, mined=False):
+    def check_control(self, tx, control, label, index=0, other_coin=False, mined=False, other_state=False):
         """The control is another transaction that spends the same program at
         input `index` (the same coin there, unless `other_coin`: the property
         is the coin itself), and the node accepts it: its mempool, or, with
         `mined`, a block (for a control relay policy refuses as non-standard;
-        it is mined after the negative is refused)."""
+        it is mined after the negative is refused).
+
+        With `other_state` the property is the state a covenant coin carries
+        in its data leaf: the control spends a coin of the same program (the
+        same commitment root in the witness) at another script, the same
+        program holding another state."""
         assert control.serialize() != tx.serialize(), "%s: the control is the negative itself" % label
         a, b = tx.vin[index].prevout, control.vin[index].prevout
         same_coin = (a.hash, a.n) == (b.hash, b.n)
-        assert same_coin != other_coin, "%s: the control spends %s coin at input %d" % (
+        assert same_coin != (other_coin or other_state), "%s: the control spends %s coin at input %d" % (
             label, "the same" if same_coin else "another", index)
-        assert tx.prev[index].spk == control.prev[index].spk, \
-            "%s: the control spends another program at input %d" % (label, index)
+        if other_state:
+            assert tx.prev[index].spk != control.prev[index].spk, \
+                "%s: the control spends a coin in the same state at input %d" % (label, index)
+            cmr = lambda t: bytes(t.wit.vtxinwit[index].scriptWitness.stack[2])
+            assert cmr(tx) == cmr(control), "%s: the control spends another program at input %d" % (label, index)
+        else:
+            assert tx.prev[index].spk == control.prev[index].spk, \
+                "%s: the control spends another program at input %d" % (label, index)
         control.rehash()
         d = {"txid": control.hash, "same_coin": same_coin, "vsize": self.measure(control)["vsize"]}
         if mined:
@@ -381,7 +392,7 @@ class ChainBase:
         return d
 
     def reject(self, tx, label, expect, mempool=None, control=None, index=0, other_coin=False,
-               control_mined=False):
+               control_mined=False, other_state=False):
         """Assert that the mempool refuses `tx` and that a block forced with
         `generateblock` refuses it too, each for the expected reason.
 
@@ -400,7 +411,7 @@ class ChainBase:
             "%s: '%s' does not say which check failed; give a control transaction" % (label, expect)
         d = {"rejected": True, "expect": expect}
         if control is not None and not control_mined:
-            d["control"] = self.check_control(tx, control, label, index, other_coin)
+            d["control"] = self.check_control(tx, control, label, index, other_coin, other_state=other_state)
         res = self.accept(tx)
         assert not res["allowed"], "%s unexpectedly ACCEPTED" % label
         reason = res.get("reject-reason", "")
@@ -425,7 +436,8 @@ class ChainBase:
         assert self.node.getblockcount() == h0
         assert reason_matches(expect, d["block-error"]), "%s: block says %r, expected %r" % (label, d["block-error"], expect)
         if control is not None and control_mined:
-            d["control"] = self.check_control(tx, control, label, index, other_coin, mined=True)
+            d["control"] = self.check_control(tx, control, label, index, other_coin, mined=True,
+                                              other_state=other_state)
         self.log.info("REJECT %-42s block: %s%s", label, d["block-error"],
                       " (control accepted)" if control is not None else "")
         self.rec(label, d)

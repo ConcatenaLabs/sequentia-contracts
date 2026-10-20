@@ -264,12 +264,12 @@ checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 [[package]]
 name = "elements"
 version = "0.25.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83c63a04238f4b7f3564fe9705921452c2900efd00982545e5c634fac9024fe2"
+source = "git+https://github.com/ConcatenaLabs/SWK?rev=87a9f5e7f98356a2c00712884019079566aacfec#87a9f5e7f98356a2c00712884019079566aacfec"
 dependencies = [
  "bech32",
  "bitcoin",
  "secp256k1-zkp",
+ "serde_json",
 ]
 
 [[package]]
@@ -607,6 +607,7 @@ checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 name = "sequentia-contracts"
 version = "0.1.0"
 dependencies = [
+ "elements",
  "secp256k1",
  "serde",
  "serde_json",

@@ -14,16 +14,16 @@
  },
  "whitelist": {
   "bitcoin": 100000000,
-  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
  },
  "p2pk/program": {
-  "cmr": "e4a747677f92a6e86c64740c2a6bd932045c4e101cfb4fc0634a2d7f09ef36fd",
+  "cmr": "48badc11eb58e155d1870a0fcde0acfa5aafd69fb775fa86e07d6f68add71122",
   "commit_program_bytes": 44,
   "compiler_version": "0.7.2",
-  "scriptPubKey": "51200c4b0efba59549a568e5da6a3dad9dd7933929368fbeda2376732fafc0b0182c",
+  "scriptPubKey": "5120cf040857c98de23baf27a774e658bb23b46417f21ebd65b6bb0050fe6e615efe",
   "control_block_bytes": 33,
   "args": {
-   "PK": "0xa43c551f92abc22660054e27e6b604ecd780ad8eb8beb8a52adb650dd2665781"
+   "PK": "0xe5b74738f3f031521b65227e8367daafac9fcd24b4de1f7506e4a13ac046cdaf"
   }
  },
  "p2pk/neg_wrong_key_local": {
@@ -34,7 +34,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "9642a5378b74b846110ccc775f26b257c8a8c99d621d55ca3e3ef4875c2647a8",
+   "txid": "eba6152cd521d3a3f4f6aab30ef6934e389d22e154e523d9f555488cd05b553d",
    "same_coin": true,
    "vsize": 209,
    "testmempoolaccept": true
@@ -43,7 +43,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9642a5378b74b846110ccc775f26b257c8a8c99d621d55ca3e3ef4875c2647a8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.2] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on eba6152cd521d3a3f4f6aab30ef6934e389d22e154e523d9f555488cd05b553d failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "p2pk/neg_program_bitflip": {
@@ -53,7 +53,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Illegal padding in final byte of program) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Illegal padding in final byte of program) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9642a5378b74b846110ccc775f26b257c8a8c99d621d55ca3e3ef4875c2647a8 failed with mempool-script-verify-flag-failed (Illegal padding in final byte of program)"
+   "[httpworker.2] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on eba6152cd521d3a3f4f6aab30ef6934e389d22e154e523d9f555488cd05b553d failed with mempool-script-verify-flag-failed (Illegal padding in final byte of program)"
   ]
  },
  "p2pk/neg_keypath_random_sig": {
@@ -63,7 +63,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -25)",
   "block-log": [
-   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9642a5378b74b846110ccc775f26b257c8a8c99d621d55ca3e3ef4875c2647a8 failed with mempool-script-verify-flag-failed (Invalid Schnorr signature)"
+   "[httpworker.2] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on eba6152cd521d3a3f4f6aab30ef6934e389d22e154e523d9f555488cd05b553d failed with mempool-script-verify-flag-failed (Invalid Schnorr signature)"
   ]
  },
  "p2pk/spend": {
@@ -75,10 +75,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00000300",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00000300"
   },
-  "txid": "9642a5378b74b846110ccc775f26b257c8a8c99d621d55ca3e3ef4875c2647a8",
+  "txid": "eba6152cd521d3a3f4f6aab30ef6934e389d22e154e523d9f555488cd05b553d",
   "confirmed": true,
   "block_height": 106,
   "program_bytes": 44,
@@ -87,9 +87,9 @@
   "budget_wu": 762,
   "cost_bound_milli_wu": 52112,
   "cost_bound_wu": 53,
-  "program_hex": "d49b4d21e2a8fc955e1133002a713f35b02766bc056c75c5f5c52956db286e9332bc082380c02a7146c60200",
-  "witness_hex": "2f239a4736b07783bf05cae04d92ebfe87850b4e2a5cf51d0cbc8ffec519c9667cf9477bba0c8b814133f5c9114737edef913539127250347f9644431ee7aadc",
-  "sighash_all": "141a3a41db1629a0cf42620736970ba51d0d223cf567b899bbec861dc08cc591",
+  "program_hex": "d49b4f2dba39c79f818a90db2913f41b3ed57d64fe6925a6f0fba8372509d602366d782380c02a7146c60200",
+  "witness_hex": "7a1fd282b3d144649437cbcea254221c2df05804d27a225a179165c2c80b5cd0b917d0a558187d4fc64bfe30d1c9c95a711cf3da320cbbcc53014e7fe9ba89c5",
+  "sighash_all": "347ec7bf8450fdd67402a0da13363a854fe5dab6df95f1c711eb6ddc34ceacaf",
   "witness_input0_bytes": 178
  },
  "p2pk/annex8_sig_without_annex_local": {
@@ -100,7 +100,7 @@
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "fdf4bc1faff57458c6a7a5ef1cf6b6cd7829ba0870315b15670fb2504cb40367",
+   "txid": "5f16ca50a6897b9c429a4aed2ac8b4cbbff7df42a2ee0f9eb6ba64d2bf7af6c3",
    "same_coin": true,
    "vsize": 211,
    "testmempoolaccept": true
@@ -109,7 +109,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on fdf4bc1faff57458c6a7a5ef1cf6b6cd7829ba0870315b15670fb2504cb40367 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 5f16ca50a6897b9c429a4aed2ac8b4cbbff7df42a2ee0f9eb6ba64d2bf7af6c3 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "p2pk/spend_annex8_signed_over_annex": {
@@ -121,10 +121,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00000300",
-   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
    "value": "0.00000300"
   },
-  "txid": "fdf4bc1faff57458c6a7a5ef1cf6b6cd7829ba0870315b15670fb2504cb40367",
+  "txid": "5f16ca50a6897b9c429a4aed2ac8b4cbbff7df42a2ee0f9eb6ba64d2bf7af6c3",
   "confirmed": true,
   "block_height": 108,
   "program_bytes": 44,
@@ -133,9 +133,9 @@
   "budget_wu": 802,
   "cost_bound_milli_wu": 52112,
   "cost_bound_wu": 53,
-  "program_hex": "d49b4d21e2a8fc955e1133002a713f35b02766bc056c75c5f5c52956db286e9332bc082380c02a7146c60200",
-  "witness_hex": "f39d985d959565c14a9c7a6902ecd983cd24250b40afb54668d103255572212a2e7f473ba7941eb580fc0ff150a1a9d8913289d5e8bc37247a14a0aa240167ba",
-  "sighash_all_with_annex": "30913032a364d3edc9e9c1ac61b6f97354cb15d6326a32ce10314a0e43c2e434",
+  "program_hex": "d49b4f2dba39c79f818a90db2913f41b3ed57d64fe6925a6f0fba8372509d602366d782380c02a7146c60200",
+  "witness_hex": "82c71d757dd29692630aa5e725dc33006977682a34d2e99fcb33663eb1cd140907a2175c007f0278c2872777fd7765f2165d67c591875f0ca9f30b730a3975c9",
+  "sighash_all_with_annex": "714e40ce961286f6db489d1ac4b32ec0011d50d27fcb7d0c6c990ef3f73e1951",
   "annex_item_bytes": 9,
   "witness_input0_bytes": 188
  }

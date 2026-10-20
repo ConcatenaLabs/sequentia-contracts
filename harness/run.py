@@ -42,6 +42,8 @@ TESTS = [
     ("o2", "o2_beacon", "Fresh attestations: a beacon coin, its rotation, and old attestations refused after it"),
     ("p1", "p1_pool_split", "The pool split covenant, Simplicity and tapscript: claims by the tool, every violation refused"),
     ("p2", "p2_pool_split_pos", "The pool split covenant as a pool's payout script on a proof-of-stake chain, maturity 1,000"),
+    ("m1", "m1_mint_limiter", "The mint limiter: mints within a window's allowance, the window's reset, the brake and the recovery"),
+    ("m2", "m2_mint_limiter_tool", "The mint-limiter tool: every path it builds is mined, and each is read back"),
 ]
 CEILINGS = [
     ("s1c", "s1_ceiling_annex", "Budget threshold, annex cap, program size, consensus cost cap"),
@@ -68,7 +70,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, s1c, s1d); default all but s1c and s1d")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "
@@ -88,7 +90,8 @@ def main():
             sys.exit("missing: %s" % path)
 
     if not a.no_build:
-        subprocess.check_call(["cargo", "build", "--release", "--locked", "--bin", "seqc"], cwd=ROOT)
+        subprocess.check_call(["cargo", "build", "--release", "--locked", "--features", "sequentia-tx",
+                               "--bin", "seqc"], cwd=ROOT)
     seqc = os.path.join(ROOT, "target", "release", "seqc")
 
     known = {t[0]: t for t in TESTS + CEILINGS}

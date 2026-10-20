@@ -1,0 +1,228 @@
+/* The mint limiter: a covenant that holds an asset's reissuance token and lets
+ * an operator mint at most an allowance per window of blocks.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(params ‖ state)))
+ *
+ * This program is the only spendable leaf. Its parameters and its state sit in
+ * the data leaf beside it, in this order:
+ *
+ *   ASSET           the asset the token reissues
+ *   TOKEN           the reissuance token, the coin's own asset
+ *   OPERATOR_KEY    the hot key that signs mints
+ *   COLD_KEY        the key that applies the brake, lifts it and recovers
+ *   WINDOW          the window, in blocks
+ *   ALLOWANCE       the most minted in one window, in ASSET's atoms
+ *   RECOVERY_DELAY  how long the brake holds before recovery, in units of 512 s
+ *   MINTED          state: the amount minted in the current window
+ *   ELAPSED         state: blocks of the current window behind this coin
+ *   ARMED           state: 1 while the brake is on, else 0
+ *
+ * The spender gives them in the witness and the program checks them against
+ * the data leaf, which consensus has bound to the output through the control
+ * block. Every path but the recovery re-creates the coin at output 0: this same
+ * program, the same parameters, the next state, the token's whole amount,
+ * explicitly and with no nonce. The coin must be input 0, so two coins cannot
+ * share one successor.
+ *
+ * The window is counted by the coins themselves. A mint declares its coin's
+ * age in blocks as a relative lock on its own input, which consensus enforces
+ * (BIP68, transaction version 2 or more), and ELAPSED grows by that age. A
+ * window ends once ELAPSED and the age reach WINDOW; that mint opens the next
+ * window, so MINTED restarts from its own amount and ELAPSED from zero. No
+ * other spend changes MINTED or ELAPSED. A stored window start would be a
+ * claim the spender makes, and a start claimed far in the past would release
+ * many windows at once; an age the chain has checked releases each block once.
+ *
+ * Paths, chosen by the witness PATH:
+ *   mint     the operator reissues ASSET on this input, explicitly, in a coin
+ *            at least two blocks old, while the brake is off, keeping MINTED
+ *            within ALLOWANCE. The two blocks leave, after every mint, a block
+ *            in which only the brake can spend the coin.
+ *   arm      the brake: anyone holding COLD_KEY's signature over the arm
+ *            message applies it, with no issuance on this input. The message
+ *            names the chain, this program and the parameters, and no coin
+ *            or state, so one signature made in advance applies to whichever
+ *            coin is current.
+ *   disarm   COLD_KEY lifts the brake, with no issuance on this input.
+ *   recover  COLD_KEY takes the token anywhere once the brake has held for
+ *            RECOVERY_DELAY, by this input's own sequence.
+ * Mints and the disarm are signed over the whole transaction (sig_all_hash).
+ */
+// include output_reader
+
+/* The data leaf's hash over the parameters and the state, in the template's order. */
+fn data_leaf(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8)) -> u256 {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (window, allowance, delay): (u16, u64, u16) = limits;
+    let (minted, elapsed, armed): (u64, u16, u8) = state;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, token);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, cold);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, window);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, allowance);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, delay);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, minted);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, elapsed);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, armed);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Output 0 is this program holding the token's whole `amount` in `state`. */
+fn successor(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8), amount: u64) {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), data_leaf(asset, token, keys, limits, state));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    out_require(0, token, amount, jet::sha_256_ctx_8_finalize(ctx));
+}
+
+/* This input carries no issuance. */
+fn no_issuance() {
+    assert!(is_none::<bool>(unwrap(jet::issuance(0))));
+}
+
+/* The age of this input's coin in blocks, as its own sequence declares it. BIP68
+ * makes consensus enforce the sequence only from transaction version 2 and with
+ * its disable bit clear; a lock in time instead of blocks is refused. */
+fn age_blocks() -> u16 {
+    assert!(jet::le_32(2, jet::version()));
+    match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(distance: u16) => distance,
+        Right(duration: u16) => panic!(),
+    }
+}
+
+/* This input has waited at least `units` units of 512 seconds of median time. */
+fn waited_time(units: u16) {
+    assert!(jet::le_32(2, jet::version()));
+    let d: u16 = match unwrap(jet::parse_sequence(jet::current_sequence())) {
+        Left(distance: u16) => panic!(),
+        Right(duration: u16) => duration,
+    };
+    assert!(jet::le_16(units, d));
+}
+
+/* a + b; refuses a sum that overflows. */
+fn plus(a: u64, b: u64) -> u64 {
+    let (carry, s): (bool, u64) = jet::add_64(a, b);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    s
+}
+
+/* The message COLD_KEY signs to apply the brake: tagged with the hash of
+ * "sequentia/mint-limiter/arm", over the chain's genesis, this leaf and the
+ * parameters. */
+fn arm_message(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16)) -> u256 {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (window, allowance, delay): (u16, u64, u16) = limits;
+    let tag: u256 = 0x3c8426a510bfae8d49b0c1f67fa566e1070f38fb16c580ed0e2632e44782915e;
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, tag);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, tag);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::tapleaf_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, token);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, cold);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, window);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, allowance);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, delay);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn mint(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8), amount: u64, sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (window, allowance, delay): (u16, u64, u16) = limits;
+    let (minted, elapsed, armed): (u64, u16, u8) = state;
+    // No mint while the brake is on.
+    assert!(jet::eq_8(armed, 0));
+
+    // A reissuance of the asset on this input, of an explicit amount.
+    assert!(unwrap(unwrap(jet::issuance(0))));
+    assert!(jet::eq_256(unwrap(unwrap(jet::issuance_asset(0))), asset));
+    let x: u64 = match unwrap(jet::current_issuance_asset_amount()) {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+
+    // The coin's age, at least two blocks.
+    let d: u16 = age_blocks();
+    assert!(jet::le_16(2, d));
+
+    // The window: it ends once the blocks behind this coin and its age reach WINDOW.
+    let (carry, sum): (bool, u16) = jet::add_16(elapsed, d);
+    let ended: bool = match carry {
+        true => true,
+        false => jet::le_16(window, sum),
+    };
+    let (minted_next, elapsed_next): (u64, u16) = match ended {
+        true => (x, 0),
+        false => (plus(minted, x), sum),
+    };
+    assert!(jet::le_64(minted_next, allowance));
+
+    successor(asset, token, keys, limits, (minted_next, elapsed_next, 0), amount);
+    jet::bip_0340_verify((operator, jet::sig_all_hash()), sig);
+}
+
+fn arm(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8), amount: u64, sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (minted, elapsed, armed): (u64, u16, u8) = state;
+    assert!(jet::eq_8(armed, 0));
+    no_issuance();
+    successor(asset, token, keys, limits, (minted, elapsed, 1), amount);
+    jet::bip_0340_verify((cold, arm_message(asset, token, keys, limits)), sig);
+}
+
+fn disarm(asset: u256, token: u256, keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8), amount: u64, sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (minted, elapsed, armed): (u64, u16, u8) = state;
+    assert!(jet::eq_8(armed, 1));
+    no_issuance();
+    successor(asset, token, keys, limits, (minted, elapsed, 0), amount);
+    jet::bip_0340_verify((cold, jet::sig_all_hash()), sig);
+}
+
+fn recover(keys: (Pubkey, Pubkey), limits: (u16, u64, u16), state: (u64, u16, u8), sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let (window, allowance, delay): (u16, u64, u16) = limits;
+    let (minted, elapsed, armed): (u64, u16, u8) = state;
+    assert!(jet::eq_8(armed, 1));
+    waited_time(delay);
+    jet::bip_0340_verify((cold, jet::sig_all_hash()), sig);
+}
+
+fn main() {
+    let asset: u256 = witness::ASSET;
+    let token: u256 = witness::TOKEN;
+    let keys: (Pubkey, Pubkey) = (witness::OPERATOR_KEY, witness::COLD_KEY);
+    let limits: (u16, u64, u16) = (witness::WINDOW, witness::ALLOWANCE, witness::RECOVERY_DELAY);
+    let state: (u64, u16, u8) = (witness::MINTED, witness::ELAPSED, witness::ARMED);
+
+    // The parameters and the state are the data leaf's.
+    assert!(jet::eq_256(data_leaf(asset, token, keys, limits, state), unwrap(jet::tappath(0))));
+
+    // One coin per transaction: this input is input 0, and its successor output 0.
+    assert!(jet::eq_32(jet::current_index(), 0));
+
+    // The coin holds the token, explicitly.
+    let (held, amount): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, token));
+
+    match witness::PATH {
+        Left(m: ()) => mint(asset, token, keys, limits, state, amount, witness::OPERATOR_SIG),
+        Right(cold_path: Either<(), Either<(), ()>>) => match cold_path {
+            Left(a: ()) => arm(asset, token, keys, limits, state, amount, witness::ARM_SIG),
+            Right(rest: Either<(), ()>) => match rest {
+                Left(b: ()) => disarm(asset, token, keys, limits, state, amount, witness::COLD_SIG),
+                Right(c: ()) => recover(keys, limits, state, witness::RECOVER_SIG),
+            },
+        },
+    }
+}

@@ -2,3 +2,14 @@
 resolver = "2"
 members = ["crates/*"]
 exclude = ["tools"]
+
+# Sequentia's transaction encoding. A Sequentia issuance carries a denomination
+# byte that the upstream `elements` crate does not read, so `seqc run` reads a
+# transaction that issues or reissues an asset only when built with the
+# `sequentia-tx` feature, which turns on this fork's `sequentia` feature. The
+# fork is the one smplx and the wallet kit declare (smplx's SEQUENTIA.md). A
+# patch applies only in the workspace that declares it, and without the feature
+# the fork encodes exactly as upstream does, so crates that depend on this one
+# are unaffected.
+[patch.crates-io]
+elements = { git = "https://github.com/ConcatenaLabs/SWK", rev = "87a9f5e7f98356a2c00712884019079566aacfec" }
