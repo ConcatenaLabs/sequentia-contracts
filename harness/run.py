@@ -83,7 +83,7 @@ def main():
     ap.add_argument("--ceilings", action="store_true", help="also run the slow S1 ceiling tests")
     ap.add_argument("--tmpdir", default=os.path.join(HARNESS, "tmp"),
                     help="where node data directories go (removed after a passing test)")
-    ap.add_argument("--no-build", action="store_true", help="use the seqc already built")
+    ap.add_argument("--no-build", action="store_true", help="use the seqc and the mint-limiter tool already built")
     a = ap.parse_args()
 
     repo = os.path.abspath(a.node_repo)
@@ -93,15 +93,19 @@ def main():
         if not os.path.exists(path):
             sys.exit("missing: %s" % path)
 
-    if not a.no_build:
-        subprocess.check_call(["cargo", "build", "--release", "--locked", "--features", "sequentia-tx",
-                               "--bin", "seqc"], cwd=ROOT)
-    seqc = os.path.join(ROOT, "target", "release", "seqc")
-
     known = {t[0]: t for t in TESTS + CEILINGS}
     chosen = [known[t] for t in a.tests] if a.tests else TESTS + (CEILINGS if a.ceilings else [])
     if a.tests and a.ceilings:
         chosen += [c for c in CEILINGS if c not in chosen]
+
+    if not a.no_build:
+        subprocess.check_call(["cargo", "build", "--release", "--locked", "--features", "sequentia-tx",
+                               "--bin", "seqc"], cwd=ROOT)
+        # m2 drives the mint-limiter tool, which builds in its own workspace.
+        if any(t[0] == "m2" for t in chosen) and not os.environ.get("MINT_LIMITER"):
+            subprocess.check_call(["cargo", "build", "--release", "--locked", "--manifest-path",
+                                   os.path.join(ROOT, "tools", "mint-limiter", "Cargo.toml")], cwd=ROOT)
+    seqc = os.path.join(ROOT, "target", "release", "seqc")
 
     os.makedirs(a.tmpdir, exist_ok=True)
     config = os.path.join(a.tmpdir, "config.ini")
