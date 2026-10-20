@@ -246,3 +246,27 @@ one property it breaks, which the node accepts.
 
 Not run: an output with a confidential asset or amount against `output_reader`,
 and a `wide_add` whose sum overflows 128 bits.
+
+### `oracle_threshold`
+
+| Function | Does |
+|---|---|
+| `att_verify_threshold3(keys, beacon_assets, m, record, slots)` | At least `m` of the three `keys` attest `record` (base, quote, price, precision, time) in format 2, each presented slot with its own beacon live at the input it names; the three keys distinct and `m` at least 1 |
+| `att_threshold_slot(key, beacon_asset, record, slot) -> u8` | 1 when `slot` presents `key`'s fresh attestation of `record` (`att_verify_fresh`), 0 when it abstains; a presented slot that does not verify fails |
+| `att_threshold_distinct3(keys)` | The three keys are three |
+
+It includes `attestation`. Every signer's message carries its own key and its
+own beacon, so the signatures of one record are over three different messages;
+what they share is the record. A slot is `Option<(signature, beacon, input)>`.
+The keys must be distinct so that `m` signatures are `m` signers, and a key
+nobody holds (the NUMS point) fills a slot a contract does not use; `m` of 0
+would accept a record with no signature at all and is refused. The later form,
+one signature by an aggregate key and a Merkle proof that it is one of the
+set's qualifying subsets, needs the signers to sign one message together.
+
+It is proven by harness test `l2`, in `templates/pignus_vault_threshold`
+([`pignus-vault.md`](pignus-vault.md), "Several oracles"). The distinct-key
+rule is shown on the abstract machine there and not in a block: a spend with
+one key in two slots holds two witness values that are equal, which the node
+refuses as `Subexpression not properly shared` unless the program shares them,
+and a shared program can only be pruned from a run the rule lets succeed.

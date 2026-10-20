@@ -1,0 +1,255 @@
+/* The Pignus loan vault, version 2, under several oracles: a loan's collateral
+ * in one coin, its terms and its state in the data leaf beside this program.
+ * It is templates/pignus_vault with one change: a liquidation takes a price
+ * record that at least THRESHOLD of three oracle keys attest, each under its
+ * own live beacon, in place of one oracle's attestation.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(terms || state)))
+ *
+ * terms  COLL, DEBT_ASSET (asset ids, internal byte order), ORACLE_1..3 (three
+ *        distinct keys whose format-2 attestations price COLL in DEBT_ASSET; a
+ *        key nobody holds fills a slot the loan does not use), BEACON_ASSET_1..3
+ *        (each oracle's beacon asset), THRESHOLD (how many must attest, 1 to
+ *        3), PRECISION (the attestations' precision), LIQ_BP, TARGET_BP,
+ *        BONUS_BP (collateral ratios in basis points), MATURITY, RECOVER_AFTER
+ *        (Unix times), LENDER, BORROWER (SHA256 of the payout scripts);
+ * state  DEBT_OUT (the debt outstanding) and LAST_TIME (the time of the last
+ *        record a liquidation used, or the time the loan began).
+ *
+ * The coin at input k owns outputs 2k and 2k+1, and the paths are the single
+ * oracle vault's:
+ *
+ *   REPAY      anyone. Output 2k+1 pays the lender P >= 1 of DEBT_ASSET; below
+ *              the debt, output 2k is the successor owing DEBT_OUT - P; at or
+ *              above it, output 2k pays the borrower the whole collateral.
+ *   TOP_UP     anyone. Output 2k is this same script holding more collateral.
+ *   LIQUIDATE  anyone, with a price record (price, time) that at least
+ *              THRESHOLD of the three keys attest, each slot presenting its
+ *              signature, the beacon it names and the input spending a coin of
+ *              that oracle's beacon asset from it; newer than LAST_TIME, its
+ *              time the transaction's lock time. The rest is the single vault's
+ *              rule: unhealthy before maturity, repaid at most to TARGET_BP,
+ *              a seizure worth at most r * BONUS_BP / 10,000, the successor
+ *              healthy with LAST_TIME = the record's time.
+ *   RECOVER    anyone, once the lock time reaches RECOVER_AFTER: output 2k pays
+ *              the lender at least the whole collateral.
+ *
+ * Health compares products at 192 bits, as the single vault does.
+ */
+// include output_reader
+// include oracle_threshold
+// include wide_arith192
+
+/* The terms in the data leaf's order, hashed: the state goes after them. */
+fn terms_ctx(assets: (u256, u256), oracles: ([Pubkey; 3], [u256; 3], u8), ratios: (u8, u32, u32, u32), times: (u32, u32), payouts: (u256, u256)) -> Ctx8 {
+    let (coll, debt_asset): (u256, u256) = assets;
+    let (keys, beacon_assets, threshold): ([Pubkey; 3], [u256; 3], u8) = oracles;
+    let [k1, k2, k3]: [Pubkey; 3] = keys;
+    let [b1, b2, b3]: [u256; 3] = beacon_assets;
+    let (precision, liq, target, bonus): (u8, u32, u32, u32) = ratios;
+    let (maturity, recover_after): (u32, u32) = times;
+    let (lender, borrower): (u256, u256) = payouts;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, coll);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, debt_asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, k1);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, k2);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, k3);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, b1);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, b2);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, b3);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, threshold);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, precision);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, liq);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, target);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, bonus);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, maturity);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, recover_after);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, lender);
+    jet::sha_256_ctx_8_add_32(ctx, borrower)
+}
+
+/* The data leaf's hash: the terms, then this state. */
+fn data_leaf(terms: Ctx8, debt: u64, last: u32) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(terms, debt);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, last);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256 of the scriptPubKey of this program holding this state. */
+fn vault_script_hash(terms: Ctx8, debt: u64, last: u32) -> u256 {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), data_leaf(terms, debt, last));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+fn widen(x: u32) -> u64 {
+    <(u32, u32)>::into((0, x))
+}
+
+/* Output i pays `script` in `asset`, explicitly and with no nonce; its amount. */
+fn paid_to(i: u32, asset: u256, script: u256) -> u64 {
+    let (id, value, s): (u256, u64, u256) = out_explicit(i);
+    assert!(jet::eq_256(id, asset));
+    assert!(jet::eq_256(s, script));
+    out_no_nonce(i);
+    value
+}
+
+/* What output i, which must exist and be explicit, returns to `script` in
+ * `asset`: its amount when it pays that script in that asset, else nothing.
+ * The choice is a mask, not a branch. */
+fn returned_to(i: u32, asset: u256, script: u256) -> u64 {
+    let (id, value, s): (u256, u64, u256) = out_explicit(i);
+    let hit: u1 = jet::and_1(<bool>::into(jet::eq_256(id, asset)), <bool>::into(jet::eq_256(s, script)));
+    jet::and_64(value, jet::left_extend_1_64(hit))
+}
+
+/* Output 2k+1 pays the lender P >= 1 of the debt asset; P. */
+fn lender_paid(pay: u32, debt_asset: u256, lender: u256) -> u64 {
+    let p: u64 = paid_to(pay, debt_asset, lender);
+    assert!(jet::lt_64(0, p));
+    p
+}
+
+fn repay(terms: Ctx8, state: (u64, u32), c: u64, outs: (u32, u32), assets: (u256, u256), payouts: (u256, u256)) {
+    let (debt, last): (u64, u32) = state;
+    let (main, pay): (u32, u32) = outs;
+    let (coll, debt_asset): (u256, u256) = assets;
+    let (lender, borrower): (u256, u256) = payouts;
+    let p: u64 = lender_paid(pay, debt_asset, lender);
+    match jet::lt_64(p, debt) {
+        // Part of the debt: the vault goes on with the same collateral.
+        true => out_require(main, coll, c, vault_script_hash(terms, minus(debt, p), last)),
+        // All of it: the borrower gets the whole collateral back.
+        false => assert!(jet::le_64(c, paid_to(main, coll, borrower))),
+    };
+}
+
+fn top_up(c: u64, main: u32, coll: u256) {
+    let more: u64 = paid_to(main, coll, jet::current_script_hash());
+    assert!(jet::lt_64(c, more));
+}
+
+fn recover(c: u64, main: u32, coll: u256, lender: u256, recover_after: u32) {
+    jet::check_lock_time(recover_after);
+    assert!(jet::le_64(c, paid_to(main, coll, lender)));
+}
+
+/* The liquidation. `att` is the record and its slots; `matured` chooses the
+ * maturity rule over the health rule. */
+fn liquidate(terms: Ctx8, state: (u64, u32), c: u64, outs: (u32, u32), assets: (u256, u256), oracles: ([Pubkey; 3], [u256; 3], u8), ratios: (u8, u32, u32, u32), times: (u32, u32), payouts: (u256, u256), att: (u64, u32, [Option<(Signature, u256, u32)>; 3], bool)) {
+    let (debt, last): (u64, u32) = state;
+    let (main, pay): (u32, u32) = outs;
+    let (coll, debt_asset): (u256, u256) = assets;
+    let (keys, beacon_assets, threshold): ([Pubkey; 3], [u256; 3], u8) = oracles;
+    let (precision, liq_bp, target_bp, bonus_bp): (u8, u32, u32, u32) = ratios;
+    let (maturity, recover_after): (u32, u32) = times;
+    let (lender, borrower): (u256, u256) = payouts;
+    let (price, time, slots, matured): (u64, u32, [Option<(Signature, u256, u32)>; 3], bool) = att;
+
+    // A fresh price of this collateral in this debt asset, from at least
+    // THRESHOLD of the three oracles.
+    att_verify_threshold3(keys, beacon_assets, threshold, (coll, debt_asset, price, precision, time), slots);
+    // Newer than the last one this vault used, and the transaction's lock
+    // time, which the chain's median time must pass.
+    assert!(jet::lt_32(last, time));
+    assert!(jet::eq_32(jet::tx_lock_time(), time));
+
+    let u: u64 = w192_pow10(precision);
+    let liq: u64 = widen(liq_bp);
+    let target: u64 = widen(target_bp);
+    let bonus: u64 = widen(bonus_bp);
+    let p: u64 = lender_paid(pay, debt_asset, lender);
+    let full: bool = jet::le_64(debt, p);
+    let r: u64 = match full {
+        true => debt,
+        false => p,
+    };
+    // The collateral's value, times 10,000 * 10^precision: c * price * 10,000.
+    let value: (u64, u64, u64) = w192_mul3(c, price, 10000);
+    match matured {
+        true => jet::check_lock_time(maturity),
+        false => {
+            // Unhealthy: c * price * 10^4 < LIQ_BP * debt * 10^precision.
+            assert!(w192_lt(value, w192_mul3(debt, u, liq)));
+            // No further than the target: repaying one atom less, at the most
+            // the liquidator may seize for it, leaves the vault below
+            // TARGET_BP. value + (r-1) * T * u < T * debt * u + (r-1) * B * u.
+            let r1: u64 = minus(r, 1);
+            assert!(w192_lt(w192_add(value, w192_mul3(r1, u, target)),
+                            w192_add(w192_mul3(debt, u, target), w192_mul3(r1, u, bonus))));
+        },
+    };
+    match full {
+        // The debt is paid: the vault closes, and what output 2k pays the
+        // borrower in the collateral is the surplus returned. A liquidator
+        // who returns nothing puts its own output there.
+        true => {
+            let s: u64 = minus(c, returned_to(main, coll, borrower));
+            assert!(w192_le(w192_mul3(s, price, 10000), w192_mul3(r, u, bonus)));
+        },
+        // Part of it: the rest of the collateral stays in the successor, which
+        // must be healthy at this price.
+        false => {
+            let left: u64 = minus(debt, r);
+            let kept: u64 = paid_to(main, coll, vault_script_hash(terms, left, time));
+            let s: u64 = minus(c, kept);
+            assert!(w192_le(w192_mul3(s, price, 10000), w192_mul3(r, u, bonus)));
+            assert!(w192_le(w192_mul3(left, u, liq), w192_mul3(kept, price, 10000)));
+        },
+    };
+}
+
+fn main() {
+    let assets: (u256, u256) = (witness::COLL, witness::DEBT_ASSET);
+    let keys: [Pubkey; 3] = [witness::ORACLE_1, witness::ORACLE_2, witness::ORACLE_3];
+    let beacon_assets: [u256; 3] = [witness::BEACON_ASSET_1, witness::BEACON_ASSET_2, witness::BEACON_ASSET_3];
+    let oracles: ([Pubkey; 3], [u256; 3], u8) = (keys, beacon_assets, witness::THRESHOLD);
+    let ratios: (u8, u32, u32, u32) = (witness::PRECISION, witness::LIQ_BP, witness::TARGET_BP, witness::BONUS_BP);
+    let times: (u32, u32) = (witness::MATURITY, witness::RECOVER_AFTER);
+    let payouts: (u256, u256) = (witness::LENDER, witness::BORROWER);
+    let state: (u64, u32) = (witness::DEBT_OUT, witness::LAST_TIME);
+    let (debt, last): (u64, u32) = state;
+    let (coll, debt_asset): (u256, u256) = assets;
+    let (lender, borrower): (u256, u256) = payouts;
+    let (maturity, recover_after): (u32, u32) = times;
+
+    // The terms and the state are the data leaf's.
+    let terms: Ctx8 = terms_ctx(assets, oracles, ratios, times, payouts);
+    assert!(jet::eq_256(data_leaf(terms, debt, last), unwrap(jet::tappath(0))));
+
+    // The coin holds the collateral asset, explicitly.
+    let (held, c): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, coll));
+
+    // Input k owns outputs 2k and 2k+1.
+    let k: u32 = jet::current_index();
+    let (carry, main): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let (carry1, pay): (bool, u32) = jet::increment_32(main);
+    let outs: (u32, u32) = (main, pay);
+
+    match witness::PATH {
+        Left(a: Either<(), ()>) => match a {
+            Left(u: ()) => repay(terms, state, c, outs, (coll, debt_asset), payouts),
+            Right(u: ()) => top_up(c, main, coll),
+        },
+        Right(b: Either<(u64, u32, [Option<(Signature, u256, u32)>; 3], bool), ()>) => match b {
+            Left(att: (u64, u32, [Option<(Signature, u256, u32)>; 3], bool)) => liquidate(terms, state, c, outs, assets, oracles, ratios, times, payouts, att),
+            Right(u: ()) => recover(c, main, coll, lender, recover_after),
+        },
+    };
+}
