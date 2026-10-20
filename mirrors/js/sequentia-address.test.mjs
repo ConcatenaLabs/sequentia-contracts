@@ -182,3 +182,18 @@ test('a script number is minimal', () => {
   assert.equal(Buffer.from(scriptNum(0x80n)).toString('hex'), '028000');
   assert.equal(Buffer.from(scriptNum(0x400002n)).toString('hex'), '03020040');
 });
+
+test('the pool split table hash and payouts agree with their vectors', async () => {
+  const { poolSplitTable, poolSplitPayouts } = await import('./sequentia-address.mjs');
+  const t = JSON.parse(read(join(root, 'templates', 'pool_split', 'tables.json')));
+  assert.ok(t.entries.length > 0 && t.payouts.length > 0);
+  for (const e of t.entries) {
+    const rows = e.rows.map((r) => [Buffer.from(r.script, 'hex'), r.numerator]);
+    assert.equal(poolSplitTable(rows).toString('hex'), e.table, e.name);
+  }
+  for (const p of t.payouts) {
+    const run = () => poolSplitPayouts(p.numerators, p.denom, p.withhold_cap_bp, p.collected, p.withheld);
+    if (p.refused) assert.throws(run, new RegExp(p.refused), p.name);
+    else assert.deepEqual(run().map(String), p.outputs, p.name);
+  }
+});

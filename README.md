@@ -23,7 +23,8 @@ tests.
 | `templates/` | Contract templates: each its programs, its descriptor (`descriptor.json`) and its golden vectors (`vectors.json`) |
 | `mirrors/` | Address derivation for a descriptor's instance in Python, JavaScript and Go, with no compiler, and in `mirrors/fixtures/` the files every reader is checked against |
 | `harness/` | The regtest harness: a Sequentia node with Simplicity active, the tests that run programs on it, and their records |
-| `docs/` | `descriptor.md` specifies contract descriptors and golden vectors; `helpers.md` documents the helpers and their measured costs; `mint-limiter.md` describes the mint limiter. Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
+| `docs/` | `descriptor.md` specifies contract descriptors and golden vectors; `helpers.md` documents the helpers and their measured costs; `pool-split.md` specifies the pool split covenant and how a pool uses and claims it; `mint-limiter.md` describes the mint limiter. Measured results: `harness-sizes.md` compares every harness figure with a run under SimplicityHL 0.4.1; `compiler-roots.md` compares the roots of the programs other repositories ship |
+| `tools/pool-claim/` | `pool_claim.py`, which derives a pool split covenant's address from a pool's record and claims, or checks a claim of, the pool's rewards; `twin_script.py`, which wrote the tapscript twin's claim leaf |
 | `tools/compiler-roots/` | Compiles a set of programs under SimplicityHL 0.4.1 and the pinned compiler in one binary and compares their roots |
 | `tools/mint-limiter/` | Builds and signs spends of the mint limiter for the bridges that mint through it, with no node access and no credential (its `README.md`) |
 | `.github/workflows/ci.yml` | Unit tests, lints, descriptor checks, the three address mirrors and the parity gate on every pull request |
@@ -122,6 +123,8 @@ cargo run --bin seqc -- descriptor check templates/<t>
 | `templates/one_key` | One key, held in the data leaf beside the program (the single-program layout) |
 | `templates/one_key_exit` | The one-key program and its data leaf, beside a tapscript exit leaf that a second key spends after a relative delay |
 | `templates/faucet_drip` | A faucet's reserve: the faucet key drips at most one tier per interval, the reserve re-created with the rest and its fee capped in its own asset; a tapscript leaf lets the treasury key take everything once drips have stopped for a long delay |
+| `templates/pool_split` | A staking pool's payout script: anyone claims its coins into a table of up to 63 fixed shares, exact to the atom, in whatever asset they hold, withholding at most a capped part for the fee; row 0, the pool, takes the rounding. A tapscript follow leaf lets one claim spend many coins. `tables.json` holds the table-hash and payout vectors ([`docs/pool-split.md`](docs/pool-split.md)) |
+| `templates/pool_split_tap3` | The same rule for a table of three rows, all in tapscript |
 | `templates/mint_limiter` | An asset's reissuance token: the operator key mints at most an allowance per window of blocks, the window and the count carried in the coin's state; a cold key's signature made in advance applies a brake that stops every mint, the cold key lifts it, and takes the token once the brake has held a long delay (`docs/mint-limiter.md`) |
 
 ## Lints
@@ -281,6 +284,8 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | `m2` | `tools/mint-limiter` against the node: every path it builds is signed by the wallet and mined, `follow` reads each back, and the tool refuses a mint over the allowance, a coin under two blocks old, the wrong key, a coin in another state and a broken arm signature |
 | `d1` | The one-key template, paid at the address the Python mirror derives from its descriptor, and spent; another key and another key's signature refused |
 | `d2` | The `one_key_exit` tree, paid at a golden vector's address and spent by each leaf from its descriptor alone: the wrong key or chain and the wrong control block refused on the Simplicity leaf; the exit refused before its delay, with a short or disabled lock, in version 1 and with the other key; each leaf's signature refused on the other under one key |
+| `p1` | The pool split covenant, Simplicity and tapscript, claimed by `tools/pool-claim`: one coin, two, eight, 70 (padded) and an issued asset, tables of 3 to 63 rows; a wrong share, swapped rows, a nonce, another withheld amount, one atom over the cap, a follower's value taken, a coin in another asset, the follow leaf alone or beside a foreign input, nine inputs to the twin and padding one byte short, all refused |
+| `p2` | The same covenants as a pool's payout script on a proof-of-stake chain with coinbase maturity 1,000: every block's reward paid to them, a claim refused at 17 and 999 confirmations and accepted at 1,000, every reward claimed in exact shares in two assets, and a wrong share and a withheld amount over the cap refused in a block |
 | `s1c`, `s1d` | The budget to the byte, the annex cap, program size and cost ceilings, budget bought with witness data |
 
 Each test writes `harness/records/<id>.json`: for every spend the program and
@@ -306,6 +311,7 @@ the feature `seqc run` refuses any transaction that issues or reissues. The only
 | `reject(tx, label, expect, mempool=, control=)` | Asserts the mempool refuses the transaction and that `generateblock` refuses it too, each with the expected reason (`mempool` when policy refuses first for another), and that the control, required for a failed assertion, is accepted; records it all. With `other_state=True` the control spends a coin of the same program in another state, for a property that is the coin's state itself |
 | `try_block(tx, label, expect)`, `try_mempool(tx, label, expect)` | Mine the transaction directly, or offer it to the mempool, and assert the result: accepted, or refused for the reason given |
 | `bit_replace`, `set_sim_wit` | Rewrite a witness at bit granularity for a negative case the compiler would not satisfy |
+| `poolsplit.py` | Builds pool split claims with the claim tool through the test node, and changes one property of a claim for a negative |
 
 ## Comparing roots across compilers
 

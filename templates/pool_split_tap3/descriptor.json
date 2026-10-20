@@ -1,0 +1,171 @@
+{
+  "descriptor": 2,
+  "template": {
+    "budget": {
+      "max": 4000050,
+      "offset": 50,
+      "per_witness_byte": 4
+    },
+    "internal_key": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "name": "sequentia/pool-split-tap3",
+    "params": [
+      {
+        "label": "Row 0, the pool's own: SHA256 of its scriptPubKey",
+        "name": "ROW0_SCRIPT",
+        "role": "script_hash",
+        "type": "u256"
+      },
+      {
+        "label": "Row 1: SHA256 of its scriptPubKey",
+        "name": "ROW1_SCRIPT",
+        "role": "script_hash",
+        "type": "u256"
+      },
+      {
+        "label": "Row 1: numerator",
+        "name": "ROW1_NUM",
+        "role": "number",
+        "type": "u32"
+      },
+      {
+        "label": "Row 2: SHA256 of its scriptPubKey",
+        "name": "ROW2_SCRIPT",
+        "role": "script_hash",
+        "type": "u256"
+      },
+      {
+        "label": "Row 2: numerator",
+        "name": "ROW2_NUM",
+        "role": "number",
+        "type": "u32"
+      },
+      {
+        "label": "Denominator of every row's numerator; row 0 holds what rows 1 and 2 leave",
+        "name": "DENOM",
+        "role": "number",
+        "type": "u32"
+      },
+      {
+        "label": "Most a claim may keep back for its fee and its claimer, in basis points of what it collects",
+        "name": "WITHHOLD_CAP_BP",
+        "role": "number",
+        "type": "u16"
+      }
+    ],
+    "paths": [
+      {
+        "effect": "Spends this coin as input 0, with every other coin of this script in the transaction (at most 8 inputs in all), all in one asset and explicit. Of what they hold, at most WITHHOLD_CAP_BP / 10000 is kept back for the fee and the claimer, as the witness states; of the rest, rows 1 and 2 are paid exactly floor(rest * numerator / DENOM) at outputs 1 and 2, and row 0, the pool's own, is paid what remains at output 0, rounding included. Anyone can claim.",
+        "leaf": "claim",
+        "name": "claim",
+        "who": "anyone"
+      },
+      {
+        "effect": "Spends this coin beside a claim: it must not be input 0, and input 0 must be a coin of this same script and asset, whose claim counts this coin.",
+        "leaf": "follow",
+        "name": "follow",
+        "who": "anyone"
+      }
+    ],
+    "slots": [],
+    "summary": "A staking pool's payout script for three rows, in tapscript: anyone can claim its coins into fixed shares, exact to the atom, in whatever asset they hold.",
+    "tree": {
+      "branch": [
+        {
+          "leaf": "claim",
+          "tapscript": [
+            "cd916982588876080000000000000000df6900c85188d4599f69080000000000000000d400a06300ca00ca7b876b876c9a6300c8518852798800c95188d7696868d451a06351ca00ca7b876b876c9a6351c8518852798851c95188d7696868d452a06352ca00ca7b876b876c9a6352c8518852798852c95188d7696868d453a06353ca00ca7b876b876c9a6353c8518852798853c95188d7696868d454a06354ca00ca7b876b876c9a6354c8518852798854c95188d7696868d455a06355ca00ca7b876b876c9a6355c8518852798855c95188d7696868d456a06356ca00ca7b876b876c9a6356c8518852798856c95188d7696868d457a06357ca00ca7b876b876c9a6357c8518852798857c95188d769686876081027000000000000da69",
+            {
+              "num": "WITHHOLD_CAP_BP"
+            },
+            "e0d9697c",
+            {
+              "num": "WITHHOLD_CAP_BP"
+            },
+            "e0d969081027000000000000da6977d7695379df695279d8697b7576",
+            {
+              "num": "DENOM"
+            },
+            "e0da690800000000000000005179",
+            {
+              "num": "ROW1_NUM"
+            },
+            "e0d9695379",
+            {
+              "num": "ROW1_NUM"
+            },
+            "e0d969",
+            {
+              "num": "DENOM"
+            },
+            "e0da6977d7697651cf51888851ce518856798851d1764f8763756776926301509367750100687882777e7c7ea868",
+            {
+              "push": "ROW1_SCRIPT"
+            },
+            "8851d00088d7695179",
+            {
+              "num": "ROW2_NUM"
+            },
+            "e0d9695379",
+            {
+              "num": "ROW2_NUM"
+            },
+            "e0d969",
+            {
+              "num": "DENOM"
+            },
+            "e0da6977d7697652cf51888852ce518856798852d1764f8763756776926301509367750100687882777e7c7ea868",
+            {
+              "push": "ROW2_SCRIPT"
+            },
+            "8852d00088d76953797cd86900cf51888800ce518854798800d1764f8763756776926301509367750100687882777e7c7ea868",
+            {
+              "push": "ROW0_SCRIPT"
+            },
+            "8800d000886d6d51"
+          ]
+        },
+        {
+          "leaf": "follow",
+          "tapscript": [
+            "cd926900cacdca7b888800c8cdc87b8887"
+          ]
+        }
+      ]
+    },
+    "version": 1
+  },
+  "template_hash": "7c58bcc6c8f89ab83a453075554b2e3bf7dcc05493ed468cf96466cf6d8d489a",
+  "chains": [
+    {
+      "name": "sequentia-testnet",
+      "genesis": "ddd11d54c87a2bd94400fd31ce05d8e1110bb4b78e7103f738342086fc4ea92e",
+      "bech32_hrp": "tb"
+    },
+    {
+      "name": "elementsregtest",
+      "genesis": null,
+      "bech32_hrp": "ert"
+    }
+  ],
+  "measured": {
+    "source": "harness/records/p1.json; the proof-of-stake claims in harness/records/p2.json",
+    "claim_one_coin": {
+      "transaction": "one coin, three rows (P2WPKH, P2TR, P2PKH), the fee from what the claim withholds",
+      "vsize": 490,
+      "weight": 1959,
+      "claim_script_bytes": 633
+    },
+    "claim_two_coins": {
+      "transaction": "two coins, the second by the follow leaf, three rows",
+      "vsize": 553,
+      "weight": 2211,
+      "claim_script_bytes": 633
+    },
+    "claim_eight_coins": {
+      "transaction": "eight coins, the most a claim may spend, three rows",
+      "vsize": 931,
+      "weight": 3723,
+      "claim_script_bytes": 633
+    }
+  }
+}

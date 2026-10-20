@@ -1,0 +1,270 @@
+{
+  "addresses": [
+    {
+      "address": {
+        "elementsregtest": "ert1pzdhp02njg9m92xf6jn2alyak7jpkxznvlqy7mlk2qs7xtqusa4wskzzcd2",
+        "sequentia-testnet": "tb1pzdhp02njg9m92xf6jn2alyak7jpkxznvlqy7mlk2qs7xtqusa4ws2gqq35"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac033627ef6d658d2338bd69079044cb5602870d7b5e39a64b6f78aa0b668d77fd97883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c450929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0c7b3143ef744441cec0fa300cb54657bc6090c20c9ab5f02354c9a4356dc824d",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "a39aad1d8144b5054ce301e7adbb6fbb017cab396b348fab7eda555b65d74078000f4240000a",
+          "hash": "33627ef6d658d2338bd69079044cb5602870d7b5e39a64b6f78aa0b668d77fd9"
+        }
+      },
+      "merkle_root": "333ae0946ef548d7e19d98f1cfb6a8e1e68cef0a5ddc6e4fab059c1fe234751c",
+      "name": "pool key 1, rows keys 2 and 3, 50000/600000/350000 of 1000000, cap 10 bp",
+      "output_key": "136e17aa72417655193a94d5df93b6f483630a6cf809edfeca043c658390ed5d",
+      "output_key_parity": 0,
+      "params": {
+        "DENOM": "000f4240",
+        "TABLE": "a39aad1d8144b5054ce301e7adbb6fbb017cab396b348fab7eda555b65d74078",
+        "WITHHOLD_CAP_BP": "000a"
+      },
+      "script_pubkey": "5120136e17aa72417655193a94d5df93b6f483630a6cf809edfeca043c658390ed5d",
+      "slots": {},
+      "tweak": "9130187c1a1042e678b0b03cf4e005a95768e2d76fed4796c0dac02caa2e1afb"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pjvqmqg3z6f3ugmeeuszzf6sshs6v95kscdnup4qnee464vprhq5sxykk9r",
+        "sequentia-testnet": "tb1pjvqmqg3z6f3ugmeeuszzf6sshs6v95kscdnup4qnee464vprhq5s6w5wea"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0bd3cee078c619927672e6aa20b1f8645aff2382d4d74ab8308a7a34b3d8674db7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c550929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac081144a4e61aff71ef3f1b8e05604fdc3be1a9ea615f17b144edc1116c273568f",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "acb0b12f28f1387b4379bd85f0e1b0b8a2181de0c1747fe723e0d65bde19c168000000640019",
+          "hash": "bd3cee078c619927672e6aa20b1f8645aff2382d4d74ab8308a7a34b3d8674db"
+        }
+      },
+      "merkle_root": "3e483e89af565bd18d0a14b4f738412656715b7aa8b2d1a384a632ddc8039f46",
+      "name": "pool key 1, rows keys 2 and 3, 10/45/45 of 100, cap 25 bp",
+      "output_key": "9301b02222d263c46f39e40424ea10bc34c2d2d0c367c0d413ce6baab023b829",
+      "output_key_parity": 1,
+      "params": {
+        "DENOM": "00000064",
+        "TABLE": "acb0b12f28f1387b4379bd85f0e1b0b8a2181de0c1747fe723e0d65bde19c168",
+        "WITHHOLD_CAP_BP": "0019"
+      },
+      "script_pubkey": "51209301b02222d263c46f39e40424ea10bc34c2d2d0c367c0d413ce6baab023b829",
+      "slots": {},
+      "tweak": "411e50ae1f5caaed58c951f3c742b2c99f0a6caf77df843900773b14523038de"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pnn6cfm5xx3naqpa26a3zgx9hcstshy8h06r9vdrcu0s4rrpy8mwsah8na6",
+        "sequentia-testnet": "tb1pnn6cfm5xx3naqpa26a3zgx9hcstshy8h06r9vdrcu0s4rrpy8mwspa9tpy"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0a04d1a0e8c8bcc05f04e8ac919801f328f1eb4cb367273a94fbe56c6f5d9c9b97883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c450929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac067d79d5798f701ab29fba66f48bb92044dc4e26410ab4d3d9b470cbfa308e77d",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "ace015219617f1e403517dcf86854a80d2b11a8c6832f43d1299686414a2fea2000027100064",
+          "hash": "a04d1a0e8c8bcc05f04e8ac919801f328f1eb4cb367273a94fbe56c6f5d9c9b9"
+        }
+      },
+      "merkle_root": "06b40095473f774923ad6901da85a8369590fe4165a8ca539832676bd88c27cc",
+      "name": "pool key 1, rows keys 2 and 4, 500/6000/3500 of 10000, cap 100 bp",
+      "output_key": "9cf584ee863467d007aad7622418b7c4170b90f77e86563478e3e1518c243edd",
+      "output_key_parity": 0,
+      "params": {
+        "DENOM": "00002710",
+        "TABLE": "ace015219617f1e403517dcf86854a80d2b11a8c6832f43d1299686414a2fea2",
+        "WITHHOLD_CAP_BP": "0064"
+      },
+      "script_pubkey": "51209cf584ee863467d007aad7622418b7c4170b90f77e86563478e3e1518c243edd",
+      "slots": {},
+      "tweak": "bd07581d8bf0c1afca4e9ca35e589594e77ea967c14989f2065e8bc439db0d86"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pxdcwlwkaenzf8hrs7ym3hmwq4e9c096f5nag3wg2wr2w5kks7j8srzr3y9",
+        "sequentia-testnet": "tb1pxdcwlwkaenzf8hrs7ym3hmwq4e9c096f5nag3wg2wr2w5kks7j8slgpfcm"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac01bfc9b854fba2fcc06c77fa94de38a6c76838ba09ba53a9a93d1c54211294c767883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c550929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac01fc708a9403b8da0cdf2754933a0d3bba5f1a12c3644f8548af7780f00ed1125",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "4c2ceda82228632371f04d82689482fe6caac08f2355ae68bfd12309871b5491000000030032",
+          "hash": "1bfc9b854fba2fcc06c77fa94de38a6c76838ba09ba53a9a93d1c54211294c76"
+        }
+      },
+      "merkle_root": "2f5f1dfe98a4ccb98d57bfa0a8bc6b04b935c1e26068f22a160a798e6628b222",
+      "name": "pool key 1, rows keys 2 and 5, 1/1/1 of 3, cap 50 bp",
+      "output_key": "3370efbaddccc493dc70f1371bedc0ae4b879749a4fa88b90a70d4ea5ad0f48f",
+      "output_key_parity": 1,
+      "params": {
+        "DENOM": "00000003",
+        "TABLE": "4c2ceda82228632371f04d82689482fe6caac08f2355ae68bfd12309871b5491",
+        "WITHHOLD_CAP_BP": "0032"
+      },
+      "script_pubkey": "51203370efbaddccc493dc70f1371bedc0ae4b879749a4fa88b90a70d4ea5ad0f48f",
+      "slots": {},
+      "tweak": "2b67c113fa3ea5869eb1a220a5bf590fd2d7823bae60941d181c385d8d3b7374"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pfe3fk75y5ufsq0ffgq9sruat3ktssswm885vrdad04tr5uduz3pqzml5sv",
+        "sequentia-testnet": "tb1pfe3fk75y5ufsq0ffgq9sruat3ktssswm885vrdad04tr5uduz3pq73avvj"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0dda3e1f015f97b301129dff8268fca59b172f0217e1ac40dcf9d2cdfc847f3e27883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c450929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac09fe71f14d939064af5e9a389134d82ae064e27e6ad7ae5861021d22a1357439f",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "803c9385c2904be61bcf697bebf4fc137bcc1a2eeb1ce787ba51a7510405e0c6000f4240000a",
+          "hash": "dda3e1f015f97b301129dff8268fca59b172f0217e1ac40dcf9d2cdfc847f3e2"
+        }
+      },
+      "merkle_root": "b8545c05da055bbf18d739030bc5787dc34cbb6c2e19093ae2cce64b5d25b8e6",
+      "name": "pool key 1, rows keys 2 and 6, 50000/600000/350000 of 1000000, cap 10 bp",
+      "output_key": "4e629b7a84a713003d29400b01f3ab8d970841db39e8c1b7ad7d563a71bc1442",
+      "output_key_parity": 0,
+      "params": {
+        "DENOM": "000f4240",
+        "TABLE": "803c9385c2904be61bcf697bebf4fc137bcc1a2eeb1ce787ba51a7510405e0c6",
+        "WITHHOLD_CAP_BP": "000a"
+      },
+      "script_pubkey": "51204e629b7a84a713003d29400b01f3ab8d970841db39e8c1b7ad7d563a71bc1442",
+      "slots": {},
+      "tweak": "ff39a45926ea92d89c459deecd3444a36e037a5861a59da8ef444fce93a7e0bd"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p4ajq3gzlg6ryec3h4v4xhmjg6wmdsl8ueeh2msuzdctg3fn753usjlpy3s",
+        "sequentia-testnet": "tb1p4ajq3gzlg6ryec3h4v4xhmjg6wmdsl8ueeh2msuzdctg3fn753usw4rudw"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0e69d392a44b8d37521f325363df9f1ff40aff8a47c3300260766b1989d89977f7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c550929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0919a604e99ef912a55db03a29907326d90842d93cf49a8bfb7ceffd68b9152d7",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "95f5fb7c1864d73c9ef91549fa7d027253b5c7c1071eaab71204f6d9aecae241000000030032",
+          "hash": "e69d392a44b8d37521f325363df9f1ff40aff8a47c3300260766b1989d89977f"
+        }
+      },
+      "merkle_root": "f888e8ea5d9e22a746a92178364e84c2455b6df37ef1f89d9a2b7765415f424e",
+      "name": "pool key 1, rows keys 2 and 3, 1/1/1 of 3, cap 50 bp",
+      "output_key": "af6408a05f46864ce237ab2a6bee48d3b6d87cfcce6eadc3826e1688a67ea479",
+      "output_key_parity": 1,
+      "params": {
+        "DENOM": "00000003",
+        "TABLE": "95f5fb7c1864d73c9ef91549fa7d027253b5c7c1071eaab71204f6d9aecae241",
+        "WITHHOLD_CAP_BP": "0032"
+      },
+      "script_pubkey": "5120af6408a05f46864ce237ab2a6bee48d3b6d87cfcce6eadc3826e1688a67ea479",
+      "slots": {},
+      "tweak": "ea95a7d9c00bdb501bc663fabf1ced4b9fa71ef460f251e5c61793c7c82d2c6e"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pq3mx8vtrw5lthd088hpsp0wd5x8edk5p5tsvym3326m5ljww4zes6mr0gv",
+        "sequentia-testnet": "tb1pq3mx8vtrw5lthd088hpsp0wd5x8edk5p5tsvym3326m5ljww4zesx3ph5j"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0e08b7a5d8cf529b1c740109236dcb8bd7ceed05b74fb7b41a77d45f1b5f036507883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c450929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac064282ab4bbdf4f33fcd9eb31faf4ac3d0404f4031672eb1d15f92cbc950dda07",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "f3e39043d219bd79bd9968c803d34bf11799b50bed71e3b938f6a652450418db000027100064",
+          "hash": "e08b7a5d8cf529b1c740109236dcb8bd7ceed05b74fb7b41a77d45f1b5f03650"
+        }
+      },
+      "merkle_root": "ca85e3bcc2c9bcca0898f49c7622978af1def8325999e72855150bd5cbfda688",
+      "name": "pool key 1, rows keys 2 and 3, 500/6000/3500 of 10000, cap 100 bp",
+      "output_key": "047663b163753ebbb5e73dc300bdcda18f96da81a2e0c26e3156b74fc9cea8b3",
+      "output_key_parity": 0,
+      "params": {
+        "DENOM": "00002710",
+        "TABLE": "f3e39043d219bd79bd9968c803d34bf11799b50bed71e3b938f6a652450418db",
+        "WITHHOLD_CAP_BP": "0064"
+      },
+      "script_pubkey": "5120047663b163753ebbb5e73dc300bdcda18f96da81a2e0c26e3156b74fc9cea8b3",
+      "slots": {},
+      "tweak": "8a8982886dce5b92ac10bcd98c9eac215561b3609cd73c79c6b9177dd1d7d6f6"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pef6rtm48j47lkhfem7npempyjhq6d7xcrmdu2gc5awjc7yjrankslsjf6n",
+        "sequentia-testnet": "tb1pef6rtm48j47lkhfem7npempyjhq6d7xcrmdu2gc5awjc7yjranksr6s3xd"
+      },
+      "leaves": {
+        "claim": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0dca2c5a278477a44e1022584f3fc93704696892df177761a04d002a56b7ec2037883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "hash": "d1e9efc6b46135c0b9b2e42c89482d3e00ff10ffded36e2ba331641e52628d0b"
+        },
+        "follow": {
+          "control_block": "c550929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0433cb1c8ae7bd5df4f4a24a507abf743462a7367e49a3168cd4b4458ed5d59f3",
+          "hash": "7883688790a3e3d7076d5620a825bbf64df8049012abdeca15f85f3a289c59e1",
+          "script": "cd926900cacdca7b888800c8cdc87b8887"
+        },
+        "params": {
+          "data": "b85c07659c4b1374edc7b00d5b9b74c39fffbec43080f4e2baa9096dbc7e4d7c000000030032",
+          "hash": "dca2c5a278477a44e1022584f3fc93704696892df177761a04d002a56b7ec203"
+        }
+      },
+      "merkle_root": "35d500466292e14b51f2656698cc45e80c1d0eb334ff47d4860a3ca793d2dd96",
+      "name": "pool key 1, rows keys 3 and 6, 1/1/1 of 3, cap 50 bp",
+      "output_key": "ca7435eea7957dfb5d39dfa61cec2495c1a6f8d81edbc52314eba58f1243eced",
+      "output_key_parity": 1,
+      "params": {
+        "DENOM": "00000003",
+        "TABLE": "b85c07659c4b1374edc7b00d5b9b74c39fffbec43080f4e2baa9096dbc7e4d7c",
+        "WITHHOLD_CAP_BP": "0032"
+      },
+      "script_pubkey": "5120ca7435eea7957dfb5d39dfa61cec2495c1a6f8d81edbc52314eba58f1243eced",
+      "slots": {},
+      "tweak": "4021febb0db44bb266b15a0631826277e92f8a15af0cc5ac22b647d213da9319"
+    }
+  ],
+  "template_hash": "8808db749829226dfb58e1fd1e36637bde53cab668769b3954367ec6af9f085f",
+  "vectors": 2
+}

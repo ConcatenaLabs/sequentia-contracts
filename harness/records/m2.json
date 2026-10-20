@@ -1,25 +1,25 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "b2191453873ebe756324bfafc7f09445ed54e7b2f28500303254a8b238389a8a": 100000000,
+  "f9949ed816341db7e562215d9d450fce492c82ab01ecab6b15676c5eb21e6c42": 100000000,
   "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
  },
  "instance/refuses_one_key_for_both": "mint-limiter: the operator key and the cold key are one key: the operator could lift its own brake",
  "instance/refuses_a_token_of_another_asset": "mint-limiter: --token is not the explicit reissuance token of --asset: an explicit mint could never spend it",
  "instance": {
   "address": {
-   "elementsregtest": "ert1p2g4vdm7rxu8vgm7za6llsf0h586kz6r54640n2j5zwndh8w4uj6qw5ttg6",
-   "sequentia-testnet": "tb1p2g4vdm7rxu8vgm7za6llsf0h586kz6r54640n2j5zwndh8w4uj6qj7fn5y"
+   "elementsregtest": "ert1plkcjrhxgwu2rkdm60w754u35qkfpkvxd7lkvkwmqevmxdnxufn6qn5arym",
+   "sequentia-testnet": "tb1plkcjrhxgwu2rkdm60w754u35qkfpkvxd7lkvkwmqevmxdnxufn6q07lmc9"
   },
   "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
   "instance": 2,
   "params": {
    "ALLOWANCE": "000000003b9aca00",
-   "ASSET": "87fe2d23595a162bd7a5a18011a59e9ac3bc70d043ce22655a183a01a33d33fe",
-   "COLD_KEY": "e8ce6f9a86d6993d6d3a6af3a29c6e5d1129d8ac32a10e3079f932095dd96cad",
-   "OPERATOR_KEY": "9d9bd68d00558f8692c8b5db2d144f27f4233a667f29d313c02b3f373587fde9",
+   "ASSET": "2d57733e182e62251ce3b3afb3bb4128b4e489014934e06bf5e29a44bcb7f6cd",
+   "COLD_KEY": "7886222796639531e4290ee8b43e238b55a475916245d96a9aaa988d07dbf220",
+   "OPERATOR_KEY": "c7e98c9f96c320b0eb15027e0cd38c46e930c1c6552f6d3a3f866347ebac06b5",
    "RECOVERY_DELAY": "0002",
-   "TOKEN": "5a655d3c421e0647b9525c78e91d17ad68f5f0b0edf610077111f88418931910",
+   "TOKEN": "44acab8324d97d95adec2db97e4e05c259b751aef356f5fc352bfeebda4f68df",
    "WINDOW": "000a"
   },
   "slots": {
@@ -33,9 +33,9 @@
  "tool/refuses_another_key": "mint-limiter: this mnemonic's contract key is not the instance's OPERATOR_KEY",
  "tool/refuses_the_cold_key_for_a_mint": "mint-limiter: this mnemonic's contract key is not the instance's OPERATOR_KEY",
  "tool/refuses_a_mint_over_the_allowance": "mint-limiter: a mint of 1000000001 would bring the window's count to 1000000001, above its allowance of 1000000000 (the window has not ended)",
- "tool/refuses_a_coin_in_another_state": "mint-limiter: the coin's script is not the instance's in state State { minted: 1, elapsed: 0, armed: 0 }: 5120522ac6efc3370ec46fc2eebff825f7a1f5616874aeaaf9aa5413a6db9dd5e4b4",
+ "tool/refuses_a_coin_in_another_state": "mint-limiter: the coin's script is not the instance's in state State { minted: 1, elapsed: 0, armed: 0 }: 5120fdb121dcc877143b377a7bbd4af23405921b30cdf7eccb3b60cb3666ccdc4cf4",
  "mint/half": {
-  "txid": "8b27044545b9d002533f1745573a07628f9f5848f160b2509ea25f067a0a4c77",
+  "txid": "7d5575249e35506e2d526db6c76ff0abe115d43a6dccef89262ba28a192e6442",
   "vsize": 867,
   "weight": 3468,
   "program_bytes": 1339,
@@ -63,15 +63,15 @@
   },
   "successor": {
    "address": {
-    "elementsregtest": "ert1pyn8cgh2skgf6z5f96gp3020nge0wzrxklpyu0el3p2w38a6585xsrsdpe5",
-    "sequentia-testnet": "tb1pyn8cgh2skgf6z5f96gp3020nge0wzrxklpyu0el3p2w38a6585xsl60e92"
+    "elementsregtest": "ert1pr8r302xt4wshadq9ahwfdja7efdgh7sh73gxw4vywe5v0zn8j0dqy85zzm",
+    "sequentia-testnet": "tb1pr8r302xt4wshadq9ahwfdja7efdgh7sh73gxw4vywe5v0zn8j0dqcdk679"
    },
-   "txid": "8b27044545b9d002533f1745573a07628f9f5848f160b2509ea25f067a0a4c77",
+   "txid": "7d5575249e35506e2d526db6c76ff0abe115d43a6dccef89262ba28a192e6442",
    "vout": 0
   }
  },
  "mint/the_rest_of_the_allowance": {
-  "txid": "31d539e9ddfe148e44cd64d6e78923c81ffe33d77b9205f2e2a401d752fcf852",
+  "txid": "20ce467a9daa55fb79500992334c85f2c8f806f947e2d9bde22dddd99a51fa6f",
   "vsize": 867,
   "weight": 3468,
   "program_bytes": 1339,
@@ -86,7 +86,7 @@
  },
  "tool/refuses_one_atom_over_in_the_window": "mint-limiter: a mint of 1 would bring the window's count to 1000000001, above its allowance of 1000000000 (the window has not ended)",
  "mint/a_whole_allowance_in_the_next_window": {
-  "txid": "6e58ce3298d3312d2e18efb4bf34d137b20fa92aff1d65ec41753af77576fff7",
+  "txid": "275c8a258e5e1186e5898a3298ce03818f790e720de3c259318c015e2e917d0e",
   "vsize": 857,
   "weight": 3425,
   "program_bytes": 1296,
@@ -114,22 +114,22 @@
   },
   "successor": {
    "address": {
-    "elementsregtest": "ert1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hqg3sr7q",
-    "sequentia-testnet": "tb1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hq5mjmz7"
+    "elementsregtest": "ert1pt799qudeu26pa96w0a57cr3xwju3unvt3p7spzc620ht7ujwqxlqtyvv33",
+    "sequentia-testnet": "tb1pt799qudeu26pa96w0a57cr3xwju3unvt3p7spzc620ht7ujwqxlqhww5d0"
    },
-   "txid": "6e58ce3298d3312d2e18efb4bf34d137b20fa92aff1d65ec41753af77576fff7",
+   "txid": "275c8a258e5e1186e5898a3298ce03818f790e720de3c259318c015e2e917d0e",
    "vout": 0
   }
  },
  "arm/signature": {
-  "arm_signature": "6786db2791d12eaba638afbb1ca9dd0cf3f36ba7688d3db7d20fc99c3a568dfb48f871d6457b09c48b252f11a373b4f8d83e68a1d08a7d0b93f95ef64a564373",
-  "cold_key": "e8ce6f9a86d6993d6d3a6af3a29c6e5d1129d8ac32a10e3079f932095dd96cad",
-  "message": "fad44551bbc05ff40798578e42e1e4fafebd8b24167bb61424ff3be2ac91fb26"
+  "arm_signature": "b932d3bb1ebe8f1adfa36f2f5a222c980d5375ee3d2d5c44262ef875ee28a3f0d42052ed2a50afc511ef74f6f0b065bdb29e84d7742fa57ba8ab1f259f59024c",
+  "cold_key": "7886222796639531e4290ee8b43e238b55a475916245d96a9aaa988d07dbf220",
+  "message": "6eb32517b8c5f7b03b437a776ac5f58806f69580a63de9608bfb7dc893c0f388"
  },
  "tool/refuses_to_make_an_arm_signature_with_the_operator_key": "mint-limiter: this mnemonic's contract key is not the instance's COLD_KEY",
  "tool/refuses_a_broken_arm_signature": "mint-limiter: arm_signature is not the cold key's signature over this instance's arm message",
  "arm/applied": {
-  "txid": "ef1edd72126acdc45093fce663b8029f05bc68f671e7c725e25ba4b320ef990f",
+  "txid": "90d848fa07bfcd2b7f81326dd5ef3931a5b88a6b27bcc8db73dbb720466f5c3a",
   "vsize": 719,
   "weight": 2873,
   "program_bytes": 1310,
@@ -156,16 +156,16 @@
   },
   "successor": {
    "address": {
-    "elementsregtest": "ert1phlekaj0ps0cgnw7tqpcgcvqfydxm39ccna45mw89sfhl6zhwz5rqldlcw7",
-    "sequentia-testnet": "tb1phlekaj0ps0cgnw7tqpcgcvqfydxm39ccna45mw89sfhl6zhwz5rqr8aqjq"
+    "elementsregtest": "ert1phtz2jhdjyu6jf3c6z6ur4sgljyca43q78sm0fjk88tg5u7w85j3q8ezl9c",
+    "sequentia-testnet": "tb1phtz2jhdjyu6jf3c6z6ur4sgljyca43q78sm0fjk88tg5u7w85j3qmnq8ex"
    },
-   "txid": "ef1edd72126acdc45093fce663b8029f05bc68f671e7c725e25ba4b320ef990f",
+   "txid": "90d848fa07bfcd2b7f81326dd5ef3931a5b88a6b27bcc8db73dbb720466f5c3a",
    "vout": 0
   }
  },
  "tool/refuses_a_mint_while_braked": "mint-limiter: the brake is on: no mint until the cold key lifts it",
  "disarm/lifted": {
-  "txid": "e233cedb7615809e550d08a43ab3831c1717e27f4ad6a84aaedbff6db8c2d47e",
+  "txid": "54cd8439a48ede5313394c08b69f2cef5b5d091ef6f8a50d090659e2f527820b",
   "vsize": 661,
   "weight": 2643,
   "program_bytes": 1080,
@@ -192,15 +192,15 @@
   },
   "successor": {
    "address": {
-    "elementsregtest": "ert1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hqg3sr7q",
-    "sequentia-testnet": "tb1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hq5mjmz7"
+    "elementsregtest": "ert1pt799qudeu26pa96w0a57cr3xwju3unvt3p7spzc620ht7ujwqxlqtyvv33",
+    "sequentia-testnet": "tb1pt799qudeu26pa96w0a57cr3xwju3unvt3p7spzc620ht7ujwqxlqhww5d0"
    },
-   "txid": "e233cedb7615809e550d08a43ab3831c1717e27f4ad6a84aaedbff6db8c2d47e",
+   "txid": "54cd8439a48ede5313394c08b69f2cef5b5d091ef6f8a50d090659e2f527820b",
    "vout": 0
   }
  },
  "arm/the_same_signature_again": {
-  "txid": "97549ff4b8ea6127849af8c129a61290fc88c84e2c267afc062f2fa6b210bd9b",
+  "txid": "4ca0162b91403cffe259f1fd8c66fb04d72ae0c2c711c539c3e64b5671e5a033",
   "vsize": 719,
   "weight": 2873,
   "program_bytes": 1310,
@@ -215,7 +215,7 @@
  },
  "tool/refuses_recovery_by_the_operator": "mint-limiter: this mnemonic's contract key is not the instance's COLD_KEY",
  "recover/after_the_delay": {
-  "txid": "153bc197bf5a6154325f01e2bf71313336bd414d47062b1f5ea4ea8d62d27f30",
+  "txid": "669bea059a32194ae2398ace0acba3946a30b9bd2dfdc5e96d742cb99b7efa69",
   "vsize": 563,
   "weight": 2249,
   "program_bytes": 734,
@@ -234,10 +234,10 @@
   "token_to": [
    {
     "amount": 100000000,
-    "script_pubkey": "0014f1c3fe921b460670cccdf20cdc15ef03aef82b95",
+    "script_pubkey": "0014b02e1a29e2134e0ca837775c949fd2f068748e56",
     "vout": 0
    }
   ],
-  "txid": "153bc197bf5a6154325f01e2bf71313336bd414d47062b1f5ea4ea8d62d27f30"
+  "txid": "669bea059a32194ae2398ace0acba3946a30b9bd2dfdc5e96d742cb99b7efa69"
  }
 }

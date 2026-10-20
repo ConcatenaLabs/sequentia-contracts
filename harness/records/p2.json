@@ -1,0 +1,334 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3": 100000000
+ },
+ "simplicity/announce": {
+  "announce": {
+   "txid": "75a04fb72298ccb3ab8cb3f35e7931f90e22476756bee18a1851286953dd0ea2",
+   "authorization_txid": "2fb0e9a4eb2a53bb79e6d53b80ff9b0d09dff6918636c8c0ec8cdf1e2813bc88",
+   "signer": "02a28bb4c9f5e3338556a07f5f8d73daedf0ae49cc32f1224b444fd707870c15e0",
+   "mode": "direct",
+   "activation": 15,
+   "notice_blocks": 10,
+   "earliest_activation": 13,
+   "payout_script": "5120b6a19ad94ad103c0855d57db969f268003ee7942183e029125e880b6ff7f9d45",
+   "address": "ert1pk6se4k226ypupp2a2lded8exsqp7u72zrqlq9yf9azqtdlmln4zsp88l67",
+   "script": "06534551504159755f755175225120b6a19ad94ad103c0855d57db969f268003ee7942183e029125e880b6ff7f9d45752102a28bb4c9f5e3338556a07f5f8d73daedf0ae49cc32f1224b444fd707870c15e0ac",
+   "note": "delegators see this as a pending policy from the moment it confirms until it binds at height 15, and can leave at any time until then (and after). It does not replace the current policy before that height."
+  },
+  "payoutinfo": {
+   "activation": 15,
+   "in_force": false,
+   "mode": "direct",
+   "payout_script": "5120b6a19ad94ad103c0855d57db969f268003ee7942183e029125e880b6ff7f9d45"
+  }
+ },
+ "simplicity/coinbase_rewards": [
+  {
+   "txid": "b5d146de4312344057861a3f3a0ad0326886f5019afe4598f80ce7c079d888b4",
+   "vout": 0,
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "atoms": 2570000,
+   "height": 15
+  },
+  {
+   "txid": "b5d146de4312344057861a3f3a0ad0326886f5019afe4598f80ce7c079d888b4",
+   "vout": 2,
+   "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+   "atoms": 2570000,
+   "height": 15
+  },
+  {
+   "txid": "205a43cd6f0f962a5479be8788087c6d22d2af48cf7cd74e49d581909519db95",
+   "vout": 0,
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "atoms": 2570000,
+   "height": 16
+  },
+  {
+   "txid": "205a43cd6f0f962a5479be8788087c6d22d2af48cf7cd74e49d581909519db95",
+   "vout": 2,
+   "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+   "atoms": 2570000,
+   "height": 16
+  },
+  {
+   "txid": "55319b65fafd31efbc8226474f6d6d6b11f01c14bf7776532f2f1c8d4fdd8ef9",
+   "vout": 0,
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "atoms": 2570000,
+   "height": 17
+  },
+  {
+   "txid": "55319b65fafd31efbc8226474f6d6d6b11f01c14bf7776532f2f1c8d4fdd8ef9",
+   "vout": 2,
+   "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+   "atoms": 3260000,
+   "height": 17
+  }
+ ],
+ "tapscript/announce": {
+  "announce": {
+   "txid": "d870ead26b9268ec6a620abc501456be0c539ae69825f83e7477c1427416f226",
+   "authorization_txid": "3196768f25d04621d7352052ef361179441cd69d492cd85a0c795111e506a935",
+   "signer": "02a28bb4c9f5e3338556a07f5f8d73daedf0ae49cc32f1224b444fd707870c15e0",
+   "mode": "direct",
+   "activation": 30,
+   "notice_blocks": 10,
+   "earliest_activation": 28,
+   "payout_script": "5120908f7437693309a120e182ef064a94851975b7ee376ead7af413ec9f32dc4e32",
+   "address": "ert1pjz8hgdmfxvy6zg8psthsvj55s5vhtdlwxah267h5z0kf7vkufceqk4lwnj",
+   "script": "0653455150415975011e755175225120908f7437693309a120e182ef064a94851975b7ee376ead7af413ec9f32dc4e32752102a28bb4c9f5e3338556a07f5f8d73daedf0ae49cc32f1224b444fd707870c15e0ac",
+   "note": "delegators see this as a pending policy from the moment it confirms until it binds at height 30, and can leave at any time until then (and after). It does not replace the current policy before that height."
+  }
+ },
+ "tapscript/coinbase_rewards": [
+  {
+   "txid": "621be28a5261f7907aace07e01fc14b47e7961e826c358ad6df0aa049be5d1cc",
+   "vout": 0,
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "atoms": 3260000,
+   "height": 30
+  },
+  {
+   "txid": "621be28a5261f7907aace07e01fc14b47e7961e826c358ad6df0aa049be5d1cc",
+   "vout": 2,
+   "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+   "atoms": 2570000,
+   "height": 30
+  },
+  {
+   "txid": "e74bbd6546e7c270826948f4ee1a8a6d3821231390346a66c40d72281df2df15",
+   "vout": 0,
+   "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+   "atoms": 3260000,
+   "height": 31
+  },
+  {
+   "txid": "e74bbd6546e7c270826948f4ee1a8a6d3821231390346a66c40d72281df2df15",
+   "vout": 2,
+   "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+   "atoms": 3260000,
+   "height": 31
+  }
+ ],
+ "simplicity/tool_refuses_an_immature_coin": {
+  "exit": 3,
+  "stderr": "refused: b5d146de4312344057861a3f3a0ad0326886f5019afe4598f80ce7c079d888b4:0 is an immature coinbase coin: 17 confirmations, and a claim in the next block needs 1000"
+ },
+ "simplicity/tool_finds_no_mature_coin": {
+  "exit": 3,
+  "stderr": "refused: no mature coin to claim (7 coins at the address, maturity 1000)"
+ },
+ "simplicity/neg_immature_17_confirmations": {
+  "expect": "bad-txns-premature-spend-of-coinbase",
+  "vsize": 928,
+  "reject-reason": "bad-txns-premature-spend-of-coinbase",
+  "block-error": "bad-txns-premature-spend-of-coinbase (code -25)"
+ },
+ "simplicity/neg_immature_999_confirmations": {
+  "expect": "bad-txns-premature-spend-of-coinbase",
+  "vsize": 928,
+  "reject-reason": "bad-txns-premature-spend-of-coinbase",
+  "block-error": "bad-txns-premature-spend-of-coinbase (code -25)"
+ },
+ "simplicity/accepted_at_1000_confirmations": {
+  "vsize": 928
+ },
+ "simplicity/neg_wrong_share_one_atom": {
+  "expect": "Assertion failed inside jet",
+  "vsize": 928,
+  "control": {
+   "txid": "7f0144dd6593b3d682173a175f348e2574616d39f0222994c8ed412763b465dc",
+   "testmempoolaccept": true,
+   "block": "valid"
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "block-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)"
+ },
+ "simplicity/neg_withheld_one_atom_over_the_cap": {
+  "expect": "Assertion failed",
+  "vsize": 994,
+  "control": {
+   "txid": "dc1d4df68c8b2d6ad3d3da4c4bbcfe6aa2f2edb4f2aa20cc8955d0371b5b4b8f",
+   "testmempoolaccept": true,
+   "block": "valid"
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "block-error": "mempool-script-verify-flag-failed (Assertion failed) (code -25)"
+ },
+ "tapscript/neg_wrong_share_one_atom": {
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "vsize": 487,
+  "control": {
+   "txid": "2e0110202aa9c4a62549da9ecca3e7fceccb1ec3072f3d4c830d886717752a35",
+   "testmempoolaccept": true,
+   "block": "valid"
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "block-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)"
+ },
+ "tapscript/neg_withheld_one_atom_over_the_cap": {
+  "expect": "Script failed an OP_VERIFY operation",
+  "vsize": 554,
+  "control": {
+   "txid": "d92d98d3add50c9a51b56ff538b9c5130387ef628ef2873fb890707158e08ebd",
+   "testmempoolaccept": true,
+   "block": "valid"
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "block-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)"
+ },
+ "coinbase_rewards_to_the_covenants": {
+  "simplicity": 7,
+  "tapscript": 4
+ },
+ "simplicity/claim_policy_asset": {
+  "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+  "coins": 4,
+  "collected": 14160000,
+  "withheld": 2210,
+  "cap": 141600,
+  "payouts": [
+   {
+    "row": "pool",
+    "amount": 707890
+   },
+   {
+    "row": "alice",
+    "amount": 8494674
+   },
+   {
+    "row": "bob (P2TR)",
+    "amount": 4955226
+   }
+  ],
+  "txid": "770f52e91629b2416869ad7f5cd8f0d31775a99aa13c8f59f54aff94fc07a9a9",
+  "vsize": 1105,
+  "fee": 2210,
+  "kept": 0,
+  "accepted": true,
+  "reject-reason": null,
+  "cost_wu": 1358,
+  "budget_wu": 9766,
+  "annex_pad": null,
+  "broadcast": "770f52e91629b2416869ad7f5cd8f0d31775a99aa13c8f59f54aff94fc07a9a9",
+  "outputs_on_chain": [
+   707890,
+   8494674,
+   4955226
+  ],
+  "exact": true
+ },
+ "simplicity/claim_issued_asset": {
+  "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+  "coins": 3,
+  "collected": 8400000,
+  "withheld": 2096,
+  "cap": 84000,
+  "payouts": [
+   {
+    "row": "pool",
+    "amount": 419896
+   },
+   {
+    "row": "alice",
+    "amount": 5038742
+   },
+   {
+    "row": "bob (P2TR)",
+    "amount": 2939266
+   }
+  ],
+  "txid": "e6b9009e5ccefc81c05593ef3dab5d0771ebe49de2cacb729e25d036611631c0",
+  "vsize": 1048,
+  "fee": 2096,
+  "kept": 0,
+  "accepted": true,
+  "reject-reason": null,
+  "cost_wu": 1089,
+  "budget_wu": 9850,
+  "annex_pad": null,
+  "broadcast": "e6b9009e5ccefc81c05593ef3dab5d0771ebe49de2cacb729e25d036611631c0",
+  "outputs_on_chain": [
+   419896,
+   5038742,
+   2939266
+  ],
+  "exact": true
+ },
+ "tapscript/claim_policy_asset": {
+  "asset": "b2e15d0d7a0c94e4e2ce0fe6e8691b9e451377f6e46e8045a86f7c4b5d4f0f23",
+  "coins": 2,
+  "collected": 6520000,
+  "withheld": 1100,
+  "cap": 65200,
+  "payouts": [
+   {
+    "row": "pool",
+    "amount": 325945
+   },
+   {
+    "row": "alice",
+    "amount": 3911340
+   },
+   {
+    "row": "bob (P2TR)",
+    "amount": 2281615
+   }
+  ],
+  "txid": "c443ac46045d32cf7b5d54780164fdf39a4f5c33c6794d4502e9efb7d7d405eb",
+  "vsize": 550,
+  "fee": 1100,
+  "kept": 0,
+  "accepted": true,
+  "reject-reason": null,
+  "broadcast": "c443ac46045d32cf7b5d54780164fdf39a4f5c33c6794d4502e9efb7d7d405eb",
+  "outputs_on_chain": [
+   325945,
+   3911340,
+   2281615
+  ],
+  "exact": true
+ },
+ "tapscript/claim_issued_asset": {
+  "asset": "c3a9c155e58e98437a26d63941745b0c14714e0eb555a67acb937dd2ec4f18a3",
+  "coins": 2,
+  "collected": 5830000,
+  "withheld": 1100,
+  "cap": 58300,
+  "payouts": [
+   {
+    "row": "pool",
+    "amount": 291445
+   },
+   {
+    "row": "alice",
+    "amount": 3497340
+   },
+   {
+    "row": "bob (P2TR)",
+    "amount": 2040115
+   }
+  ],
+  "txid": "3ca3c4599def7a1b60c092783f241b254b6892f709c46244e7ebc0247501fc11",
+  "vsize": 550,
+  "fee": 1100,
+  "kept": 0,
+  "accepted": true,
+  "reject-reason": null,
+  "broadcast": "3ca3c4599def7a1b60c092783f241b254b6892f709c46244e7ebc0247501fc11",
+  "outputs_on_chain": [
+   291445,
+   3497340,
+   2040115
+  ],
+  "exact": true
+ },
+ "simplicity/status_after_the_claims": {
+  "address_script": "5120b6a19ad94ad103c0855d57db969f268003ee7942183e029125e880b6ff7f9d45",
+  "maturity": 1000,
+  "assets": {}
+ }
+}

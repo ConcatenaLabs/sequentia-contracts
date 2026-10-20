@@ -1,0 +1,319 @@
+{
+  "tables": 1,
+  "rows_max": 63,
+  "entries": [
+    {
+      "name": "pool key 1, rows keys 2 and 3, 50000/600000/350000 of 1000000, cap 10 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 50000
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 600000
+        },
+        {
+          "script": "5120f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+          "numerator": 350000
+        }
+      ],
+      "table": "a39aad1d8144b5054ce301e7adbb6fbb017cab396b348fab7eda555b65d74078"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 3, 10/45/45 of 100, cap 25 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 10
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 45
+        },
+        {
+          "script": "5120f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+          "numerator": 45
+        }
+      ],
+      "table": "acb0b12f28f1387b4379bd85f0e1b0b8a2181de0c1747fe723e0d65bde19c168"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 4, 500/6000/3500 of 10000, cap 100 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 500
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 6000
+        },
+        {
+          "script": "5120e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13",
+          "numerator": 3500
+        }
+      ],
+      "table": "ace015219617f1e403517dcf86854a80d2b11a8c6832f43d1299686414a2fea2"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 5, 1/1/1 of 3, cap 50 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 1
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 1
+        },
+        {
+          "script": "51202f8bde4d1a07209355b4a7250a5c5128e88b84bddc619ab7cba8d569b240efe4",
+          "numerator": 1
+        }
+      ],
+      "table": "4c2ceda82228632371f04d82689482fe6caac08f2355ae68bfd12309871b5491"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 6, 50000/600000/350000 of 1000000, cap 10 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 50000
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 600000
+        },
+        {
+          "script": "5120fff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556",
+          "numerator": 350000
+        }
+      ],
+      "table": "803c9385c2904be61bcf697bebf4fc137bcc1a2eeb1ce787ba51a7510405e0c6"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 3, 1/1/1 of 3, cap 50 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 1
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 1
+        },
+        {
+          "script": "5120f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+          "numerator": 1
+        }
+      ],
+      "table": "95f5fb7c1864d73c9ef91549fa7d027253b5c7c1071eaab71204f6d9aecae241"
+    },
+    {
+      "name": "pool key 1, rows keys 2 and 3, 500/6000/3500 of 10000, cap 100 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 500
+        },
+        {
+          "script": "5120c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "numerator": 6000
+        },
+        {
+          "script": "5120f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+          "numerator": 3500
+        }
+      ],
+      "table": "f3e39043d219bd79bd9968c803d34bf11799b50bed71e3b938f6a652450418db"
+    },
+    {
+      "name": "pool key 1, rows keys 3 and 6, 1/1/1 of 3, cap 50 bp",
+      "rows": [
+        {
+          "script": "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "numerator": 1
+        },
+        {
+          "script": "5120f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+          "numerator": 1
+        },
+        {
+          "script": "5120fff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556",
+          "numerator": 1
+        }
+      ],
+      "table": "b85c07659c4b1374edc7b00d5b9b74c39fffbec43080f4e2baa9096dbc7e4d7c"
+    }
+  ],
+  "payouts": [
+    {
+      "name": "three rows of 10,000, nothing withheld",
+      "numerators": [
+        500,
+        6000,
+        3500
+      ],
+      "denom": 10000,
+      "withhold_cap_bp": 100,
+      "collected": "1234567",
+      "withheld": "0",
+      "outputs": [
+        "61729",
+        "740740",
+        "432098"
+      ]
+    },
+    {
+      "name": "three rows of 10,000, withheld exactly at the cap",
+      "numerators": [
+        500,
+        6000,
+        3500
+      ],
+      "denom": 10000,
+      "withhold_cap_bp": 100,
+      "collected": "1234567",
+      "withheld": "12345",
+      "outputs": [
+        "61112",
+        "733333",
+        "427777"
+      ]
+    },
+    {
+      "name": "three rows of 10,000, one atom over the cap",
+      "numerators": [
+        500,
+        6000,
+        3500
+      ],
+      "denom": 10000,
+      "withhold_cap_bp": 100,
+      "collected": "1234567",
+      "withheld": "12346",
+      "refused": "withheld over the cap"
+    },
+    {
+      "name": "thirds: the rounding goes to row 0",
+      "numerators": [
+        1,
+        1,
+        1
+      ],
+      "denom": 3,
+      "withhold_cap_bp": 50,
+      "collected": "1000",
+      "withheld": "5",
+      "outputs": [
+        "333",
+        "331",
+        "331"
+      ]
+    },
+    {
+      "name": "thirds of 1 atom",
+      "numerators": [
+        1,
+        1,
+        1
+      ],
+      "denom": 3,
+      "withhold_cap_bp": 0,
+      "collected": "1",
+      "withheld": "0",
+      "outputs": [
+        "1",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "name": "a cap of zero withholds nothing",
+      "numerators": [
+        1,
+        1,
+        1
+      ],
+      "denom": 3,
+      "withhold_cap_bp": 0,
+      "collected": "1000",
+      "withheld": "1",
+      "refused": "withheld over the cap"
+    },
+    {
+      "name": "near the 64-bit limit",
+      "numerators": [
+        50000,
+        600000,
+        350000
+      ],
+      "denom": 1000000,
+      "withhold_cap_bp": 10,
+      "collected": "18446744073709551615",
+      "withheld": "18446744073709551",
+      "outputs": [
+        "921414866481792104",
+        "11056978397781505238",
+        "6449904065372544722"
+      ]
+    },
+    {
+      "name": "a row numerator above the denominator",
+      "numerators": [
+        0,
+        3,
+        1
+      ],
+      "denom": 3,
+      "withhold_cap_bp": 100,
+      "collected": "900",
+      "withheld": "0",
+      "refused": "the rows are owed more than the claim holds"
+    },
+    {
+      "name": "a cap above 100% still cannot withhold more than is collected",
+      "numerators": [
+        1,
+        1
+      ],
+      "denom": 2,
+      "withhold_cap_bp": 20000,
+      "collected": "100",
+      "withheld": "150",
+      "refused": "withheld over what is collected"
+    },
+    {
+      "name": "ten rows, odd numerators",
+      "numerators": [
+        7,
+        11,
+        13,
+        17,
+        19,
+        23,
+        29,
+        31,
+        37,
+        41
+      ],
+      "denom": 228,
+      "withhold_cap_bp": 75,
+      "collected": "987654321987",
+      "withheld": "7407407414",
+      "outputs": [
+        "30095300014",
+        "47292614299",
+        "55891271444",
+        "73088585735",
+        "81687242881",
+        "98884557171",
+        "124680528607",
+        "133279185753",
+        "159075157189",
+        "176272471480"
+      ]
+    }
+  ]
+}

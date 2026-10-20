@@ -660,3 +660,40 @@ def derive(descriptor, params, slots=None):
             "address": address,
         }
     return dict(x, address=address)
+
+
+# ---- The pool split covenant (templates/pool_split, pool_split_tap3) -------
+
+POOL_SPLIT_MAX_ROWS = 63
+
+
+def pool_split_table(rows):
+    """The TABLE parameter of templates/pool_split: SHA256 over the rows in
+    order, each the SHA256 of its scriptPubKey then its numerator as 4
+    big-endian bytes. `rows` is [(script_pubkey bytes, numerator)]."""
+    out = b""
+    for script, num in rows:
+        if not 0 <= num < 1 << 32:
+            raise ValueError("a numerator is a 32-bit number")
+        out += sha256(bytes(script)) + int(num).to_bytes(4, "big")
+    return sha256(out)
+
+
+def pool_split_payouts(numerators, denom, cap_bp, collected, withheld):
+    """What a claim pays each row, row 0 first, as both templates rule it: of
+    `collected`, at most cap_bp / 10,000 is withheld; each row from 1 gets
+    floor(net * numerator / denom) of net = collected - withheld, and row 0 the
+    rest. Raises ValueError for a claim the covenant refuses."""
+    if not 0 < denom < 1 << 32 or not 0 <= cap_bp < 1 << 16:
+        raise ValueError("denominator or cap out of range")
+    if not 0 <= collected < 1 << 64 or not 0 <= withheld < 1 << 64:
+        raise ValueError("amount out of range")
+    if withheld * 10000 > collected * cap_bp:
+        raise ValueError("withheld over the cap")
+    if withheld > collected:
+        raise ValueError("withheld over what is collected")
+    net = collected - withheld
+    shares = [net * n // denom for n in numerators[1:]]
+    if sum(shares) > net:
+        raise ValueError("the rows are owed more than the claim holds")
+    return [net - sum(shares)] + shares
