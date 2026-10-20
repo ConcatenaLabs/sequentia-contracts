@@ -1,0 +1,165 @@
+{
+  "descriptor": 2,
+  "template": {
+    "budget": {
+      "max": 4000050,
+      "offset": 50,
+      "per_witness_byte": 4
+    },
+    "internal_key": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "name": "sequentia/verifier-token",
+    "params": [
+      {
+        "label": "Verifier asset the token reissues",
+        "name": "VERIFIER_ASSET",
+        "role": "asset",
+        "type": "u256"
+      },
+      {
+        "label": "Reissuance token held by the covenant",
+        "name": "TOKEN",
+        "role": "asset",
+        "type": "u256"
+      },
+      {
+        "label": "Amount of the verifier asset a verifier covenant holds",
+        "name": "AMOUNT",
+        "role": "amount",
+        "type": "u64"
+      },
+      {
+        "label": "Issuer update key, which signs every spend",
+        "name": "ISSUER_KEY",
+        "role": "pubkey",
+        "type": "Pubkey"
+      }
+    ],
+    "paths": [
+      {
+        "effect": "Reissues exactly AMOUNT of VERIFIER_ASSET on input 0, explicitly, into output 1, which pays it explicitly and with no nonce to the script whose SHA-256 is VERIFIER, and re-creates the covenant at output 0 with the token's whole amount and the same VERIFIER. The transaction has at most six outputs, each with an explicit asset, and none but output 1 carries VERIFIER_ASSET. Signed by ISSUER_KEY over the whole transaction.",
+        "leaf": "token",
+        "name": "resume",
+        "who": "the holder of ISSUER_KEY"
+      },
+      {
+        "effect": "Records the script of input 0, which must hold exactly AMOUNT of VERIFIER_ASSET explicitly, as VERIFIER: the covenant is input 1 and is re-created at output 1 with the token's whole amount, with no issuance on input 1. A halt that burns the verifier records it, so that a resume restores the policy that was halted. Signed by ISSUER_KEY over the whole transaction.",
+        "leaf": "token",
+        "name": "record",
+        "who": "the holder of ISSUER_KEY"
+      }
+    ],
+    "slots": [
+      {
+        "label": "SHA-256 of the verifier covenant's scriptPubKey a resume mints into",
+        "name": "VERIFIER",
+        "role": "script_hash",
+        "type": "u256"
+      }
+    ],
+    "summary": "Holds the reissuance token of an OpenDAMP asset's verifier asset: the issuer key reissues the verifier amount only into the verifier covenant it last recorded, and records a verifier only from a coin that holds the verifier amount.",
+    "tree": {
+      "branch": [
+        {
+          "leaf": "token",
+          "simplicity": {
+            "cmr": "64cf2735c324d62998ad380a6cdb2e74da13f0801cddd898a53e533ff12b825c",
+            "compiler": {
+              "name": "simplicityhl",
+              "version": "0.7.2"
+            },
+            "max_cost_wu": 529,
+            "source": "verifier_token.simf",
+            "source_sha256": "4505eefad9846ac1cd3fbf8b8720cf7ca97167a4df9e71508069c42e10d17e97",
+            "witness": [
+              {
+                "name": "VERIFIER_ASSET",
+                "source": "param:VERIFIER_ASSET",
+                "type": "u256"
+              },
+              {
+                "name": "TOKEN",
+                "source": "param:TOKEN",
+                "type": "u256"
+              },
+              {
+                "name": "AMOUNT",
+                "source": "param:AMOUNT",
+                "type": "u64"
+              },
+              {
+                "name": "ISSUER_KEY",
+                "source": "param:ISSUER_KEY",
+                "type": "Pubkey"
+              },
+              {
+                "name": "VERIFIER",
+                "source": "slot:VERIFIER",
+                "type": "u256"
+              },
+              {
+                "name": "PATH",
+                "source": "spender",
+                "type": "Either<(), ()>"
+              },
+              {
+                "name": "RESUME_SIG",
+                "source": "signature:sig_all_hash:ISSUER_KEY",
+                "type": "Signature"
+              },
+              {
+                "name": "RECORD_SIG",
+                "source": "signature:sig_all_hash:ISSUER_KEY",
+                "type": "Signature"
+              }
+            ]
+          }
+        },
+        {
+          "data": [
+            "VERIFIER_ASSET",
+            "TOKEN",
+            "AMOUNT",
+            "ISSUER_KEY",
+            "VERIFIER"
+          ],
+          "leaf": "state"
+        }
+      ]
+    },
+    "version": 1
+  },
+  "template_hash": "bdcea3847f1b481084f7ef3c7bf8ac3a4d7820a88c2d38393e0bbb0f20b34650",
+  "chains": [
+    {
+      "name": "sequentia-testnet",
+      "genesis": "ddd11d54c87a2bd94400fd31ce05d8e1110bb4b78e7103f738342086fc4ea92e",
+      "bech32_hrp": "tb"
+    },
+    {
+      "name": "elementsregtest",
+      "genesis": null,
+      "bech32_hrp": "ert"
+    }
+  ],
+  "measured": {
+    "source": "harness/records/v1.json",
+    "record_in_a_halt": {
+      "transaction": "the halt: the verifier at input 0 burned by its issuer path, the covenant at input 1 recording it, a wallet fee coin; the burn, the successor, the change and the fee",
+      "vsize": 743,
+      "weight": 2971,
+      "program_bytes": 864,
+      "witness_bytes": 201,
+      "cost_bound_wu": 462,
+      "budget_wu": 4726
+    },
+    "resume": {
+      "transaction": "the covenant as input 0 reissuing the verifier amount, a wallet fee coin; the successor, the verifier output, the change and the fee",
+      "vsize": 792,
+      "weight": 3165,
+      "program_bytes": 1003,
+      "witness_bytes": 201,
+      "cost_bound_wu": 528,
+      "budget_wu": 5282
+    }
+  }
+}

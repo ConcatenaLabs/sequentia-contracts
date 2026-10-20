@@ -1,0 +1,89 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000,
+  "246d497e99532cf1cbc5c4debf1f85e7b53a8b0f3b3c7959d40c5c887046d0ab": 100000000,
+  "8d47fa262fb0e7fd5f1d4abb0df2f6bc7108e3273a9ca755fd28655f23221bc6": 100000000
+ },
+ "instance/refuses_a_token_of_another_asset": "token-covenants: --token is not the explicit reissuance token of --verifier-asset: an explicit resume could never spend it",
+ "instance": {
+  "address": {
+   "elementsregtest": "ert1p3hap70ves6t7wugnar7k0jsa6s6e0hzsc34dzv4usz60f0f9kxwqf37cnh",
+   "sequentia-testnet": "tb1p3hap70ves6t7wugnar7k0jsa6s6e0hzsc34dzv4usz60f0f9kxwq4muq0f"
+  },
+  "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
+  "instance": 2,
+  "params": {
+   "AMOUNT": "00000000000003e8",
+   "ISSUER_KEY": "d26fd85964c8428832baa72dba667c53aebe0700983b8f8510c11609d1f1742d",
+   "TOKEN": "eda1aa99c4f85d224b5542e264831ab47fbb7924b1c5f5d33295654e93cbe7af",
+   "VERIFIER_ASSET": "c61b22235f6528fd55a79c3a27e30871bcf6f20dbb4a1d5ffde7b02f26fa478d"
+  },
+  "slots": {
+   "VERIFIER": "be03a777a3993eb1abcc13b871ee58cb23402144b7b460fb9d1b4fefb331e36c"
+  },
+  "template_hash": "bdcea3847f1b481084f7ef3c7bf8ac3a4d7820a88c2d38393e0bbb0f20b34650",
+  "verifier_script_pubkey": "5120ed19bbe3c2be3d40089d7218c3f3679581e27c57364a2993ffa42c2df20e863d"
+ },
+ "update/A_to_B": {
+  "txid": "4bc6df1c6d26bf782a91a588c6c1185ae5cf8106e8ba47c4a3d92320ec56e9df",
+  "vsize": 364,
+  "weight": 1453
+ },
+ "tool/refuses_a_record_by_another_key": "token-covenants: this key is not the instance's ISSUER_KEY",
+ "tool/refuses_a_coin_recording_another_verifier": "token-covenants: the token coin's script is not the instance's recording 5120ab1017d273b796a8b6a58534c41b9ee67b89243efa490686670d53dadb9eeb08: 51208dfa1f3d998697e77113e8fd67ca1dd43597dc50c46ad132bc80b4f4bd25b19c",
+ "tool/refuses_an_output_1_recording_another_script": "token-covenants: output 1 is not the covenant recording input 0's script with the whole token: want 51202f4e4d25fa622c40138f9678e16a556b355921c8ffa3d8216df8076fbdfabd85 holding 100000000 of afe7cb934e659532d3f5c5b12479bb7fb41a8364e242554b225df8c499aaa1ed",
+ "tool/refuses_an_input_0_short_of_the_verifier_amount": "token-covenants: input 0 does not hold exactly 1000 of the verifier asset 8d47fa262fb0e7fd5f1d4abb0df2f6bc7108e3273a9ca755fd28655f23221bc6, explicitly",
+ "halt/burned_and_recorded_by_the_tool": {
+  "txid": "ca5ef1c9a0af6f53416747ef30bd40206c5a9e71eb5b38146eb9c62f118c2961",
+  "vsize": 743,
+  "weight": 2971,
+  "program_bytes": 864,
+  "witness_bytes": 201,
+  "cost_bound_milli_wu": 461965,
+  "budget_wu": 4726
+ },
+ "follow/record": {
+  "path": "record",
+  "recorded": "5120ab1017d273b796a8b6a58534c41b9ee67b89243efa490686670d53dadb9eeb08",
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1p9a8y6f06vgkyqyu0jeuwz6j4dv64jgwgl73asgtdlqrkl006hkzse337dd",
+    "sequentia-testnet": "tb1p9a8y6f06vgkyqyu0jeuwz6j4dv64jgwgl73asgtdlqrkl006hkzs9mnx3n"
+   },
+   "txid": "ca5ef1c9a0af6f53416747ef30bd40206c5a9e71eb5b38146eb9c62f118c2961",
+   "vout": 1
+  },
+  "txid": "ca5ef1c9a0af6f53416747ef30bd40206c5a9e71eb5b38146eb9c62f118c2961"
+ },
+ "tool/refuses_a_resume_by_another_key": "token-covenants: this key is not the instance's ISSUER_KEY",
+ "tool/refuses_a_resume_into_another_verifier": "token-covenants: the token coin's script is not the instance's recording 5120ed19bbe3c2be3d40089d7218c3f3679581e27c57364a2993ffa42c2df20e863d: 51202f4e4d25fa622c40138f9678e16a556b355921c8ffa3d8216df8076fbdfabd85",
+ "resume/by_the_tool": {
+  "txid": "5118c007744f8bf563321695f065669384b4de6a191f12250e22e962314b6f87",
+  "vsize": 792,
+  "weight": 3165,
+  "program_bytes": 1003,
+  "witness_bytes": 201,
+  "cost_bound_milli_wu": 527922,
+  "budget_wu": 5282
+ },
+ "follow/resume": {
+  "minted": {
+   "atoms": "1000",
+   "script_pubkey": "5120ab1017d273b796a8b6a58534c41b9ee67b89243efa490686670d53dadb9eeb08",
+   "vout": 1
+  },
+  "path": "resume",
+  "successor": {
+   "txid": "5118c007744f8bf563321695f065669384b4de6a191f12250e22e962314b6f87",
+   "vout": 0
+  },
+  "txid": "5118c007744f8bf563321695f065669384b4de6a191f12250e22e962314b6f87",
+  "verifier_script_pubkey": "5120ab1017d273b796a8b6a58534c41b9ee67b89243efa490686670d53dadb9eeb08"
+ },
+ "update/the_resumed_verifier_moves_on": {
+  "txid": "267ac8ebb36b560a4a751c94f600ea5fa752a7bd7f7c1f31bb57c6228a145bfe",
+  "vsize": 364,
+  "weight": 1453
+ }
+}

@@ -1,0 +1,285 @@
+{
+  "addresses": [
+    {
+      "address": {
+        "elementsregtest": "ert1pga540pey5ee2thwwraa4mvq5e9rx9uwr9xfj4g87ykvak023sxxq8jmu52",
+        "sequentia-testnet": "tb1pga540pey5ee2thwwraa4mvq5e9rx9uwr9xfj4g87ykvak023sxxqmceyg5"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000",
+          "hash": "e927a8ef31a095106246d0acbbc7c440527eebe8b3eaaf16b67ad789eae79e29"
+        },
+        "token": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0e927a8ef31a095106246d0acbbc7c440527eebe8b3eaaf16b67ad789eae79e29",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "ac7278110486a4c219284ab8874cebde870a1223af7a6c20419e35fc46fb4699",
+      "name": "verifier asset amount 1, issuer key 1, nothing recorded",
+      "output_key": "4769578724a672a5ddce1f7b5db014c94662f1c329932aa0fe2599db3d51818c",
+      "output_key_parity": 1,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "51204769578724a672a5ddce1f7b5db014c94662f1c329932aa0fe2599db3d51818c",
+      "slots": {
+        "VERIFIER": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tweak": "d79a36af75c5de794bce370190ae96903e2b1dc70f31cc95b9801448c4a37479"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p9n92jfqhqweudu7ctxm834ttm6g0zvv6tten2cre3qujc37af62qajpkc2",
+        "sequentia-testnet": "tb1p9n92jfqhqweudu7ctxm834ttm6g0zvv6tten2cre3qujc37af62qpcrwy5"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817986ddd71c1dc223a97137bbfcb698dc27cc7a6db5909d198c0e62a95637434e34b",
+          "hash": "4afdab5d66e1299d5c738c0a2e18479c8af66166927e7505fc57348e7cff0395"
+        },
+        "token": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac04afdab5d66e1299d5c738c0a2e18479c8af66166927e7505fc57348e7cff0395",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "f06892cf357e6037ce0715b008bc0f4a3a82e3d00e36d8fcd870491ebbd2f8a0",
+      "name": "verifier asset amount 1, issuer key 1, recording the verifier of policy 0",
+      "output_key": "2ccaa9241703b3c6f3d859b678d56bde90f1319a5af335607988392c47dd4e94",
+      "output_key_parity": 0,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "51202ccaa9241703b3c6f3d859b678d56bde90f1319a5af335607988392c47dd4e94",
+      "slots": {
+        "VERIFIER": "6ddd71c1dc223a97137bbfcb698dc27cc7a6db5909d198c0e62a95637434e34b"
+      },
+      "tweak": "f50a62f86e0fe1dfad82f77b75db36b7e9bcf1bdc4319e433398ff8d702f2981"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1ptg45y4fcqq6r2mep9gfdz5a3tq962l8mmuxs5g076p7c8kqf52vqke7wrj",
+        "sequentia-testnet": "tb1ptg45y4fcqq6r2mep9gfdz5a3tq962l8mmuxs5g076p7c8kqf52vq2nuklv"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f8740000000005f5e100c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee56ddd71c1dc223a97137bbfcb698dc27cc7a6db5909d198c0e62a95637434e34b",
+          "hash": "022aba80ac03a2f8c31f946ff807b4131123be20cfc67a70f8519a0743b5a01f"
+        },
+        "token": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0022aba80ac03a2f8c31f946ff807b4131123be20cfc67a70f8519a0743b5a01f",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "eeceb54a230a2283096f138527b0350c0c3378c1205f91394719534739b112de",
+      "name": "verifier asset amount 100000000, issuer key 2, recording the verifier of policy 0",
+      "output_key": "5a2b4255380034356f212a12d153b1580ba57cfbdf0d0a21fed07d83d809a298",
+      "output_key_parity": 1,
+      "params": {
+        "AMOUNT": "0000000005f5e100",
+        "ISSUER_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "51205a2b4255380034356f212a12d153b1580ba57cfbdf0d0a21fed07d83d809a298",
+      "slots": {
+        "VERIFIER": "6ddd71c1dc223a97137bbfcb698dc27cc7a6db5909d198c0e62a95637434e34b"
+      },
+      "tweak": "412419c8f93cc0c73b4dde44e1afe1db0688d67edb104017998ed6f34b1cc57e"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pkrh4mm3drset35alfac2lydgj7srwetsescjckgfztnzvngmwhwqj3llnp",
+        "sequentia-testnet": "tb1pkrh4mm3drset35alfac2lydgj7srwetsescjckgfztnzvngmwhwqwma80l"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798b55677668d0f6900025a4ba47605cac416a25f134340183991bb98c166d25375",
+          "hash": "3d378a05a704b0c1f079ecea9449ecddc6843193846a5d2b402c96be74846d2f"
+        },
+        "token": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac03d378a05a704b0c1f079ecea9449ecddc6843193846a5d2b402c96be74846d2f",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "696d13e2737de56e1b5cc82966b253e6663c6842782a4635b16edd04574161d9",
+      "name": "verifier asset amount 1, issuer key 1, recording the verifier of policy 1",
+      "output_key": "b0ef5dee2d1c32b8d3bf4f70af91a897a0376570cc312c590912e6264d1b75dc",
+      "output_key_parity": 0,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "5120b0ef5dee2d1c32b8d3bf4f70af91a897a0376570cc312c590912e6264d1b75dc",
+      "slots": {
+        "VERIFIER": "b55677668d0f6900025a4ba47605cac416a25f134340183991bb98c166d25375"
+      },
+      "tweak": "b79bcbc91cc2294c724f2423f43fe877c77b1ac3a274cb82dafffb71e6b4c9ba"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pwncsd5l9as934s46cpny06w278rnkdvnv063wahrg96t64zn3drqug6ru8",
+        "sequentia-testnet": "tb1pwncsd5l9as934s46cpny06w278rnkdvnv063wahrg96t64zn3drqqzcmqe"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f8740000000005f5e100c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5b55677668d0f6900025a4ba47605cac416a25f134340183991bb98c166d25375",
+          "hash": "4b9f3625844830ddc287f0888d57e8fe402575e4306fea0ee4d26f9b284610fc"
+        },
+        "token": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac04b9f3625844830ddc287f0888d57e8fe402575e4306fea0ee4d26f9b284610fc",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "87a2ee18578dce87eccea84757f0826df8b0de23d9189f32d17dfaf90e3cbcc4",
+      "name": "verifier asset amount 100000000, issuer key 2, recording the verifier of policy 1",
+      "output_key": "74f106d3e5ec0b1ac2bac06647e9caf1c73b359363f51776e34174bd54538b46",
+      "output_key_parity": 1,
+      "params": {
+        "AMOUNT": "0000000005f5e100",
+        "ISSUER_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "512074f106d3e5ec0b1ac2bac06647e9caf1c73b359363f51776e34174bd54538b46",
+      "slots": {
+        "VERIFIER": "b55677668d0f6900025a4ba47605cac416a25f134340183991bb98c166d25375"
+      },
+      "tweak": "5ee9d8f16645ec5e3d3b772240d49d0b54d5dc901ead502e3b33bdc5a653d5d3"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p5f9vuw695hje3pagudwg5xuvrfaflvaysnrnxh45xp8c09zkxtwqzm38cl",
+        "sequentia-testnet": "tb1p5f9vuw695hje3pagudwg5xuvrfaflvaysnrnxh45xp8c09zkxtwq73nlyp"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817981f89eb318cfac23ca96ef6694b568b616cecdf87ee3e60c2d75168f20f0c5409",
+          "hash": "f2c0371934279fcc650c50ac304f7c2580112fddaaf5842a03e4e24665056f35"
+        },
+        "token": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0f2c0371934279fcc650c50ac304f7c2580112fddaaf5842a03e4e24665056f35",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "1f92e9074b1bbecb2a1f0a4197956d4750ed823e990544cec6a8e8326338f76c",
+      "name": "verifier asset amount 1, issuer key 1, recording the verifier of policy 2",
+      "output_key": "a24ace3b45a5e59887a8e35c8a1b8c1a7a9fb3a484c7335eb4304f87945632dc",
+      "output_key_parity": 0,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "5120a24ace3b45a5e59887a8e35c8a1b8c1a7a9fb3a484c7335eb4304f87945632dc",
+      "slots": {
+        "VERIFIER": "1f89eb318cfac23ca96ef6694b568b616cecdf87ee3e60c2d75168f20f0c5409"
+      },
+      "tweak": "626cb59c986a5e781064a9c2621a715b9d2410c070d90c2d2790dd18b4039bfc"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pnxy6cx43tyk7pr0c2tttd0c88f94aun0mgqcuumyjffytr0pzu3qyp02wv",
+        "sequentia-testnet": "tb1pnxy6cx43tyk7pr0c2tttd0c88f94aun0mgqcuumyjffytr0pzu3qctdjjj"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817986d83e0b2b66adbc567222e3ea8071ee44d6912a359223be78ba0cd831bdffeda",
+          "hash": "f8caa5a2dcdb6241aa58a23f24f665b22db06fff445fd74b10a0cd9b630329e5"
+        },
+        "token": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0f8caa5a2dcdb6241aa58a23f24f665b22db06fff445fd74b10a0cd9b630329e5",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "d578b66d3fcf5f757bc45b87a2fbc4e0bb00303aebdc6698963ce3a67abfc78f",
+      "name": "verifier asset amount 1, issuer key 1, recording the verifier of policy 3",
+      "output_key": "9989ac1ab1592de08df852d6b6bf073a4b5ef26fda018e73649252458de11722",
+      "output_key_parity": 0,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "51209989ac1ab1592de08df852d6b6bf073a4b5ef26fda018e73649252458de11722",
+      "slots": {
+        "VERIFIER": "6d83e0b2b66adbc567222e3ea8071ee44d6912a359223be78ba0cd831bdffeda"
+      },
+      "tweak": "df65c5a24267fb2293ced64d8cfb43cec47dabeb19ea1afdca2b9ffcd862af24"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pxtet4d42hzhszqkjv7llxjsaql6a4d70mx78vsep839933c99p5sh0hzkc",
+        "sequentia-testnet": "tb1pxtet4d42hzhszqkjv7llxjsaql6a4d70mx78vsep839933c99p5st9462x"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f8740000000005f5e100c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5484bf16adc21e3d78c6af51a97914559b8ddc79e81479a11ea07fe8d8f946e2a",
+          "hash": "f2c6bdb34d86f737651d6a239c749b55417cc2ce545bff6f59f036173ca7e06a"
+        },
+        "token": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0f2c6bdb34d86f737651d6a239c749b55417cc2ce545bff6f59f036173ca7e06a",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "3db578b67e97e6c616df1752c6e0865a32231cfdd1d7527b4824face1874f487",
+      "name": "verifier asset amount 100000000, issuer key 2, recording the verifier of policy 12",
+      "output_key": "32f2bab6aab8af0102d267bff34a1d07f5dab7cfd9bc7643213c4a58c7052869",
+      "output_key_parity": 1,
+      "params": {
+        "AMOUNT": "0000000005f5e100",
+        "ISSUER_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "512032f2bab6aab8af0102d267bff34a1d07f5dab7cfd9bc7643213c4a58c7052869",
+      "slots": {
+        "VERIFIER": "484bf16adc21e3d78c6af51a97914559b8ddc79e81479a11ea07fe8d8f946e2a"
+      },
+      "tweak": "49d0dd703904f1394b2f4d097e5d69879ecb09e1a0273e98dcb6a7a1a9877377"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p9vh45mz4lk5kxfns9lp854nunatxc93vp4hgkzksd89jlp0rw7gqghv2p3",
+        "sequentia-testnet": "tb1p9vh45mz4lk5kxfns9lp854nunatxc93vp4hgkzksd89jlp0rw7gq5awja0"
+      },
+      "leaves": {
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874000000000000000179be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179812899f7a98d714de831213186632fec63a3776d56d8be656b50d182dff0e3ebd",
+          "hash": "f33142a8a545ff930525a0c2d36809cd04a41fb28bc9ff8b561a24d6af3c246c"
+        },
+        "token": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0f33142a8a545ff930525a0c2d36809cd04a41fb28bc9ff8b561a24d6af3c246c",
+          "hash": "d25d4046bd6c325910ad8b383ca441a4aa0cdfeb8c228c601d3aae27afa6a701"
+        }
+      },
+      "merkle_root": "7b24c8526ce72798c51b3c754085e4437e362c769b26bc44868669e0d1c18c63",
+      "name": "verifier asset amount 1, issuer key 1, recording the verifier of policy 13",
+      "output_key": "2b2f5a6c55fda96326702fc27a567c9f566c162c0d6e8b0ad069cb2f85e37790",
+      "output_key_parity": 1,
+      "params": {
+        "AMOUNT": "0000000000000001",
+        "ISSUER_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874",
+        "VERIFIER_ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f"
+      },
+      "script_pubkey": "51202b2f5a6c55fda96326702fc27a567c9f566c162c0d6e8b0ad069cb2f85e37790",
+      "slots": {
+        "VERIFIER": "12899f7a98d714de831213186632fec63a3776d56d8be656b50d182dff0e3ebd"
+      },
+      "tweak": "48863b00258c8a17e34a88b364e76b9cfa3dea326289041f796c71005d10f01a"
+    }
+  ],
+  "template_hash": "bdcea3847f1b481084f7ef3c7bf8ac3a4d7820a88c2d38393e0bbb0f20b34650",
+  "vectors": 2
+}
