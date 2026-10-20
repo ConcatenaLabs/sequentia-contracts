@@ -21,10 +21,18 @@ against the budget its witness earns.
 cargo build --release --manifest-path tools/mint-limiter/Cargo.toml
 ```
 
-It reads the template from the checkout it was built in
-(`templates/mint_limiter`), compiles it with the pinned compiler and refuses
-any template but the one it pins, so run it from that checkout or pass
-`--template DIR`.
+or install it from a commit, with no checkout:
+
+```sh
+cargo install --locked --git https://github.com/ConcatenaLabs/sequentia-contracts --rev COMMIT mint-limiter
+```
+
+The template (`templates/mint_limiter` and the helper its source includes) is
+built into the binary, so the tool reads no file of the checkout it was built
+from, which may be moved or deleted. Each run compiles the template with the
+pinned compiler and checks it against its descriptor. `--template DIR` reads a
+directory's copy instead, and the tool refuses any template but the one it
+pins.
 
 ## Commands
 
