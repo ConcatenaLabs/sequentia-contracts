@@ -1,0 +1,253 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000,
+  "40c152184ce7d71a3caadea9b4c1b1b05bbe693b10bbbdd1de6e0f7b2fb8fea1": 100000000
+ },
+ "instance": {
+  "template_hash": "e602bafffda0dd1f2c19b3725fb4a84aa3106ceee88ada4ff6865b249ca254b4",
+  "minimum": 1000000000,
+  "close": 134,
+  "deadline": 154,
+  "addresses": {
+   "A": "ert1pftgqwsk8wc4cyklzeffkyllpmdqkqrlwgexvjd9xpfnnt9fxwvdq97eu47",
+   "B": "ert1pjtv0lym4pgmd63n96xmepz43jcwezvcc30s0pmp045hlxeh8jwqstjdt6z",
+   "C": "ert1p0xk2duevc02axu5zpyhf4376tfz2673yq5mmg679wzadqqxgdz6qh5852j",
+   "D": "ert1pcp7rvjjzupczhrdy8vr0nj2k456e8r5970lcp92527dgckld3hmqushlst",
+   "E": "ert1py0c0aanvtnmy5ej2u53sdq98mh5t90zy9sqh9wsas5h83226cpfqjg3pqe"
+  },
+  "leaf_bytes": {
+   "release": 219,
+   "cancel": 191,
+   "refund": 163
+  }
+ },
+ "release/neg_locktime_below_the_close": {
+  "rejected": true,
+  "expect": "Locktime requirement not satisfied",
+  "reject-reason": "mempool-script-verify-flag-failed (Locktime requirement not satisfied)",
+  "rpc-error": "mempool-script-verify-flag-failed (Locktime requirement not satisfied) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Locktime requirement not satisfied) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 25e0f6d5ff55765f6ee61c631b7e7970ab8294e22cedd23e91ba72e17b718913 failed with mempool-script-verify-flag-failed (Locktime requirement not satisfied)"
+  ]
+ },
+ "release/neg_before_the_close_is_mined": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-final",
+  "rpc-error": "non-final (code -26)",
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal, non-final transaction (code -25)",
+  "block-log": []
+ },
+ "refund/neg_locktime_below_the_deadline": {
+  "rejected": true,
+  "expect": "Locktime requirement not satisfied",
+  "reject-reason": "mempool-script-verify-flag-failed (Locktime requirement not satisfied)",
+  "rpc-error": "mempool-script-verify-flag-failed (Locktime requirement not satisfied) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Locktime requirement not satisfied) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on a9ba27667d4cebcb1ef86af097aa4cded1bff10c465b2ae78139699acacb7e82 failed with mempool-script-verify-flag-failed (Locktime requirement not satisfied)"
+  ]
+ },
+ "cancel/neg_to_another_script": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 57d347182cf88ec4a820d9e2fa847c96610800cbe3f58675afbfadf03ea5471d failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "cancel/neg_one_atom_over_the_fee_cap": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on c7869d8420aaaffaec6b91689a1133bd56b2a03bf113737523a601fbe2cdf9f6 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "cancel/neg_signed_by_another_key": {
+  "rejected": true,
+  "expect": "Invalid Schnorr signature",
+  "reject-reason": "mempool-script-verify-flag-failed (Invalid Schnorr signature)",
+  "rpc-error": "mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 805e917fc33293db64af5cd43f9c6e4507cd25bc63e23194a88f5e117b3c04bb failed with mempool-script-verify-flag-failed (Invalid Schnorr signature)"
+  ]
+ },
+ "cancel/exactly_the_fee_cap_kept_accepted": {
+  "testmempoolaccept": true,
+  "kept": 10000
+ },
+ "cancel/subscription_d_returned": {
+  "size": 744,
+  "vsize": 388,
+  "weight": 1551,
+  "nin": 2,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00003000",
+   "asset": "40c152184ce7d71a3caadea9b4c1b1b05bbe693b10bbbdd1de6e0f7b2fb8fea1",
+   "value": "0.00003000"
+  },
+  "txid": "805e917fc33293db64af5cd43f9c6e4507cd25bc63e23194a88f5e117b3c04bb",
+  "confirmed": true,
+  "block_height": 111,
+  "witness_input0_bytes": 356
+ },
+ "release/neg_output_0_one_atom_under_the_minimum": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 226b5fb500130ca04a10173189cebb28c39e3112a3745330bdfb90158117d997 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "release/output_0_exactly_the_minimum_accepted": {
+  "testmempoolaccept": true,
+  "out0": 1000000000
+ },
+ "release/neg_subscriptions_short_of_the_minimum": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on eb87d594ef8a047c840533eb8e1660ce2dec50fd2d190eba521154a8e040f163 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "release/neg_output_0_to_another_script": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on fd09ca9bdffe0643220e7cf69fa685016e0f952fff244fed906d632db8b77683 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "release/neg_output_0_carries_a_nonce": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "Transaction output has nonce, but is not blinded. Did you forget to call blindrawtransaction, or rawblindrawtransaction? (code -25)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.0] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on d405eed3c4c367cb2c44a8746b84b81eb60f1f5b1c973b2fc357519ec6d81285 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "release/neg_signed_by_another_key": {
+  "rejected": true,
+  "expect": "Invalid Schnorr signature",
+  "reject-reason": "mempool-script-verify-flag-failed (Invalid Schnorr signature)",
+  "rpc-error": "mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 27ae0a43bcf2545d79d5787c5e724b7a9b49845a8a2bc4e120bde179db3dd586 failed with mempool-script-verify-flag-failed (Invalid Schnorr signature)"
+  ]
+ },
+ "cancel/neg_signature_made_for_the_release_leaf": {
+  "rejected": true,
+  "expect": "Invalid Schnorr signature",
+  "reject-reason": "mempool-script-verify-flag-failed (Invalid Schnorr signature)",
+  "rpc-error": "mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Invalid Schnorr signature) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 6dce7e4a294ca5d3673f4dc24a0e29d9c157f8e054c58d40ca3cbbee9c645b4c failed with mempool-script-verify-flag-failed (Invalid Schnorr signature)"
+  ]
+ },
+ "release/neg_output_0_in_another_asset": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on a293d1b563cf6332475fb17b188177d52468cd069dc2d2112a73f268b7799805 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "release/subscriptions_a_and_b": {
+  "size": 1200,
+  "vsize": 533,
+  "weight": 2130,
+  "nin": 3,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00003000",
+   "asset": "40c152184ce7d71a3caadea9b4c1b1b05bbe693b10bbbdd1de6e0f7b2fb8fea1",
+   "value": "0.00003000"
+  },
+  "txid": "27ae0a43bcf2545d79d5787c5e724b7a9b49845a8a2bc4e120bde179db3dd586",
+  "confirmed": true,
+  "block_height": 136,
+  "escrow_inputs": 2,
+  "out0": 1100000000,
+  "witness_input0_bytes": 384
+ },
+ "refund/neg_before_the_deadline_is_mined": {
+  "rejected": true,
+  "expect": "bad-txns-nonfinal",
+  "reject-reason": "non-final",
+  "rpc-error": "non-final (code -26)",
+  "block-error": "TestBlockValidity failed: bad-txns-nonfinal, non-final transaction (code -25)",
+  "block-log": []
+ },
+ "refund/neg_to_another_script": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on d9cebcdac9ac1fd400628a69167d9e796d4d1e00f8000c4d189bf69efc6f51fe failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "refund/neg_subscribers_swapped": {
+  "rejected": true,
+  "expect": "Script failed an OP_EQUALVERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 1300fa6d379b74781e380306dcfcbf2de1ed0f7cb7beb3e6a7764507e7f84299 failed with mempool-script-verify-flag-failed (Script failed an OP_EQUALVERIFY operation)"
+  ]
+ },
+ "refund/neg_fee_one_atom_over_the_cap": {
+  "rejected": true,
+  "expect": "Script failed an OP_VERIFY operation",
+  "reject-reason": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)",
+  "rpc-error": "mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 4a7b31bca95ac5ec0cca07053d29858c7acfb8805ea9782b25043aca19fc6768 failed with mempool-script-verify-flag-failed (Script failed an OP_VERIFY operation)"
+  ]
+ },
+ "refund/subscriptions_c_and_e_by_anyone": {
+  "size": 807,
+  "vsize": 404,
+  "weight": 1614,
+  "nin": 2,
+  "nout": 3,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00006000",
+   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "value": "0.00006000"
+  },
+  "txid": "fe15f9a1e332aac31fb10d9a9a771fb1590205aa5b5a31d85cd5ed6f1fb48adb",
+  "confirmed": true,
+  "block_height": 155,
+  "escrow_inputs": 2,
+  "witness_input0_bytes": 263
+ }
+}
