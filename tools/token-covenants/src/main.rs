@@ -8,6 +8,12 @@
 //! token-covenants supply-cap address  --instance I [--minted ATOMS]
 //! token-covenants supply-cap build    --instance I (--mnemonic-file F | --key-file F) < request.json
 //! token-covenants supply-cap follow   --instance I < request.json
+//! token-covenants verifier-token instance --verifier-asset V --token T --entropy E --amount Q
+//!                                         --issuer-key K --verifier SPK --genesis HASH
+//! token-covenants verifier-token address  --instance I --verifier SPK
+//! token-covenants verifier-token build    --instance I (--mnemonic-file F | --key-file F) < request.json
+//! token-covenants verifier-token record   --instance I (--mnemonic-file F | --key-file F) < request.json
+//! token-covenants verifier-token follow   --instance I < request.json
 //! ```
 //!
 //! The tool reaches no node and holds no credential. A service reads the
@@ -141,7 +147,7 @@ impl Args {
     }
 }
 
-const USAGE: &str = "usage: token-covenants key [options] | token-covenants supply-cap (instance | address | build | follow) [options]; see tools/token-covenants/README.md";
+const USAGE: &str = "usage: token-covenants key [options] | token-covenants supply-cap (instance | address | build | follow) [options] | token-covenants verifier-token (instance | address | build | record | follow) [options]; see tools/token-covenants/README.md";
 
 // ---------------------------------------------------------------------------
 // Keys
@@ -210,7 +216,11 @@ fn key_for(a: &Args, net: SimplicityNetwork, want: &str, name: &str) -> Res<Key>
     let key = match (a.opt("mnemonic-file"), a.opt("key-file")) {
         (Some(m), None) => Key::Mnemonic(Box::new(signer_from_words(&words(m)?, net)?)),
         (None, Some(k)) => Key::Raw(raw_key(k)?),
-        _ => return fail(format!("give {name}'s key: --mnemonic-file or --key-file, one of them")),
+        _ => {
+            return fail(format!(
+                "give {name}'s key: --mnemonic-file or --key-file, one of them"
+            ))
+        }
     };
     if hex(&key.public().serialize()) != want {
         return fail(format!("this key is not the instance's {name}"));
@@ -224,9 +234,12 @@ fn cmd_key(a: &Args) -> Res<Value> {
     // The contract key at m/8383h/1h/0h/0/0, the account every Sequentia
     // chain but the mainnet derives under.
     let of_words = |w: &str| -> Res<String> {
-        Ok(hex(&signer_from_words(w, SimplicityNetwork::SequentiaTestnet)?
-            .get_schnorr_public_key()
-            .serialize()))
+        Ok(hex(&signer_from_words(
+            w,
+            SimplicityNetwork::SequentiaTestnet,
+        )?
+        .get_schnorr_public_key()
+        .serialize()))
     };
     let create = |path: &str, text: &str| -> Res<()> {
         use std::os::unix::fs::OpenOptionsExt;
@@ -240,7 +253,9 @@ fn cmd_key(a: &Args) -> Res<Value> {
     };
     match (new, a.opt("mnemonic-file"), a.opt("key-file")) {
         (false, Some(m), None) => Ok(json!({"key": of_words(&words(m)?)?})),
-        (false, None, Some(k)) => Ok(json!({"key": hex(&raw_key(k)?.x_only_public_key().0.serialize())})),
+        (false, None, Some(k)) => {
+            Ok(json!({"key": hex(&raw_key(k)?.x_only_public_key().0.serialize())}))
+        }
         // A new mnemonic: twelve words from the operating system's
         // randomness, printed once or written once to a new file readable by
         // its owner alone, never to stderr.
@@ -258,7 +273,9 @@ fn cmd_key(a: &Args) -> Res<Value> {
         // A new raw key, for a service that keeps its key in a file.
         (true, None, Some(path)) => {
             let secp = Secp256k1::new();
-            let (sk, _) = secp.generate_keypair(&mut sequentia_contracts::simplicityhl::elements::secp256k1_zkp::rand::thread_rng());
+            let (sk, _) = secp.generate_keypair(
+                &mut sequentia_contracts::simplicityhl::elements::secp256k1_zkp::rand::thread_rng(),
+            );
             let k = Keypair::from_secret_key(&secp, &sk);
             create(path, &hex(&sk.secret_bytes()))?;
             Ok(json!({"key_file": path, "key": hex(&k.x_only_public_key().0.serialize())}))
@@ -297,6 +314,16 @@ const SUPPLY_CAP: Builtin = Builtin {
     helpers: &[OUTPUT_READER],
 };
 
+/// `sequentia/verifier-token`, version 1.
+const VERIFIER_TOKEN: Builtin = Builtin {
+    template_hash: "bdcea3847f1b481084f7ef3c7bf8ac3a4d7820a88c2d38393e0bbb0f20b34650",
+    leaf: "token",
+    descriptor: include_str!("../../../templates/verifier_token/descriptor.json"),
+    source_name: "verifier_token.simf",
+    source: include_str!("../../../templates/verifier_token/verifier_token.simf"),
+    helpers: &[OUTPUT_READER],
+};
+
 struct Template {
     builtin: &'static Builtin,
     descriptor: Descriptor,
@@ -324,8 +351,10 @@ fn template(a: &Args, b: &'static Builtin) -> Res<Template> {
             let dir = PathBuf::from(d);
             let descriptor = Descriptor::load(&dir.join("descriptor.json"))?;
             let raw = std::fs::read_to_string(dir.join(b.source_name)).map_err(e)?;
-            let sources =
-                BTreeMap::from([(b.source_name.to_string(), sequentia_contracts::expand(&raw)?)]);
+            let sources = BTreeMap::from([(
+                b.source_name.to_string(),
+                sequentia_contracts::expand(&raw)?,
+            )]);
             (descriptor, sources, dir.display().to_string())
         }
         None => (
@@ -381,7 +410,16 @@ fn instance(a: &Args, t: &Template) -> Res<Instance> {
 fn instance_from(v: &Value, t: &Template) -> Res<Instance> {
     let obj = v.as_object().ok_or("an instance is a JSON object")?;
     for k in obj.keys() {
-        if !["instance", "template_hash", "params", "slots", "genesis", "address"].contains(&k.as_str()) {
+        if ![
+            "instance",
+            "template_hash",
+            "params",
+            "slots",
+            "genesis",
+            "address",
+        ]
+        .contains(&k.as_str())
+        {
             return fail(format!("unknown field {k}"));
         }
     }
@@ -481,7 +519,10 @@ fn contract(
     }
     let leaf = t.builtin.leaf;
     if hex(&tree.control_block(leaf).map_err(e)?.serialize())
-        != derived.leaves[leaf].control_block.clone().unwrap_or_default()
+        != derived.leaves[leaf]
+            .control_block
+            .clone()
+            .unwrap_or_default()
     {
         return fail("the framework's control block is not the descriptor's");
     }
@@ -622,7 +663,9 @@ fn add_fee_coins(ft: &mut FinalTransaction, fee: &Value, forbidden: &[AssetId]) 
         let fc = coin(f, &format!("fee.coins[{i}]"))?;
         let (fa, fv) = explicit(&fc.txout).ok_or("a fee coin is confidential")?;
         if fee_asset.is_some_and(|x| x != fa) {
-            return fail("the fee coins hold more than one asset; one asset pays a transaction's fee");
+            return fail(
+                "the fee coins hold more than one asset; one asset pays a transaction's fee",
+            );
         }
         if forbidden.contains(&fa) {
             return fail("a fee coin holds an asset the covenant itself moves");
@@ -703,10 +746,9 @@ fn read_request() -> Res<Value> {
 /// The issuance entropy of an asset whose explicit reissuance token is
 /// `token`, checked against both.
 fn entropy_of(v: &Value, asset: AssetId, token: AssetId) -> Res<sha256::Midstate> {
-    let entropy = sha256::Midstate::from_str(
-        v.as_str().ok_or("entropy: the asset's issuance entropy")?,
-    )
-    .map_err(e)?;
+    let entropy =
+        sha256::Midstate::from_str(v.as_str().ok_or("entropy: the asset's issuance entropy")?)
+            .map_err(e)?;
     if AssetId::from_entropy(entropy) != asset {
         return fail("this entropy issues another asset than the instance's");
     }
@@ -761,7 +803,14 @@ mod cap {
 
     pub fn cmd_instance(a: &Args) -> Res<Value> {
         a.only(&[
-            "template", "asset", "token", "entropy", "operator-key", "cold-key", "cap", "genesis",
+            "template",
+            "asset",
+            "token",
+            "entropy",
+            "operator-key",
+            "cold-key",
+            "cap",
+            "genesis",
         ])?;
         let t = template(a, &SUPPLY_CAP)?;
         let asset = AssetId::from_str(a.get("asset")?).map_err(e)?;
@@ -889,14 +938,22 @@ mod cap {
         let (succ, sd) = contract(&t, &next_inst, &slots(next_minted))?;
         ft.add_output(PartialOutput::new(succ.script_pubkey(), amount, token));
         if let Some(x) = issue {
-            ft.add_output(PartialOutput::new(script_arg(&req["mint_to"], "mint_to")?, x, asset));
+            ft.add_output(PartialOutput::new(
+                script_arg(&req["mint_to"], "mint_to")?,
+                x,
+                asset,
+            ));
         }
         add_fee_outputs(&mut ft, &fee);
 
         let (mut pst, _) = ft.extract_pst();
         let program = tree.program(t.builtin.leaf).map_err(e)?;
         let (sig_name, signer, signer_name) = match path {
-            "mint" => ("OPERATOR_SIG", param_hex(&inst, "OPERATOR_KEY")?, "OPERATOR_KEY"),
+            "mint" => (
+                "OPERATOR_SIG",
+                param_hex(&inst, "OPERATOR_KEY")?,
+                "OPERATOR_KEY",
+            ),
             _ => ("COLD_SIG", param_hex(&inst, "COLD_KEY")?, "COLD_KEY"),
         };
         let key = key_for(a, net, signer, signer_name)?;
@@ -963,15 +1020,20 @@ mod cap {
             if succ.script_pubkey() != out0 {
                 return fail("output 0 is not the instance with the count raised by the mint");
             }
-            return Ok(json!({"path": "mint", "minted": minted.to_string(), "amount": x.to_string(),
+            return Ok(
+                json!({"path": "mint", "minted": minted.to_string(), "amount": x.to_string(),
                              "next_minted": next.to_string(),
                              "successor": {"txid": txid, "vout": 0,
-                                           "address": t.descriptor.addresses(&sd.output_key)?}}));
+                                           "address": t.descriptor.addresses(&sd.output_key)?}}),
+            );
         }
         // A rekey: the new keys are in the witness, so the caller names them.
         let mut v = json!({"path": "rekey", "minted": minted.to_string(), "txid": txid,
                            "successor_script_pubkey": hex(out0.as_bytes())});
-        if let (Some(op), Some(cold)) = (req["new_operator_key"].as_str(), req["new_cold_key"].as_str()) {
+        if let (Some(op), Some(cold)) = (
+            req["new_operator_key"].as_str(),
+            req["new_cold_key"].as_str(),
+        ) {
             let next = rekeyed(&inst, op, cold);
             let (succ, _) = contract(&t, &next, &slots(minted))?;
             if succ.script_pubkey() != out0 {
@@ -980,6 +1042,375 @@ mod cap {
             v["next_instance"] = instance_json(&t, &next, minted)?;
         }
         Ok(v)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The verifier token
+
+mod vt {
+    use super::*;
+
+    pub const PATHS: [(&str, &str); 2] = [("resume", "Left(())"), ("record", "Right(())")];
+    /// The most outputs a resume may have; the covenant reads each of them.
+    pub const MAX_OUTPUTS: usize = 6;
+
+    pub fn slots(verifier_spk: &Script) -> BTreeMap<String, String> {
+        BTreeMap::from([(
+            "VERIFIER".to_string(),
+            hex(sha256::Hash::hash(verifier_spk.as_bytes()).as_ref()),
+        )])
+    }
+
+    fn spk_arg(v: &Value, what: &str) -> Res<Script> {
+        let s = script_arg(v, what)?;
+        if s.is_empty() {
+            return fail(format!("{what}: an empty script names no verifier"));
+        }
+        Ok(s)
+    }
+
+    pub fn instance_json(t: &Template, inst: &Instance, verifier: &Script) -> Res<Value> {
+        let (_, derived) = contract(t, inst, &slots(verifier))?;
+        Ok(json!({
+            "instance": 2, "template_hash": t.builtin.template_hash, "params": inst.params,
+            "slots": slots(verifier), "genesis": inst.genesis.to_string(),
+            "address": t.descriptor.addresses(&derived.output_key)?,
+        }))
+    }
+
+    pub fn cmd_instance(a: &Args) -> Res<Value> {
+        a.only(&[
+            "template",
+            "verifier-asset",
+            "token",
+            "entropy",
+            "amount",
+            "issuer-key",
+            "verifier",
+            "genesis",
+        ])?;
+        let t = template(a, &VERIFIER_TOKEN)?;
+        let v = AssetId::from_str(a.get("verifier-asset")?).map_err(e)?;
+        let token = AssetId::from_str(a.get("token")?).map_err(e)?;
+        let entropy = sha256::Midstate::from_str(a.get("entropy")?).map_err(e)?;
+        if AssetId::from_entropy(entropy) != v {
+            return fail("the entropy issues another asset than --verifier-asset");
+        }
+        if AssetId::reissuance_token_from_entropy(entropy, false) != token {
+            return fail("--token is not the explicit reissuance token of --verifier-asset: an explicit resume could never spend it");
+        }
+        let amount: u64 = a.get("amount")?.parse().map_err(e)?;
+        if amount == 0 {
+            return fail("a verifier amount of zero mints nothing");
+        }
+        let issuer = a.get("issuer-key")?;
+        XOnlyPublicKey::from_str(issuer).map_err(|x| format!("--issuer-key: {x}"))?;
+        let verifier = spk_arg(&json!(a.get("verifier")?), "--verifier")?;
+        let inst = Instance {
+            params: strings(
+                &json!({
+                    "VERIFIER_ASSET": internal(v), "TOKEN": internal(token),
+                    "AMOUNT": format!("{amount:016x}"), "ISSUER_KEY": issuer,
+                }),
+                "params",
+            )?,
+            genesis: BlockHash::from_str(a.get("genesis")?).map_err(e)?,
+        };
+        let mut out = instance_json(&t, &inst, &verifier)?;
+        out["verifier_script_pubkey"] = json!(hex(verifier.as_bytes()));
+        Ok(out)
+    }
+
+    pub fn cmd_address(a: &Args) -> Res<Value> {
+        a.only(&["instance", "template", "verifier"])?;
+        let t = template(a, &VERIFIER_TOKEN)?;
+        let inst = instance(a, &t)?;
+        let verifier = spk_arg(&json!(a.get("verifier")?), "--verifier")?;
+        let (_, derived) = contract(&t, &inst, &slots(&verifier))?;
+        Ok(json!({
+            "template_hash": t.builtin.template_hash,
+            "verifier_script_pubkey": hex(verifier.as_bytes()),
+            "slots": slots(&verifier),
+            "address": t.descriptor.addresses(&derived.output_key)?,
+            "script_pubkey": derived.script_pubkey,
+            "leaves": derived.leaves,
+        }))
+    }
+
+    /// The coin of this instance recording `verifier`, holding the token explicitly.
+    fn token_coin(
+        t: &Template,
+        inst: &Instance,
+        verifier: &Script,
+        txout: &TxOut,
+    ) -> Res<(ContractTree, u64)> {
+        let token = param_asset(inst, "TOKEN")?;
+        let (tree, _) = contract(t, inst, &slots(verifier))?;
+        if txout.script_pubkey != tree.script_pubkey() {
+            return fail(format!(
+                "the token coin's script is not the instance's recording {}: {}",
+                hex(verifier.as_bytes()),
+                hex(txout.script_pubkey.as_bytes())
+            ));
+        }
+        let (held, amount) = explicit(txout)
+            .ok_or("the token coin is confidential; the covenant reads only explicit coins")?;
+        if held != token {
+            return fail(format!(
+                "the token coin holds {held}, not the token {token}"
+            ));
+        }
+        Ok((tree, amount))
+    }
+
+    /// The resume: AMOUNT of the verifier asset reissued into the recorded verifier.
+    pub fn cmd_build(a: &Args) -> Res<Value> {
+        a.only(&["instance", "template", "mnemonic-file", "key-file"])?;
+        let t = template(a, &VERIFIER_TOKEN)?;
+        let inst = instance(a, &t)?;
+        let v = param_asset(&inst, "VERIFIER_ASSET")?;
+        let token = param_asset(&inst, "TOKEN")?;
+        let amount = param_u64(&inst, "AMOUNT")?;
+        let net = network(&inst, v);
+        let req = read_request()?;
+        match req["path"].as_str() {
+            Some("resume") => {}
+            Some("record") => {
+                return fail(
+                    "a record is signed into a transaction that spends the verifier: use record",
+                )
+            }
+            _ => return fail("path: resume"),
+        }
+        let verifier = spk_arg(
+            &req["verifier"],
+            "verifier: the recorded verifier's scriptPubKey",
+        )?;
+        let c = coin(&req["coin"], "coin")?;
+        let (tree, held) = token_coin(&t, &inst, &verifier, &c.txout)?;
+        let entropy = entropy_of(&req["entropy"], v, token)?;
+
+        let mut ft = FinalTransaction::new();
+        ft.add_issuance_input(
+            PartialInput::new(UTXO {
+                outpoint: c.outpoint,
+                txout: c.txout.clone(),
+                secrets: None,
+            })
+            .with_sequence(Sequence::MAX),
+            IssuanceInput::new_reissuance(amount, entropy.to_byte_array()),
+            RequiredSignature::None,
+        );
+        let fee = add_fee_coins(&mut ft, &req["fee"], &[v, token])?;
+        ft.add_output(PartialOutput::new(tree.script_pubkey(), held, token));
+        ft.add_output(PartialOutput::new(verifier.clone(), amount, v));
+        add_fee_outputs(&mut ft, &fee);
+
+        let (mut pst, _) = ft.extract_pst();
+        if pst.outputs().len() > MAX_OUTPUTS {
+            return fail("a resume has at most six outputs");
+        }
+        let program = tree.program(t.builtin.leaf).map_err(e)?;
+        let key = key_for(a, net, param_hex(&inst, "ISSUER_KEY")?, "ISSUER_KEY")?;
+        let sig = key.sign(&pst, &program, 0, &net)?;
+        let fixed = BTreeMap::from([("PATH", PATHS[0].1.to_string())]);
+        let wv = witness(
+            &program,
+            &inst,
+            &slots(&verifier),
+            &fixed,
+            "RESUME_SIG",
+            &sig,
+        )?;
+        let (_, mut out) = finalize(&mut pst, &program, &wv, 0, &net)?;
+        out["path"] = json!("resume");
+        out["verifier_script_pubkey"] = json!(hex(verifier.as_bytes()));
+        out["minted"] = json!({"asset": v.to_string(), "atoms": amount.to_string(), "vout": 1});
+        out["coin"] = json!({"txid": c.outpoint.txid.to_string(), "vout": c.outpoint.vout});
+        out["fee"] = json!({"asset": fee.asset.to_string(), "atoms": fee.atoms.to_string(), "change": fee.change.to_string()});
+        out["successor"] = json!({"txid": out["txid"], "vout": 0, "amount": held.to_string(),
+                                  "script_pubkey": hex(tree.script_pubkey().as_bytes())});
+        Ok(out)
+    }
+
+    /// The outputs a transaction's inputs spend, in input order, each
+    /// `{asset, value, script_pubkey}` with an explicit asset and value.
+    fn prevouts(v: &Value, n: usize) -> Res<Vec<TxOut>> {
+        let list = v
+            .as_array()
+            .ok_or("prevouts: the outputs the transaction's inputs spend, in order")?;
+        if list.len() != n {
+            return fail(format!("prevouts: {} given for {n} inputs", list.len()));
+        }
+        list.iter()
+            .enumerate()
+            .map(|(i, p)| {
+                let asset = AssetId::from_str(
+                    p["asset"]
+                        .as_str()
+                        .ok_or_else(|| format!("prevouts[{i}].asset"))?,
+                )
+                .map_err(|x| format!("prevouts[{i}].asset: {x}"))?;
+                let value = atoms(&p["value"], &format!("prevouts[{i}].value"))?;
+                let spk = script_arg(&p["script_pubkey"], &format!("prevouts[{i}].script_pubkey"))?;
+                Ok(TxOut {
+                    asset: confidential::Asset::Explicit(asset),
+                    value: confidential::Value::Explicit(value),
+                    nonce: confidential::Nonce::Null,
+                    script_pubkey: spk,
+                    witness: Default::default(),
+                })
+            })
+            .collect()
+    }
+
+    /// The record: the issuer key's signature on the token covenant at input 1
+    /// of a transaction that spends the verifier at input 0, such as a halt.
+    pub fn cmd_record(a: &Args) -> Res<Value> {
+        a.only(&["instance", "template", "mnemonic-file", "key-file"])?;
+        let t = template(a, &VERIFIER_TOKEN)?;
+        let inst = instance(a, &t)?;
+        let v = param_asset(&inst, "VERIFIER_ASSET")?;
+        let token = param_asset(&inst, "TOKEN")?;
+        let amount = param_u64(&inst, "AMOUNT")?;
+        let net = network(&inst, v);
+        let req = read_request()?;
+        let raw = req["tx"]
+            .as_str()
+            .ok_or("tx: the hex of the transaction to sign into")?;
+        let mut tx: Transaction = deserialize(&unhex(raw)?).map_err(|x| format!("tx: {x}"))?;
+        if tx.input.len() < 2 || tx.output.len() < 2 {
+            return fail(
+                "a record spends the verifier at input 0 and the token covenant at input 1",
+            );
+        }
+        let prev = prevouts(&req["prevouts"], tx.input.len())?;
+        let verifier = spk_arg(
+            &req["verifier"],
+            "verifier: the verifier the token coin records now",
+        )?;
+        let (tree, held) = token_coin(&t, &inst, &verifier, &prev[1])?;
+        if tx.input[1].has_issuance() {
+            return fail("input 1 carries an issuance; a record mints nothing");
+        }
+        match explicit(&prev[0]) {
+            Some((asset, x)) if asset == v && x == amount => {}
+            _ => {
+                return fail(format!(
+                    "input 0 does not hold exactly {amount} of the verifier asset {v}, explicitly"
+                ))
+            }
+        }
+        let recorded = prev[0].script_pubkey.clone();
+        let (succ, sd) = contract(&t, &inst, &slots(&recorded))?;
+        let o1 = &tx.output[1];
+        if o1.script_pubkey != succ.script_pubkey()
+            || explicit(o1) != Some((token, held))
+            || !o1.nonce.is_null()
+        {
+            return fail(format!(
+                "output 1 is not the covenant recording input 0's script with the whole token: want {} holding {held} of {token}",
+                hex(succ.script_pubkey().as_bytes())
+            ));
+        }
+        let mut pst = PartiallySignedTransaction::from_tx(tx.clone());
+        for (i, p) in prev.iter().enumerate() {
+            pst.inputs_mut()[i].witness_utxo = Some(p.clone());
+        }
+        let program = tree.program(t.builtin.leaf).map_err(e)?;
+        let key = key_for(a, net, param_hex(&inst, "ISSUER_KEY")?, "ISSUER_KEY")?;
+        let sig = key.sign(&pst, &program, 1, &net)?;
+        let fixed = BTreeMap::from([("PATH", PATHS[1].1.to_string())]);
+        let wv = witness(
+            &program,
+            &inst,
+            &slots(&verifier),
+            &fixed,
+            "RECORD_SIG",
+            &sig,
+        )?;
+        let spend = program
+            .finalize_spend(&pst, &wv, 1, &net)
+            .map_err(|x| format!("the covenant refuses this record: {x}"))?;
+        let rule: BudgetRule = net.simplicity_budget();
+        if !rule.covers(spend.cost, &spend.stack) {
+            return fail(
+                "the spend's witness does not earn its cost bound; this tool does not pad",
+            );
+        }
+        let budget = rule.report(spend.cost, &spend.stack);
+        tx.input[1].witness.script_witness = spend.stack.clone();
+        Ok(json!({
+            "path": "record",
+            "txid": tx.txid().to_string(),
+            "hex": serialize_hex(&tx),
+            "recorded": hex(recorded.as_bytes()),
+            "successor": {"txid": tx.txid().to_string(), "vout": 1, "amount": held.to_string(),
+                          "address": t.descriptor.addresses(&sd.output_key)?},
+            "program_bytes": spend.stack[1].len(),
+            "witness_bytes": spend.stack[0].len(),
+            "cost_bound_milli_wu": budget.cost_milliweight,
+            "budget_wu": budget.budget,
+        }))
+    }
+
+    /// What a transaction that spent the token coin did to it.
+    pub fn cmd_follow(a: &Args) -> Res<Value> {
+        a.only(&["instance", "template"])?;
+        let t = template(a, &VERIFIER_TOKEN)?;
+        let inst = instance(a, &t)?;
+        let v = param_asset(&inst, "VERIFIER_ASSET")?;
+        let req = read_request()?;
+        let verifier = spk_arg(&req["verifier"], "verifier: the verifier the coin recorded")?;
+        let c = coin(&req["coin"], "coin")?;
+        token_coin(&t, &inst, &verifier, &c.txout)?;
+        let raw = req["tx"]
+            .as_str()
+            .ok_or("tx: the hex of the transaction that spent the coin")?;
+        let tx: Transaction = deserialize(&unhex(raw)?).map_err(|x| format!("tx: {x}"))?;
+        let at = tx
+            .input
+            .iter()
+            .position(|i| i.previous_output == c.outpoint)
+            .ok_or("the transaction does not spend the coin")?;
+        let txid = tx.txid().to_string();
+        match at {
+            0 => {
+                let (succ, _) = contract(&t, &inst, &slots(&verifier))?;
+                if tx.output.first().map(|o| &o.script_pubkey) != Some(&succ.script_pubkey()) {
+                    return fail("output 0 is not the covenant recording the same verifier");
+                }
+                let to = tx.output.get(1).ok_or("no output 1")?;
+                Ok(
+                    json!({"path": "resume", "txid": txid, "verifier_script_pubkey": hex(verifier.as_bytes()),
+                          "minted": {"vout": 1, "atoms": explicit(to).filter(|(a, _)| *a == v).map(|(_, x)| x.to_string()),
+                                     "script_pubkey": hex(to.script_pubkey.as_bytes())},
+                          "successor": {"txid": txid, "vout": 0}}),
+                )
+            }
+            1 => {
+                // The recorded script is input 0's: the caller gives the
+                // transaction that made that coin.
+                let p = coin(
+                    &req["input_0"],
+                    "input_0: the transaction and vout of the coin input 0 spends",
+                )?;
+                if p.outpoint != tx.input[0].previous_output {
+                    return fail("input_0 is not the coin the transaction spends at input 0");
+                }
+                let recorded = p.txout.script_pubkey.clone();
+                let (succ, sd) = contract(&t, &inst, &slots(&recorded))?;
+                if tx.output.get(1).map(|o| &o.script_pubkey) != Some(&succ.script_pubkey()) {
+                    return fail("output 1 is not the covenant recording input 0's script");
+                }
+                Ok(
+                    json!({"path": "record", "txid": txid, "recorded": hex(recorded.as_bytes()),
+                          "successor": {"txid": txid, "vout": 1, "address": t.descriptor.addresses(&sd.output_key)?}}),
+                )
+            }
+            _ => fail("the transaction spends the coin at an input no path allows"),
+        }
     }
 }
 
@@ -992,6 +1423,11 @@ fn run() -> Res<Value> {
         ["supply-cap", "address"] => cap::cmd_address(&a),
         ["supply-cap", "build"] => cap::cmd_build(&a),
         ["supply-cap", "follow"] => cap::cmd_follow(&a),
+        ["verifier-token", "instance"] => vt::cmd_instance(&a),
+        ["verifier-token", "address"] => vt::cmd_address(&a),
+        ["verifier-token", "build"] => vt::cmd_build(&a),
+        ["verifier-token", "record"] => vt::cmd_record(&a),
+        ["verifier-token", "follow"] => vt::cmd_follow(&a),
         _ => fail(USAGE),
     }
 }
@@ -1023,8 +1459,13 @@ mod tests {
 
     #[test]
     fn the_templates_are_the_pinned_ones() {
-        for (b, dir) in [(&SUPPLY_CAP, "supply_cap")] {
-            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates").join(dir);
+        for (b, dir) in [
+            (&SUPPLY_CAP, "supply_cap"),
+            (&VERIFIER_TOKEN, "verifier_token"),
+        ] {
+            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../templates")
+                .join(dir);
             let d = Descriptor::load(&dir.join("descriptor.json")).unwrap();
             assert_eq!(d.template_hash, b.template_hash);
             d.validate(&dir).unwrap();
@@ -1041,17 +1482,29 @@ mod tests {
 
     #[test]
     fn the_vectors_derive_through_the_framework() {
-        let t = template(&args(&["x"]), &SUPPLY_CAP).unwrap();
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/supply_cap");
-        let v: Value = serde_json::from_str(&std::fs::read_to_string(dir.join("vectors.json")).unwrap()).unwrap();
-        for c in v["addresses"].as_array().unwrap() {
-            let inst = Instance {
-                params: strings(&c["params"], "params").unwrap(),
-                genesis: SimplicityNetwork::SequentiaTestnet.genesis_block_hash(),
-            };
-            let s = strings(&c["slots"], "slots").unwrap();
-            let (tree, _) = contract(&t, &inst, &s).unwrap();
-            assert_eq!(hex(tree.script_pubkey().as_bytes()), c["script_pubkey"].as_str().unwrap());
+        for (b, dir) in [
+            (&SUPPLY_CAP, "supply_cap"),
+            (&VERIFIER_TOKEN, "verifier_token"),
+        ] {
+            let t = template(&args(&["x"]), b).unwrap();
+            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../templates")
+                .join(dir);
+            let v: Value =
+                serde_json::from_str(&std::fs::read_to_string(dir.join("vectors.json")).unwrap())
+                    .unwrap();
+            for c in v["addresses"].as_array().unwrap() {
+                let inst = Instance {
+                    params: strings(&c["params"], "params").unwrap(),
+                    genesis: SimplicityNetwork::SequentiaTestnet.genesis_block_hash(),
+                };
+                let s = strings(&c["slots"], "slots").unwrap();
+                let (tree, _) = contract(&t, &inst, &s).unwrap();
+                assert_eq!(
+                    hex(tree.script_pubkey().as_bytes()),
+                    c["script_pubkey"].as_str().unwrap()
+                );
+            }
         }
     }
 
@@ -1067,7 +1520,10 @@ mod tests {
 
     #[test]
     fn amounts_read_as_strings_and_small_numbers() {
-        assert_eq!(atoms(&json!("18446744073709551615"), "x").ok(), Some(u64::MAX));
+        assert_eq!(
+            atoms(&json!("18446744073709551615"), "x").ok(),
+            Some(u64::MAX)
+        );
         assert_eq!(atoms(&json!(1000), "x").ok(), Some(1000));
         assert!(atoms(&json!(9_007_199_254_740_993u64), "x").is_err());
         assert!(atoms(&json!("012"), "x").is_err());
