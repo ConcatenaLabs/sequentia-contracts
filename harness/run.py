@@ -47,6 +47,7 @@ TESTS = [
     ("u1", "u1_supply_cap", "The supply cap: mints up to the cap on each side of a rekey, the retirement; every violation refused"),
     ("u2", "u2_supply_cap_tool", "The token-covenants tool's supply cap: every path it builds is mined, and each is read back"),
     ("l1", "l1_pignus_vault", "The Pignus vault and offer, version 2: a loan above version 1's limit taken, topped up, repaid and liquidated in part, called, recovered; every violation refused"),
+    ("l2", "l2_pignus_vault_threshold", "The Pignus vault and offer under three oracles: a 2-of-3 loan taken and liquidated with two signatures, refused with one; every violation refused"),
     ("c1", "c1_capped_sale", "The capped sale: purchases within each buyer's cap at any input index, a full buy and the reclaim; every violation refused"),
     ("b1", "b1_oracle_bond", "The oracle bond: a conflict slashed (half burned, half to the presenter), notice and withdrawal after the wait; every violation refused"),
     ("e1", "e1_subscription_escrow", "The subscription escrow, tapscript: a release of two subscriptions, a cancel and a refund by anyone after the deadline; every violation refused"),
@@ -76,7 +77,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, u1, u2, l1, c1, b1, e1, s1c, s1d); default all but s1c and s1d")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, u1, u2, l1, l2, c1, b1, e1, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "

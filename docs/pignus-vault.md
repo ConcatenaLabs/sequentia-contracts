@@ -233,3 +233,77 @@ figure.
 | The rotated beacon's own coin, spent by the rotation | `bad-txns-inputs-missingorspent` |
 | Call: before maturity; the surplus paid to the liquidator; the surplus one atom short | `Assertion failed inside jet` |
 | Recovery before its time, or paid to the borrower; a refund before expiry, or 1,000 atoms short | `Assertion failed inside jet` |
+
+## Several oracles
+
+`templates/pignus_vault_threshold` and `templates/pignus_offer_threshold` are
+the vault and the offer above with one change: a liquidation takes a price
+record that at least `THRESHOLD` of three oracle keys attest, each under its
+own live beacon, in place of one oracle's attestation. Repay, top-up and
+recovery are the same paths, and the health, target, bonus and maturity rules
+are the same; the offer opens vaults of the threshold vault's program only.
+
+| Terms in place of `ORACLE` and `BEACON_ASSET` | Type | What |
+|---|---|---|
+| `ORACLE_1`, `ORACLE_2`, `ORACLE_3` | keys | Three distinct keys whose format-2 attestations price `COLL` in `DEBT_ASSET`. A key nobody holds, such as the NUMS point, fills a slot the loan does not use: a 2-of-2 is two keys and NUMS at threshold 2 |
+| `BEACON_ASSET_1..3` | asset ids | Each oracle's beacon asset |
+| `THRESHOLD` | 1 to 3 | How many must attest |
+
+The data leaf holds the terms in the order `COLL`, `DEBT_ASSET`, the three
+keys, the three beacon assets, `THRESHOLD`, then the single vault's terms from
+`PRECISION` on, then the state.
+
+A liquidation's witness gives the record, a price and a time, and three slots;
+each slot either abstains or presents its oracle's signature, the beacon that
+oracle's message names and the input that spends a coin of that oracle's
+beacon asset from it (`helpers/oracle_threshold.simf`). Each signer's message
+carries its own key and its own beacon, so the signatures are over three
+messages of one record. The record's time is the transaction's lock time and
+must be newer than `LAST_TIME`, as in the single vault.
+
+**The oracles must sign the same record.** Signers that price from one feed
+and stamp the feed's own observation time sign the same price at the same
+time; signers on different feeds or clocks rarely do, and a threshold they
+cannot meet together leaves the loan to its maturity call and its recovery.
+The vault takes no tolerance between prices: a tolerance would let the
+liquidator choose the lowest price the set allows, which is the single lowest
+signer's price.
+
+The three keys must be distinct, so that `THRESHOLD` signatures are that many
+signers, and `THRESHOLD` must be at least 1. The program checks both on every
+liquidation; an instance that breaks either can still be repaid, topped up and
+recovered, but never liquidated.
+
+### Proof
+
+Harness test `l2` runs both templates on a regtest chain from their
+descriptors, with three oracles, each with its own beacon. A 2-of-3 offer is
+taken; the vault is liquidated in part by oracles 1 and 2, and its successor
+again by oracles 2 and 3; a 1-of-3 and a 3-of-3 vault are liquidated with one
+and three signatures. `harness/records/l2.json` holds every figure.
+
+| Spend, from `harness/records/l2.json` | vsize | Program | Witness | Cost bound | Budget |
+|---|---|---|---|---|---|
+| Take of a 2-of-3 offer | 907 | 1,592 B | 371 B | 1,733 WU | 8,326 WU |
+| Partial liquidation, 1 of 3: the vault, one beacon coin, the liquidator's coin | 1,611 | 3,516 B | 467 B | 3,229 WU | 16,406 WU |
+| Partial liquidation, 2 of 3: two beacon coins | 1,780 | 3,516 B | 567 B | 3,229 WU | 16,806 WU |
+| Partial liquidation, 3 of 3: three beacon coins | 1,956 | 3,545 B | 667 B | 3,229 WU | 17,322 WU |
+
+Against the single vault's partial liquidation (1,427 vB, program 2,910 B, cost
+bound 1,653 WU), a 2-of-3 liquidation costs 353 vB more: one more beacon coin
+in and out, one more signature, and three key slots. Every slot's check is one
+shared function, so the pruned program and its cost bound are the same for one
+signature as for three.
+
+| Refused in a block, each against an accepted control | Error |
+|---|---|
+| A 2-of-3 vault with one signature (against a 1-of-3 vault liquidated with it); a 3-of-3 with two (against the 2-of-3 with the same two); a threshold of 0 with one (against the 1-of-3) | `Assertion failed inside jet` |
+| The second signature by a key outside the set; the first oracle's own signature in the second slot; the second over another price or another time; the second slot's beacon named at the first oracle's beacon input, or not live | `Assertion failed inside jet` |
+| The offer opening a vault under another key set, or at another threshold | `Assertion failed inside jet` |
+
+A negative that needs another vault runs its control's pruned program on that
+vault's coin, with the differing terms swapped in the witness; the swap itself
+is shown accepted on a vault where it changes nothing the program refuses (the
+2-of-3 control on a 1-of-3 vault). One key listed twice, filling two slots,
+is refused on the abstract machine rather than in a block, as
+[`helpers.md`](helpers.md) explains under `oracle_threshold`.

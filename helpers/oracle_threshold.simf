@@ -1,0 +1,57 @@
+/* Several oracles: a format-2 price record accepted when at least m of a
+ * contract's three oracle keys attest it, each under its own live beacon.
+ *
+ * A record is what the attestations agree on: base, quote, price, precision
+ * and time. Each signer's message also carries its own key and its own beacon,
+ * so the signatures are over three different messages of one record; a slot
+ * presents one signature, the beacon it names and the input where that beacon
+ * is spent, or abstains. Each presented slot is checked as att_verify_fresh
+ * checks one attestation, against that slot's key and beacon asset.
+ *
+ * The three keys must be distinct, so m signatures are m signers; a key nobody
+ * holds (the NUMS point, say) fills a slot a contract does not use. m is at
+ * least 1, so no instance accepts a record with no signature at all.
+ *
+ * The later form, one signature by an aggregate key and a Merkle proof that the
+ * key is one of the set's qualifying subsets, needs the signers to sign one
+ * message together; this one needs nothing from them but the same record.
+ * Include with `// include oracle_threshold`; it includes attestation.
+ */
+// include attestation
+
+/* 1 when the slot presents key's fresh attestation of the record, 0 when it
+ * abstains; a presented slot that does not verify fails the program. */
+fn att_threshold_slot(key: Pubkey, beacon_asset: u256, record: (u256, u256, u64, u8, u32), slot: Option<(Signature, u256, u32)>) -> u8 {
+    let (base, quote, price, precision, time): (u256, u256, u64, u8, u32) = record;
+    match slot {
+        Some(s: (Signature, u256, u32)) => {
+            let (sig, beacon, at): (Signature, u256, u32) = s;
+            att_verify_fresh(key, base, quote, price, precision, time, beacon, sig, beacon_asset, at);
+            1
+        },
+        None => 0,
+    }
+}
+
+/* The three keys are three. */
+fn att_threshold_distinct3(keys: [Pubkey; 3]) {
+    let [k1, k2, k3]: [Pubkey; 3] = keys;
+    assert!(jet::eq_1(<bool>::into(jet::eq_256(k1, k2)), 0));
+    assert!(jet::eq_1(<bool>::into(jet::eq_256(k1, k3)), 0));
+    assert!(jet::eq_1(<bool>::into(jet::eq_256(k2, k3)), 0));
+}
+
+/* At least m of the three keys attest the record, each with its own beacon live. */
+fn att_verify_threshold3(keys: [Pubkey; 3], beacon_assets: [u256; 3], m: u8, record: (u256, u256, u64, u8, u32), slots: [Option<(Signature, u256, u32)>; 3]) {
+    att_threshold_distinct3(keys);
+    assert!(jet::le_8(1, m));
+    let [k1, k2, k3]: [Pubkey; 3] = keys;
+    let [b1, b2, b3]: [u256; 3] = beacon_assets;
+    let [s1, s2, s3]: [Option<(Signature, u256, u32)>; 3] = slots;
+    let n1: u8 = att_threshold_slot(k1, b1, record, s1);
+    let n2: u8 = att_threshold_slot(k2, b2, record, s2);
+    let n3: u8 = att_threshold_slot(k3, b3, record, s3);
+    let (c1, n12): (bool, u8) = jet::add_8(n1, n2);
+    let (c2, n): (bool, u8) = jet::add_8(n12, n3);
+    assert!(jet::le_8(m, n));
+}
