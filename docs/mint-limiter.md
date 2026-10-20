@@ -143,6 +143,30 @@ transaction's id, in flight.
 The operator key and the cold key must differ: the operator could otherwise
 lift its own brake. `tools/mint-limiter` refuses such an instance.
 
+## Why there is no tapscript twin
+
+The limiter is Simplicity only. A tapscript leaf on Sequentia could carry the
+same state in principle: it can rebuild its own output key from the state with
+`OP_SHA256` and `OP_CAT` and check it against `OP_INSPECTINPUTSCRIPTPUBKEY`
+with `OP_TWEAKVERIFY`, do the same for the successor at output 0, read the
+reissuance with `OP_INSPECTINPUTISSUANCE` and check a declared age with
+`OP_CHECKSEQUENCEVERIFY`. Three things make it a large, fragile script with
+nothing gained over the Simplicity leaf:
+
+- a taproot branch hashes its two children in byte order, and tapscript has
+  no comparison of 32-byte strings, so every spend would prove the order of
+  the state's leaf against the code's leaf from a witness hint, byte by byte
+  with `OP_SUBSTR`, for the coin and again for its successor;
+- the descriptor's values are big-endian and Elements' 64-bit arithmetic is
+  little-endian, so the count and the allowance would be reversed byte by
+  byte in script on every spend;
+- the brake's message names the chain, and no opcode reads the genesis hash,
+  so the twin's message would bind the chain only through a parameter.
+
+The plan's measurement of state carried across a spend found the same: not
+practical in tapscript, 448 vB with a 363-byte program in Simplicity. The
+limiter's Simplicity leaf is 857 to 867 vB a mint, well inside its budget.
+
 ## Measured
 
 `harness/tests/m1_mint_limiter.py` (record `harness/records/m1.json`) runs
