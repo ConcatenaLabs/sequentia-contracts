@@ -1,10 +1,15 @@
 # token-covenants
 
 Builds and signs spends of the covenants that hold an asset's reissuance
-token, for the services that mint through them: the supply cap,
-`sequentia/supply-cap` (`templates/supply_cap`, described in
-`docs/supply-cap.md`), which lets an operator mint only while the total minted
-through it stays at or under a cap fixed when it is made.
+token, for the services that mint through them:
+
+- the supply cap, `sequentia/supply-cap` (`templates/supply_cap`, described in
+  `docs/supply-cap.md`), which lets an operator mint only while the total
+  minted through it stays at or under a cap fixed when it is made;
+- the verifier token, `sequentia/verifier-token` (`templates/verifier_token`,
+  described in `docs/verifier-token.md`), which holds an OpenDAMP asset's
+  verifier-asset token and mints the verifier amount only into the verifier
+  covenant it last recorded.
 
 The tool reaches no node and holds no credential. The service that uses it
 reads the chain and its own wallet, hands the tool the coins as the
@@ -119,8 +124,83 @@ for a mint, the amount and the next count and successor; for a rekey, the
 successor's script, and with `new_operator_key` and `new_cold_key` in the
 request, checked against them, the `next_instance`.
 
+### The verifier token
+
+```text
+token-covenants verifier-token instance --verifier-asset V --token T --entropy E --amount Q \
+    --issuer-key K --verifier SPK --genesis HASH
+```
+
+An instance: the verifier asset, its reissuance token and its issuance entropy
+as an RPC prints them, the verifier amount `q` in atoms, the asset's issuer
+update key and the chain's genesis hash. `--verifier` is the scriptPubKey, in
+hex, of the verifier covenant the token records when it moves in: the genesis
+verifier the issuance funds. The output is the instance file (its `address`
+and `verifier_script_pubkey` fields are for convenience) and the address the
+token moves to.
+
+```text
+token-covenants verifier-token address --instance I --verifier SPK
+```
+
+The address of the instance recording a verifier's script.
+
+```text
+token-covenants verifier-token build --instance I (--mnemonic-file F | --key-file F) < request.json
+```
+
+The resume, signed by the issuer key:
+
+```json
+{
+  "path": "resume",
+  "coin": {"tx": "<hex of the transaction that made the token coin>", "vout": 1},
+  "verifier": "<scriptPubKey hex the coin records>",
+  "entropy": "<the verifier asset's issuance entropy>",
+  "fee": {"coins": [{"tx": "<hex>", "vout": 1}], "atoms": "300", "change_to": "<scriptPubKey hex>"}
+}
+```
+
+It reissues exactly `q` of the verifier asset into the recorded script at
+output 1, the successor at output 0, then the change and the fee. The reply
+holds the transaction with the fee coins still to sign, its `txid`, and the
+program's size, cost bound and budget.
+
+```text
+token-covenants verifier-token record --instance I (--mnemonic-file F | --key-file F) < request.json
+```
+
+Signs the record into a transaction somebody else laid out, such as the halt
+`opendamp halt` builds: the verifier coin at input 0, the token coin at input
+1 and its successor at output 1.
+
+```json
+{
+  "tx": "<hex of the transaction, other inputs signed or not>",
+  "prevouts": [{"asset": "<display hex>", "value": "1", "script_pubkey": "<hex>"}, ...],
+  "verifier": "<scriptPubKey hex the token coin records now>"
+}
+```
+
+`prevouts` are the outputs the inputs spend, in input order, each explicit.
+The tool checks that input 0 holds exactly `q` of the verifier asset, that
+input 1 is the instance recording `verifier`, and that output 1 is the
+instance recording input 0's script with the whole token, then signs and fills
+in input 1's witness alone, leaving every other input as it was. A witness is
+outside every signature hash, so the order in which the inputs are signed does
+not matter.
+
+```text
+token-covenants verifier-token follow --instance I < request.json
+```
+
+What a transaction that spent the token coin did to it, from `{"coin": ...,
+"verifier": "<what it recorded>", "tx": "<hex>"}`: for a resume, the output the
+verifier asset went to; for a record, with `"input_0": {"tx", "vout"}` naming
+the coin the transaction spent at input 0, the script now recorded.
+
 ## Tests
 
 `cargo test --release --manifest-path tools/token-covenants/Cargo.toml` runs
-the unit tests. `harness/run.py u2` runs the tool against a regtest node: every
-path is built, signed by the wallet, mined, and read back with `follow`.
+the unit tests. `harness/run.py u2 v2` runs the tool against a regtest node:
+every path is built, signed by the wallet, mined, and read back with `follow`.

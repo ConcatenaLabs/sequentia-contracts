@@ -1,0 +1,146 @@
+/* The verifier token: a covenant that holds the reissuance token of an
+ * OpenDAMP asset's verifier asset V, and reissues V only in the verifier
+ * amount and only into the verifier covenant it last recorded.
+ *
+ * OpenDAMP's confinement rests on one invariant no covenant of the asset can
+ * check: the verifier amount of V never exists outside a verifier covenant.
+ * A halt burns V, and V's reissuance token is what resumes the asset. Held in
+ * a wallet, that token can mint V to any address, which bypasses the policy
+ * of every holder. Held here, it can mint V only to a script that the chain
+ * has already shown holding the verifier amount of V.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(params ‖ state)))
+ *
+ * This program is the only spendable leaf. Its parameters and its state sit in
+ * the data leaf beside it, in this order:
+ *
+ *   VERIFIER_ASSET  V, the asset the token reissues
+ *   TOKEN           V's reissuance token, the coin's own asset
+ *   AMOUNT          q, the amount of V a verifier covenant holds
+ *   ISSUER_KEY      the asset's issuer update key, which signs every spend
+ *   VERIFIER        state: SHA256 of the scriptPubKey of the verifier covenant
+ *                   a resume mints into
+ *
+ * Every path re-creates the coin, at the output whose index is this input's:
+ * this same program, the same parameters, the token's whole amount,
+ * explicitly and with no nonce.
+ *
+ * Paths, chosen by the witness PATH:
+ *   resume  ISSUER_KEY reissues exactly AMOUNT of V on this input, input 0,
+ *           explicitly, into output 1, which pays it explicitly and with no
+ *           nonce to the script VERIFIER names. The transaction has at most six
+ *           outputs, each with an explicit asset, and none but output 1
+ *           carries V. Signed over the whole transaction (sig_all_hash).
+ *   record  ISSUER_KEY records the script of input 0 as VERIFIER. Input 0
+ *           holds exactly AMOUNT of V explicitly, which by the invariant makes
+ *           it a verifier covenant; this coin is input 1, its successor output
+ *           1, with no issuance on this input. A halt records the verifier it
+ *           burns, so a resume restores the policy that was halted. Signed
+ *           over the whole transaction.
+ */
+// include output_reader
+
+/* The data leaf's hash over the parameters and the state, in the template's order. */
+fn data_leaf(v: u256, token: u256, amount: u64, issuer: Pubkey, verifier: u256) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, v);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, token);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, amount);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, issuer);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, verifier);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Output i is this program holding the token's whole `held`, recording `verifier`. */
+fn successor(i: u32, v: u256, token: u256, amount: u64, issuer: Pubkey, verifier: u256, held: u64) {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), data_leaf(v, token, amount, issuer, verifier));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    out_require(i, token, held, jet::sha_256_ctx_8_finalize(ctx));
+}
+
+/* Output i, if it exists, has an explicit asset other than V. */
+fn not_v(i: u32, v: u256) {
+    match jet::output_asset(i) {
+        None => (),
+        Some(a: Asset1) => match a {
+            Left(blinded: (u1, u256)) => panic!(),
+            Right(id: u256) => match jet::eq_256(id, v) {
+                true => panic!(),
+                false => (),
+            },
+        },
+    };
+}
+
+fn resume(v: u256, token: u256, amount: u64, issuer: Pubkey, verifier: u256, held: u64, sig: Signature) {
+    assert!(jet::eq_32(jet::current_index(), 0));
+
+    // A reissuance of V on this input, of exactly AMOUNT, explicitly.
+    assert!(unwrap(unwrap(jet::issuance(0))));
+    assert!(jet::eq_256(unwrap(unwrap(jet::issuance_asset(0))), v));
+    let x: u64 = match unwrap(jet::current_issuance_asset_amount()) {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    assert!(jet::eq_64(x, amount));
+
+    successor(0, v, token, amount, issuer, verifier, held);
+    // Output 1: AMOUNT of V to the recorded verifier covenant.
+    out_require(1, v, amount, verifier);
+    // No other output takes V, and every one shows its asset.
+    assert!(jet::le_32(jet::num_outputs(), 6));
+    not_v(2, v);
+    not_v(3, v);
+    not_v(4, v);
+    not_v(5, v);
+
+    jet::bip_0340_verify((issuer, jet::sig_all_hash()), sig);
+}
+
+fn record(v: u256, token: u256, amount: u64, issuer: Pubkey, held: u64, sig: Signature) {
+    assert!(jet::eq_32(jet::current_index(), 1));
+    // No issuance on this input.
+    assert!(is_none::<bool>(unwrap(jet::issuance(1))));
+
+    // Input 0 holds exactly AMOUNT of V, explicitly.
+    let (a0, v0): (Asset1, Amount1) = unwrap(jet::input_amount(0));
+    let id0: u256 = match a0 {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    let x0: u64 = match v0 {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    assert!(jet::eq_256(id0, v));
+    assert!(jet::eq_64(x0, amount));
+
+    // Its script is the next VERIFIER.
+    successor(1, v, token, amount, issuer, unwrap(jet::input_script_hash(0)), held);
+    jet::bip_0340_verify((issuer, jet::sig_all_hash()), sig);
+}
+
+fn main() {
+    let v: u256 = witness::VERIFIER_ASSET;
+    let token: u256 = witness::TOKEN;
+    let amount: u64 = witness::AMOUNT;
+    let issuer: Pubkey = witness::ISSUER_KEY;
+    let verifier: u256 = witness::VERIFIER;
+
+    // The parameters and the state are the data leaf's.
+    assert!(jet::eq_256(data_leaf(v, token, amount, issuer, verifier), unwrap(jet::tappath(0))));
+
+    // The coin holds the token, explicitly.
+    let (held_asset, held): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held_asset, token));
+
+    match witness::PATH {
+        Left(r: ()) => resume(v, token, amount, issuer, verifier, held, witness::RESUME_SIG),
+        Right(c: ()) => record(v, token, amount, issuer, held, witness::RECORD_SIG),
+    }
+}

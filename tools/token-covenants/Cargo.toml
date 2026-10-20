@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 publish = false
-description = "Builds and signs spends of the covenants that hold an asset's reissuance token: the supply cap."
+description = "Builds and signs spends of the covenants that hold an asset's reissuance token: the supply cap and the verifier token."
 
 [[bin]]
 name = "token-covenants"
