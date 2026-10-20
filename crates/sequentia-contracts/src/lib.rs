@@ -11,6 +11,7 @@
 pub mod attestation;
 pub mod descriptor;
 pub mod lint;
+pub mod pool;
 pub mod simplex;
 
 use std::collections::HashMap;

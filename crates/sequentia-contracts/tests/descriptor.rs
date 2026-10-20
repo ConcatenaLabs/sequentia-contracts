@@ -322,13 +322,16 @@ fn expanded_sources(dir: &Path, d: &Descriptor) -> BTreeMap<String, String> {
 
 #[test]
 fn every_template_validates_from_its_sources_as_text() {
+    let mut with_programs = 0;
     for dir in descriptor_dirs() {
         let d = Descriptor::load(&dir.join("descriptor.json")).unwrap();
         let sources = expanded_sources(&dir, &d);
-        assert!(!sources.is_empty(), "{}", dir.display());
+        // A tree of tapscript leaves alone (pool_split_tap3) has no source.
+        with_programs += usize::from(!sources.is_empty());
         d.validate_sources(&sources)
             .unwrap_or_else(|e| panic!("{}: {e}", dir.display()));
     }
+    assert!(with_programs > 0);
 }
 
 #[test]
