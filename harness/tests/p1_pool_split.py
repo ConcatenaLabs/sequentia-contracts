@@ -22,6 +22,7 @@ tool itself refuses each before the chain does.
 """
 import copy
 import os
+import subprocess
 import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "lib"))
@@ -30,6 +31,7 @@ from poolsplit import *  # noqa: E402,F401,F403
 EQV = "Script failed an OP_EQUALVERIFY operation"
 VFY = "Script failed an OP_VERIFY operation"
 FALSE = "Script evaluated without error but finished with a false/empty top stack element"
+TOOL = os.path.join(REPO_ROOT, "tools", "pool-claim", "pool_claim.py")
 
 
 def _coin_of(u):
@@ -43,6 +45,14 @@ class P1(SimBase, BitcoinTestFramework):
 
     def set_test_params(self):
         self.chain_params()
+
+    def cli(self):
+        return "%s -datadir=%s" % (os.environ["BITCOINCLI"], self.node.datadir)
+
+    def tool(self, *args):
+        p = subprocess.run([sys.executable, TOOL] + list(args), capture_output=True, text=True,
+                           env=dict(os.environ, SEQC=SEQC))
+        return p.returncode, p.stdout, p.stderr.strip()
 
     def record(self, template, rows, denom=10000, cap=100):
         return {"pool_record": 1, "template": template, "denom": denom, "withhold_cap_bp": cap,
@@ -237,6 +247,24 @@ class P1(SimBase, BitcoinTestFramework):
                 ("bob (P2PKH)", bytes.fromhex(node.getaddressinfo(node.getnewaddress("", "legacy"))["scriptPubKey"]), 3500)]
         pool = self.run_template("sequentia/pool-split", "simplicity", rows)
         self.run_template("sequentia/pool-split-tap3", "tapscript", rows)
+
+        # The command line: an address with no node, a claim the tool refuses.
+        with open(os.path.join(self.options.tmpdir, "pool.json"), "w") as f:
+            json.dump(self.record("sequentia/pool-split", rows), f)
+        rc, out, err = self.tool("address", "--record", f.name, "--chain-name", "elementsregtest")
+        assert rc == 0 and json.loads(out)["address"] == pool.address("elementsregtest"), (rc, out, err)
+        t = self.pay(pool, 5 * 10 ** 7, self.POL)
+        self.generate(node, 1)
+        rc, out, err = self.tool("claim", "--record", f.name, "--cli", self.cli(), "--maturity", "100",
+                                 "--keep", str(10 ** 6), "--claimer", node.getnewaddress(), "--dry-run")
+        assert rc == 3 and "withheld over the cap" in err, (rc, out, err)
+        self.rec("cli/claim_refused_over_the_cap", {"exit": rc, "stderr": err})
+        rc, out, err = self.tool("claim", "--record", f.name, "--cli", self.cli(), "--maturity", "100")
+        assert rc == 0, (rc, out, err)
+        res = json.loads(out)
+        self.generate(node, 1)
+        assert node.getrawtransaction(res["broadcast"], True)["confirmations"] == 1
+        self.rec("cli/claim", res)
 
         for n in (10, 20, 63):
             self.sizes(n)

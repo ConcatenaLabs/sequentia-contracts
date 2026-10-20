@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
-"""Claims of the pool split covenant: build one, and check one.
+"""pool-claim: claim a staking pool's payouts held by the pool split covenant.
 
-A pool that sets its payout script to the covenant's address has every block's
-reward paid there, in whatever asset the block's fees were paid, and anyone can
-claim those coins into the pool's fixed shares, exact to the atom
-(docs/pool-split.md). This module builds such a claim from the pool's record and
-checks a claim against the rule and the chain:
+A pool that sets its payout script to the covenant's address
+(`announcepayout direct ... payout_script=<script>`, or the address) has every
+block's reward paid there, in whatever asset the block's fees were paid. Anyone
+can claim those coins into the pool's fixed shares, exact to the atom. This tool
+does it from the pool's record:
 
-    pool = Pool(record)                      # the record, checked; its instance
-    claim = Claim(pool, coins, genesis)      # coins of one asset at the pool's script
-    tx = claim.make(rpc)                     # the fee at the node's floor, witnesses set
-    verify(pool, tx, rpc, maturity)          # raises Refused, naming the reason
+    pool_claim.py address --record pool.json
+    pool_claim.py status  --record pool.json --cli "sequentia-cli -datadir=..."
+    pool_claim.py claim   --record pool.json --cli "..." [--asset A] [--coin TXID:N ...]
+                          [--fee-rate R] [--keep N --claimer ADDRESS] [--dry-run]
+    pool_claim.py verify  --record pool.json --cli "..." --tx HEX
 
-`rpc(method, *args)` is any way to call the node. The record is JSON:
+`address` needs no node. The others reach the node through `sequentia-cli`
+(`--cli` is the command line to run it, with whatever -datadir, -chain or
+-rpcwallet it needs). `claim` refuses, before the chain does, a coin that is not
+yet mature, a withheld amount over the cap, and any output that differs from
+the share the rule gives; `verify` checks a claim someone else built the same
+way.
+
+The record is JSON:
 
     {"pool_record": 1,
      "template": "sequentia/pool-split",          (or "sequentia/pool-split-tap3")
@@ -25,9 +33,10 @@ Row 0 is the pool's own row: it is paid its share and every rounding remainder.
 Each row names a `script` or an `address` (resolved through the node). The
 numerators are positive and sum to `denom`, which is below 2^31.
 
-It needs Python 3 alone, and `seqc` from this repository for a Simplicity claim
-(default `target/release/seqc`).
+The tool needs Python 3 alone, and `seqc` from this repository for a Simplicity
+claim (`--seqc`, default `target/release/seqc`).
 """
+import argparse
 import hashlib
 import io
 import json
@@ -578,8 +587,8 @@ def verify(pool, tx, rpc, maturity):
         if c.txout.asset != asset or c.txout.value is None:
             raise Refused("input %d is a coin of the pool in another asset, or confidential" % i)
         if not mature(c, maturity):
-            raise Refused("input %d (%s) is an immature coinbase coin: %d of %d confirmations, counting the next "
-                          "block" % (i, c.outpoint(), c.confirmations, maturity))
+            raise Refused("input %d (%s) is an immature coinbase coin: %d confirmations, and a claim in the next "
+                          "block needs %d" % (i, c.outpoint(), c.confirmations, maturity))
         collected += c.txout.value
     if len(tx.vout) < len(pool.rows):
         raise Refused("the claim has %d outputs for %d rows" % (len(tx.vout), len(pool.rows)))
@@ -608,3 +617,123 @@ def verify(pool, tx, rpc, maturity):
             raise Refused("the witness states another withheld amount than the outputs leave")
     return {"asset": display_asset(asset), "coins": len(mine), "collected": collected, "withheld": withheld,
             "cap": pool.cap(collected), "payouts": [{"row": pool.rows[i][2], "amount": a} for i, a in enumerate(paid)]}
+
+
+# ---------------------------------------------------------------------------
+# Command line
+# ---------------------------------------------------------------------------
+
+def load_pool(path, rpc=None):
+    with open(path) as f:
+        record = json.load(f)
+    resolve = None
+    if rpc is not None:
+        resolve = lambda a: rpc("validateaddress", a)["scriptPubKey"]
+    return Pool(record, resolve)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    def common(p, node=True):
+        p.add_argument("--record", required=True, help="the pool's record (JSON)")
+        if node:
+            p.add_argument("--cli", required=True, help="the sequentia-cli command line, with its options")
+            p.add_argument("--maturity", type=int, help="coinbase maturity on a custom chain")
+
+    p = sub.add_parser("address", help="the covenant's address and instance")
+    common(p, node=False)
+    p.add_argument("--chain-name", default="sequentia-testnet")
+    p = sub.add_parser("status", help="the pool's coins, mature and not")
+    common(p)
+    p = sub.add_parser("claim", help="build, check and broadcast a claim")
+    common(p)
+    p.add_argument("--asset", help="the asset to claim (display hex); default: the one with the most mature value")
+    p.add_argument("--coin", action="append", default=[], help="TXID:N, a coin to claim (repeatable); default: every mature coin of the asset")
+    p.add_argument("--fee-rate", type=Decimal, help="atoms of the asset per vbyte (default: the node's floor)")
+    p.add_argument("--keep", default="0", help="atoms the claimer keeps, within the cap; \"max\" keeps all the cap leaves beyond the fee")
+    p.add_argument("--claimer", help="the claimer's address, with --keep")
+    p.add_argument("--seqc", help="the seqc binary (default: this repository's target/release/seqc)")
+    p.add_argument("--dry-run", action="store_true", help="build and check, broadcast nothing")
+    p = sub.add_parser("verify", help="check a claim transaction")
+    common(p)
+    p.add_argument("--tx", required=True, help="the claim, raw hex")
+    a = ap.parse_args(argv)
+
+    try:
+        if a.cmd == "address":
+            pool = load_pool(a.record)
+            print(json.dumps({"address": pool.address(a.chain_name), "script_pubkey": pool.script_pubkey.hex(),
+                              "template": pool.template_name, "instance": pool.instance()}, indent=1))
+            return 0
+        rpc = cli_rpc(a.cli)
+        pool = load_pool(a.record, rpc)
+        maturity = chain_maturity(rpc, a.maturity)
+        if a.cmd == "status":
+            coins = pool_coins(rpc, pool)
+            out = {}
+            for c in coins:
+                k = display_asset(c.txout.asset) if c.txout.asset else "confidential"
+                e = out.setdefault(k, {"mature": 0, "immature": 0, "coins": 0})
+                e["coins"] += 1
+                e["mature" if mature(c, maturity) else "immature"] += c.txout.value or 0
+            print(json.dumps({"address_script": pool.script_pubkey.hex(), "maturity": maturity, "assets": out}, indent=1))
+            return 0
+        if a.cmd == "verify":
+            print(json.dumps(verify(pool, Tx.parse(a.tx), rpc, maturity), indent=1))
+            return 0
+        # claim
+        if a.coin:
+            coins = []
+            for spec in a.coin:
+                txid, n = spec.split(":")
+                c = fetch_coin(rpc, txid, int(n))
+                if c is None:
+                    raise Refused("%s is not an unspent coin" % spec)
+                if not mature(c, maturity):
+                    raise Refused("%s is an immature coinbase coin: %d confirmations, and a claim in the next "
+                                  "block needs %d" % (spec, c.confirmations, maturity))
+                coins.append(c)
+        else:
+            every = [c for c in pool_coins(rpc, pool) if c.txout.asset and c.txout.value is not None]
+            ready = [c for c in every if mature(c, maturity)]
+            if a.asset:
+                ready = [c for c in ready if display_asset(c.txout.asset) == a.asset]
+            elif ready:
+                by = {}
+                for c in ready:
+                    by[c.txout.asset] = by.get(c.txout.asset, 0) + c.txout.value
+                best = max(by, key=by.get)
+                ready = [c for c in ready if c.txout.asset == best]
+            if not ready:
+                raise Refused("no mature coin to claim (%d coins at the address, maturity %d)" % (len(every), maturity))
+            ready.sort(key=lambda c: (-c.txout.value, c.txid, c.vout))
+            coins = ready[:MAX_INPUTS[pool.template_name]]
+        claimer = bytes.fromhex(rpc("validateaddress", a.claimer)["scriptPubKey"]) if a.claimer else None
+        keep = a.keep if a.keep == "max" else int(a.keep)
+        claim = Claim(pool, coins, rpc("getblockhash", 0), keep, claimer, a.seqc)
+        tx = claim.make(rpc, a.fee_rate)
+        summary = verify(pool, tx, rpc, maturity)
+        test = rpc("testmempoolaccept", [tx.hex()])[0]
+        summary.update({"txid": tx.txid(), "vsize": rpc("decoderawtransaction", tx.hex())["vsize"],
+                        "fee": claim.withheld - claim.keep, "kept": claim.keep,
+                        "accepted": bool(test.get("allowed")), "reject-reason": test.get("reject-reason")})
+        if claim.cost is not None:
+            summary.update({"cost_wu": claim.cost, "budget_wu": claim.budget, "annex_pad": claim.annex_pad})
+        if not test.get("allowed"):
+            print(json.dumps(summary, indent=1))
+            raise Refused("the node refuses the claim: %s" % test.get("reject-reason"))
+        if not a.dry_run:
+            summary["broadcast"] = rpc("sendrawtransaction", tx.hex())
+        else:
+            summary["hex"] = tx.hex()
+        print(json.dumps(summary, indent=1))
+        return 0
+    except Refused as e:
+        print("refused: %s" % e, file=sys.stderr)
+        return 3
+
+
+if __name__ == "__main__":
+    sys.exit(main())
