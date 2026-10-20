@@ -1,0 +1,117 @@
+/* The supply cap: a covenant that holds an asset's reissuance token and lets an
+ * operator mint the asset only while the total minted through it stays at or
+ * under a cap fixed when the covenant is made.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(params ‖ state)))
+ *
+ * This program is the only spendable leaf. Its parameters and its state sit in
+ * the data leaf beside it, in this order:
+ *
+ *   ASSET         the asset the token reissues
+ *   TOKEN         the reissuance token, the coin's own asset
+ *   OPERATOR_KEY  the key that signs mints
+ *   COLD_KEY      the key that moves the covenant to new keys
+ *   CAP           the most ever minted through the covenant, in ASSET's atoms
+ *   MINTED        state: the total minted through the covenant so far
+ *
+ * The spender gives them in the witness and the program checks them against
+ * the data leaf, which consensus has bound to the output through the control
+ * block. Both paths re-create the coin at output 0: this same program, the same
+ * ASSET, TOKEN and CAP, the token's whole amount, explicitly and with no nonce.
+ * The coin must be input 0, so two coins cannot share one successor.
+ *
+ * Paths, chosen by the witness PATH:
+ *   mint   OPERATOR_KEY reissues ASSET on this input, in an explicit amount.
+ *          MINTED grows by it and may not pass CAP. Signed over the whole
+ *          transaction (sig_all_hash).
+ *   rekey  COLD_KEY moves the coin to the keys NEW_OPERATOR_KEY and
+ *          NEW_COLD_KEY, with MINTED and CAP unchanged and no issuance on this
+ *          input: a lost or stolen operator key is replaced, and nothing can
+ *          take the token out or raise the cap. Signed over the whole
+ *          transaction.
+ * No path releases the token and no path lowers MINTED, so whatever key is
+ * stolen, at most CAP is ever minted through the covenant.
+ */
+// include output_reader
+
+/* The data leaf's hash over the parameters and the state, in the template's order. */
+fn data_leaf(asset: u256, token: u256, keys: (Pubkey, Pubkey), cap: u64, minted: u64) -> u256 {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, token);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, cold);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, cap);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, minted);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Output 0 is this program holding the token's whole `amount`, with `keys` and `minted`. */
+fn successor(asset: u256, token: u256, keys: (Pubkey, Pubkey), cap: u64, minted: u64, amount: u64) {
+    let root: u256 = jet::build_tapbranch(jet::tapleaf_hash(), data_leaf(asset, token, keys, cap, minted));
+    let key: u256 = jet::build_taptweak(jet::internal_key(), root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    out_require(0, token, amount, jet::sha_256_ctx_8_finalize(ctx));
+}
+
+/* a + b; refuses a sum that overflows. */
+fn plus(a: u64, b: u64) -> u64 {
+    let (carry, s): (bool, u64) = jet::add_64(a, b);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    s
+}
+
+fn mint(asset: u256, token: u256, keys: (Pubkey, Pubkey), cap: u64, minted: u64, amount: u64, sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+
+    // A reissuance of the asset on this input, of an explicit amount.
+    assert!(unwrap(unwrap(jet::issuance(0))));
+    assert!(jet::eq_256(unwrap(unwrap(jet::issuance_asset(0))), asset));
+    let x: u64 = match unwrap(jet::current_issuance_asset_amount()) {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+
+    // The total minted through the covenant stays at or under the cap.
+    let total: u64 = plus(minted, x);
+    assert!(jet::le_64(total, cap));
+
+    successor(asset, token, keys, cap, total, amount);
+    jet::bip_0340_verify((operator, jet::sig_all_hash()), sig);
+}
+
+fn rekey(asset: u256, token: u256, keys: (Pubkey, Pubkey), cap: u64, minted: u64, amount: u64, new_keys: (Pubkey, Pubkey), sig: Signature) {
+    let (operator, cold): (Pubkey, Pubkey) = keys;
+    // No issuance on this input.
+    assert!(is_none::<bool>(unwrap(jet::issuance(0))));
+    successor(asset, token, new_keys, cap, minted, amount);
+    jet::bip_0340_verify((cold, jet::sig_all_hash()), sig);
+}
+
+fn main() {
+    let asset: u256 = witness::ASSET;
+    let token: u256 = witness::TOKEN;
+    let keys: (Pubkey, Pubkey) = (witness::OPERATOR_KEY, witness::COLD_KEY);
+    let cap: u64 = witness::CAP;
+    let minted: u64 = witness::MINTED;
+
+    // The parameters and the state are the data leaf's.
+    assert!(jet::eq_256(data_leaf(asset, token, keys, cap, minted), unwrap(jet::tappath(0))));
+
+    // One coin per transaction: this input is input 0, and its successor output 0.
+    assert!(jet::eq_32(jet::current_index(), 0));
+
+    // The coin holds the token, explicitly.
+    let (held, amount): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, token));
+
+    match witness::PATH {
+        Left(m: ()) => mint(asset, token, keys, cap, minted, amount, witness::OPERATOR_SIG),
+        Right(r: ()) => rekey(asset, token, keys, cap, minted, amount, (witness::NEW_OPERATOR_KEY, witness::NEW_COLD_KEY), witness::COLD_SIG),
+    }
+}

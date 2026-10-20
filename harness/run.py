@@ -44,6 +44,8 @@ TESTS = [
     ("p2", "p2_pool_split_pos", "The pool split covenant as a pool's payout script on a proof-of-stake chain, maturity 1,000"),
     ("m1", "m1_mint_limiter", "The mint limiter: mints within a window's allowance, the window's reset, the brake and the recovery"),
     ("m2", "m2_mint_limiter_tool", "The mint-limiter tool: every path it builds is mined, and each is read back"),
+    ("u1", "u1_supply_cap", "The supply cap: mints up to the cap on each side of a rekey, the retirement; every violation refused"),
+    ("u2", "u2_supply_cap_tool", "The token-covenants tool's supply cap: every path it builds is mined, and each is read back"),
     ("l1", "l1_pignus_vault", "The Pignus vault and offer, version 2: a loan above version 1's limit taken, topped up, repaid and liquidated in part, called, recovered; every violation refused"),
     ("l2", "l2_pignus_vault_threshold", "The Pignus vault and offer under three oracles: a 2-of-3 loan taken and liquidated with two signatures, refused with one; every violation refused"),
     ("c1", "c1_capped_sale", "The capped sale: purchases within each buyer's cap at any input index, a full buy and the reclaim; every violation refused"),
@@ -75,7 +77,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, l1, l2, c1, b1, e1, s1c, s1d); default all but s1c and s1d")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, u1, u2, l1, l2, c1, b1, e1, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "
@@ -84,7 +86,7 @@ def main():
     ap.add_argument("--ceilings", action="store_true", help="also run the slow S1 ceiling tests")
     ap.add_argument("--tmpdir", default=os.path.join(HARNESS, "tmp"),
                     help="where node data directories go (removed after a passing test)")
-    ap.add_argument("--no-build", action="store_true", help="use the seqc and the mint-limiter tool already built")
+    ap.add_argument("--no-build", action="store_true", help="use the seqc and the tools already built")
     a = ap.parse_args()
 
     repo = os.path.abspath(a.node_repo)
@@ -106,6 +108,10 @@ def main():
         if any(t[0] == "m2" for t in chosen) and not os.environ.get("MINT_LIMITER"):
             subprocess.check_call(["cargo", "build", "--release", "--locked", "--manifest-path",
                                    os.path.join(ROOT, "tools", "mint-limiter", "Cargo.toml")], cwd=ROOT)
+        # u2 drives the token-covenants tool, which builds in its own workspace too.
+        if any(t[0] == "u2" for t in chosen) and not os.environ.get("TOKEN_COVENANTS"):
+            subprocess.check_call(["cargo", "build", "--release", "--locked", "--manifest-path",
+                                   os.path.join(ROOT, "tools", "token-covenants", "Cargo.toml")], cwd=ROOT)
     seqc = os.path.join(ROOT, "target", "release", "seqc")
 
     os.makedirs(a.tmpdir, exist_ok=True)

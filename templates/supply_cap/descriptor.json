@@ -1,0 +1,196 @@
+{
+  "descriptor": 2,
+  "template": {
+    "budget": {
+      "max": 4000050,
+      "offset": 50,
+      "per_witness_byte": 4
+    },
+    "internal_key": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "name": "sequentia/supply-cap",
+    "params": [
+      {
+        "label": "Asset the token mints",
+        "name": "ASSET",
+        "role": "asset",
+        "type": "u256"
+      },
+      {
+        "label": "Reissuance token held by the covenant",
+        "name": "TOKEN",
+        "role": "asset",
+        "type": "u256"
+      },
+      {
+        "label": "Operator key, which signs mints",
+        "name": "OPERATOR_KEY",
+        "role": "pubkey",
+        "type": "Pubkey"
+      },
+      {
+        "label": "Cold key, which moves the covenant to new keys",
+        "name": "COLD_KEY",
+        "role": "pubkey",
+        "type": "Pubkey"
+      },
+      {
+        "label": "Most ever minted through the covenant, in the asset",
+        "name": "CAP",
+        "role": "amount",
+        "type": "u64"
+      }
+    ],
+    "paths": [
+      {
+        "effect": "Reissues ASSET on input 0, in an explicit amount, and re-creates the covenant at output 0 with the token's whole amount and MINTED raised by that amount. MINTED may not exceed CAP. Signed by OPERATOR_KEY over the whole transaction.",
+        "leaf": "cap",
+        "name": "mint",
+        "who": "the holder of OPERATOR_KEY"
+      },
+      {
+        "effect": "Re-creates the covenant at output 0 with the token's whole amount, the same ASSET, TOKEN, CAP and MINTED, and the operator and cold keys the spender names, with no issuance on input 0. It replaces a lost or stolen key; it cannot release the token or raise the cap. Signed by COLD_KEY over the whole transaction.",
+        "leaf": "cap",
+        "name": "rekey",
+        "who": "the holder of COLD_KEY"
+      }
+    ],
+    "slots": [
+      {
+        "label": "Minted through the covenant so far",
+        "name": "MINTED",
+        "role": "amount",
+        "type": "u64"
+      }
+    ],
+    "summary": "Holds an asset's reissuance token: the operator mints only while the total minted through it stays at or under a cap fixed when it is made, and a cold key can move it to new keys but never take the token out or raise the cap.",
+    "tree": {
+      "branch": [
+        {
+          "leaf": "cap",
+          "simplicity": {
+            "cmr": "0aed255053fdcafd962c95a23c96d10c684589e5a910f6ab1bd95196b936f421",
+            "compiler": {
+              "name": "simplicityhl",
+              "version": "0.7.2"
+            },
+            "max_cost_wu": 525,
+            "source": "supply_cap.simf",
+            "source_sha256": "fc1778a769609c53d5f9b009c56c1c2f90f3c4055743d62813762cd6697ff883",
+            "witness": [
+              {
+                "name": "ASSET",
+                "source": "param:ASSET",
+                "type": "u256"
+              },
+              {
+                "name": "TOKEN",
+                "source": "param:TOKEN",
+                "type": "u256"
+              },
+              {
+                "name": "OPERATOR_KEY",
+                "source": "param:OPERATOR_KEY",
+                "type": "Pubkey"
+              },
+              {
+                "name": "COLD_KEY",
+                "source": "param:COLD_KEY",
+                "type": "Pubkey"
+              },
+              {
+                "name": "CAP",
+                "source": "param:CAP",
+                "type": "u64"
+              },
+              {
+                "name": "MINTED",
+                "source": "slot:MINTED",
+                "type": "u64"
+              },
+              {
+                "name": "PATH",
+                "source": "spender",
+                "type": "Either<(), ()>"
+              },
+              {
+                "name": "OPERATOR_SIG",
+                "source": "signature:sig_all_hash:OPERATOR_KEY",
+                "type": "Signature"
+              },
+              {
+                "name": "NEW_OPERATOR_KEY",
+                "source": "spender",
+                "type": "Pubkey"
+              },
+              {
+                "name": "NEW_COLD_KEY",
+                "source": "spender",
+                "type": "Pubkey"
+              },
+              {
+                "name": "COLD_SIG",
+                "source": "signature:sig_all_hash:COLD_KEY",
+                "type": "Signature"
+              }
+            ]
+          }
+        },
+        {
+          "data": [
+            "ASSET",
+            "TOKEN",
+            "OPERATOR_KEY",
+            "COLD_KEY",
+            "CAP",
+            "MINTED"
+          ],
+          "leaf": "state"
+        }
+      ]
+    },
+    "version": 1
+  },
+  "template_hash": "f93a2bffc93db5280ef17f6dc09e99fdee5e4253ccc152afdbebe135265b900d",
+  "chains": [
+    {
+      "name": "sequentia-testnet",
+      "genesis": "ddd11d54c87a2bd94400fd31ce05d8e1110bb4b78e7103f738342086fc4ea92e",
+      "bech32_hrp": "tb"
+    },
+    {
+      "name": "elementsregtest",
+      "genesis": null,
+      "bech32_hrp": "ert"
+    }
+  ],
+  "measured": {
+    "source": "harness/records/u1.json",
+    "mint": {
+      "transaction": "the covenant as input 0 reissuing, one wallet coin paying the fee in an issued asset; the successor, the minted output, the change and the fee",
+      "vsize": 765,
+      "weight": 3057,
+      "program_bytes": 935,
+      "witness_bytes": 209,
+      "cost_bound_wu": 525,
+      "budget_wu": 5042
+    },
+    "rekey": {
+      "transaction": "the covenant as input 0 and a fee coin; the successor under new keys, the change and the fee",
+      "vsize": 610,
+      "weight": 2439,
+      "program_bytes": 817,
+      "witness_bytes": 273,
+      "cost_bound_wu": 495,
+      "budget_wu": 4834
+    },
+    "retire": {
+      "transaction": "the same rekey, to the NUMS point for both keys",
+      "vsize": 601,
+      "weight": 2404,
+      "program_bytes": 816,
+      "witness_bytes": 241,
+      "cost_bound_wu": 495,
+      "budget_wu": 4694
+    }
+  }
+}
