@@ -225,6 +225,29 @@ class PoolSplit(unittest.TestCase):
                 self.assertEqual([str(x) for x in sa.pool_split_payouts(*args)], p["outputs"], p["name"])
 
 
+class CappedSale(unittest.TestCase):
+    def test_allocation_tree_and_payment_agree_with_their_vectors(self):
+        v = json.loads(read(os.path.join(ROOT, "templates", "capped_sale", "allocations.json")))
+        self.assertEqual(v["depth"], sa.CAPPED_SALE_DEPTH)
+        self.assertTrue(v["trees"] and v["payments"] and v["refusals"])
+        for t in v["trees"]:
+            e = [(bytes.fromhex(x["key"]), int(x["cap"]), int(x["bought"])) for x in t["entries"]]
+            self.assertEqual(sa.capped_sale_root(e).hex(), t["root"], t["name"])
+            for p in t["proofs"]:
+                self.assertEqual(sa.capped_sale_leaf(*e[p["index"]]).hex(), p["leaf"], t["name"])
+                got = [{"sibling": s.hex(), "sibling_is_left": l} for s, l in sa.capped_sale_proof(e, p["index"])]
+                self.assertEqual(got, p["proof"], t["name"])
+        for p in v["payments"]:
+            self.assertEqual(str(sa.capped_sale_payment(int(p["amount"]), int(p["num"]), int(p["den"]))), p["payment"])
+        for r in v["refusals"]:
+            e = [(bytes.fromhex(x["key"]), int(x["cap"]), int(x["bought"])) for x in r["entries"]]
+            with self.assertRaisesRegex(ValueError, r["reason"]):
+                sa.capped_sale_root(e)
+        for r in v["payment_refusals"]:
+            with self.assertRaisesRegex(ValueError, r["reason"]):
+                sa.capped_sale_payment(int(r["amount"]), int(r["num"]), int(r["den"]))
+
+
 class PignusVault(unittest.TestCase):
     def test_liquidation_rule_agrees_with_its_vectors(self):
         v = json.loads(read(os.path.join(ROOT, "templates", "pignus_vault", "rules.json")))

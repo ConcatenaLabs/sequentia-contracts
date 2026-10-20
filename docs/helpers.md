@@ -109,9 +109,14 @@ spender defeats them with an old coin of their own; the lints refuse them.
 | `merkle_leaf(data) -> u256` | `SHA256(0x00 \|\| data)` |
 | `merkle_node(left, right) -> u256` | `SHA256(0x01 \|\| left \|\| right)` |
 | `merkle_root_8(leaf, proof)`, `merkle_root_16(leaf, proof)` | Folds a proof of `(sibling, sibling_is_left)` pairs, leaf first |
+| `merkle_update_16(old_leaf, new_leaf, proof) -> (u256, u256)` | Folds one 16-level proof over two leaves at once: the roots before and after that one leaf changes, every other leaf the same in both |
 
 The distinct prefixes keep a leaf from passing for an inner node. A proof's
 depth is fixed by the template, so every position costs the same.
+`merkle_update_16` is how a contract keeps a table in its state and changes
+one row: it checks the old root against the state and carries the new one
+into its successor, and since both come from one proof no other row can move
+(`templates/capped_sale` runs it on every purchase).
 
 ### `fee_cap`
 

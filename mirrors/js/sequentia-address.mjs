@@ -823,3 +823,82 @@ export function pignusVaultLiquidation({ collateral, debt, lastTime, time, price
   if (!full && (d - r) * liq * u > k * pr * 10000n) throw new Error('leaves the vault unhealthy');
   return { repaid: r, seized, closes: full, debtAfter: full ? 0n : d - r, lastTimeAfter: Number(time) };
 }
+
+// ---------------------------------------------------------------------------
+// The capped sale (templates/capped_sale): the allocation tree
+// ---------------------------------------------------------------------------
+
+export const CAPPED_SALE_DEPTH = 16;
+const U64 = 1n << 64n;
+const be8 = (v) => { const b = Buffer.alloc(8); b.writeBigUInt64BE(v); return b; };
+
+// A buyer's leaf: SHA256(0x00 || SHA256(key || cap || bought)), the cap and
+// the amount bought as 8-byte big-endian atoms of the token.
+export function cappedSaleLeaf(key, cap, bought) {
+  const k = Buffer.from(key);
+  const c = BigInt(cap);
+  const b = BigInt(bought);
+  if (k.length !== 32) throw new Error("a buyer's key is 32 bytes");
+  for (const v of [c, b]) if (v < 0n || v >= U64) throw new Error('a cap or an amount bought is a 64-bit number');
+  if (b > c) throw new Error('bought more than the cap');
+  const data = createHash('sha256').update(Buffer.concat([k, be8(c), be8(b)])).digest();
+  return createHash('sha256').update(Buffer.concat([Buffer.from([0]), data])).digest();
+}
+
+const saleNode = (l, r) => createHash('sha256').update(Buffer.concat([Buffer.from([1]), l, r])).digest();
+
+function saleLevels(entries) {
+  if (entries.length > 2 ** CAPPED_SALE_DEPTH) throw new Error('an allocation list holds at most 65536 buyers');
+  const seen = new Set();
+  for (const [k] of entries) {
+    const h = Buffer.from(k).toString('hex');
+    if (seen.has(h)) throw new Error('a key is on the allocation list twice');
+    seen.add(h);
+  }
+  const empty = [cappedSaleLeaf(Buffer.alloc(32), 0n, 0n)];
+  for (let l = 0; l < CAPPED_SALE_DEPTH; l++) empty.push(saleNode(empty[l], empty[l]));
+  let level = new Map(entries.map(([k, c, b], i) => [i, cappedSaleLeaf(k, c, b)]));
+  const levels = [level];
+  for (let l = 0; l < CAPPED_SALE_DEPTH; l++) {
+    const next = new Map();
+    for (const i of level.keys()) {
+      const p = i >> 1;
+      if (!next.has(p)) next.set(p, saleNode(level.get(2 * p) ?? empty[l], level.get(2 * p + 1) ?? empty[l]));
+    }
+    level = next;
+    levels.push(level);
+  }
+  return { levels, empty };
+}
+
+// The ALLOCATIONS slot: the root of the 16-level tree whose leaf i is entry i
+// [key, cap, bought] of the list, every other leaf the zero key's with a zero cap.
+export function cappedSaleRoot(entries) {
+  const { levels, empty } = saleLevels(entries);
+  return levels[CAPPED_SALE_DEPTH].get(0) ?? empty[CAPPED_SALE_DEPTH];
+}
+
+// The proof the purchase program folds for entry `index`: one
+// [sibling, siblingIsLeft] pair per level, leaf first.
+export function cappedSaleProof(entries, index) {
+  const { levels, empty } = saleLevels(entries);
+  if (!levels[0].has(index)) throw new Error('no buyer at that position');
+  const out = [];
+  let i = index;
+  for (let l = 0; l < CAPPED_SALE_DEPTH; l++) {
+    out.push([levels[l].get(i ^ 1) ?? empty[l], (i & 1) === 1]);
+    i >>= 1;
+  }
+  return out;
+}
+
+// The least a purchase of `amount` pays the treasury, ceil(amount * num / den),
+// as a BigInt.
+export function cappedSalePayment(amount, num, den) {
+  const a = BigInt(amount);
+  const n = BigInt(num);
+  const d = BigInt(den);
+  for (const v of [a, n, d]) if (v < 0n || v >= U64) throw new Error('an amount or a price part is a 64-bit number');
+  if (d === 0n) throw new Error("the price's denominator is zero");
+  return (a * n + d - 1n) / d;
+}

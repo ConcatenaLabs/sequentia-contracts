@@ -225,3 +225,23 @@ test('the Pignus vault liquidation rule agrees with its vectors', async () => {
     }
   }
 });
+
+test('the capped sale allocation tree and payment agree with their vectors', async () => {
+  const m = await import('./sequentia-address.mjs');
+  const v = JSON.parse(read(join(root, 'templates', 'capped_sale', 'allocations.json')));
+  assert.equal(v.depth, m.CAPPED_SALE_DEPTH);
+  assert.ok(v.trees.length > 0 && v.payments.length > 0 && v.refusals.length > 0);
+  const ents = (xs) => xs.map((x) => [Buffer.from(x.key, 'hex'), BigInt(x.cap), BigInt(x.bought)]);
+  for (const t of v.trees) {
+    const e = ents(t.entries);
+    assert.equal(m.cappedSaleRoot(e).toString('hex'), t.root, t.name);
+    for (const p of t.proofs) {
+      assert.equal(m.cappedSaleLeaf(...e[p.index]).toString('hex'), p.leaf, t.name);
+      const got = m.cappedSaleProof(e, p.index).map(([s, l]) => ({ sibling: s.toString('hex'), sibling_is_left: l }));
+      assert.deepEqual(got, p.proof, t.name);
+    }
+  }
+  for (const p of v.payments) assert.equal(String(m.cappedSalePayment(p.amount, p.num, p.den)), p.payment);
+  for (const r of v.refusals) assert.throws(() => m.cappedSaleRoot(ents(r.entries)), new RegExp(r.reason), r.name);
+  for (const r of v.payment_refusals) assert.throws(() => m.cappedSalePayment(r.amount, r.num, r.den), new RegExp(r.reason));
+});

@@ -788,3 +788,86 @@ def pignus_vault_liquidation(collateral, debt, last_time, time, price, precision
     return {"repaid": r, "seized": seized, "closes": full,
             "debt_after": 0 if full else debt - r, "last_time_after": time}
 
+
+
+# ---------------------------------------------------------------------------
+# The capped sale (templates/capped_sale): the allocation tree
+# ---------------------------------------------------------------------------
+
+CAPPED_SALE_DEPTH = 16
+CAPPED_SALE_MAX_BUYERS = 1 << CAPPED_SALE_DEPTH
+
+
+def capped_sale_leaf(key, cap, bought):
+    """A buyer's leaf: SHA256(0x00 || SHA256(key || cap || bought)), the cap
+    and the amount bought as 8-byte big-endian atoms of the token."""
+    key = bytes(key)
+    if len(key) != 32:
+        raise ValueError("a buyer's key is 32 bytes")
+    for v in (cap, bought):
+        if not 0 <= v < 1 << 64:
+            raise ValueError("a cap or an amount bought is a 64-bit number")
+    if bought > cap:
+        raise ValueError("bought more than the cap")
+    data = sha256(key + int(cap).to_bytes(8, "big") + int(bought).to_bytes(8, "big"))
+    return sha256(b"\x00" + data)
+
+
+def _capped_sale_node(left, right):
+    return sha256(b"\x01" + left + right)
+
+
+def _capped_sale_levels(entries):
+    """Every level of the tree over `entries` [(key, cap, bought)], leaves
+    first, as {position: hash} holding only positions under a used leaf;
+    `empty[l]` is the hash of a subtree of level l with no buyer in it."""
+    entries = list(entries)
+    if len(entries) > CAPPED_SALE_MAX_BUYERS:
+        raise ValueError("an allocation list holds at most %d buyers" % CAPPED_SALE_MAX_BUYERS)
+    keys = [bytes(k) for k, _, _ in entries]
+    if len(set(keys)) != len(keys):
+        raise ValueError("a key is on the allocation list twice")
+    empty = [capped_sale_leaf(bytes(32), 0, 0)]
+    for _ in range(CAPPED_SALE_DEPTH):
+        empty.append(_capped_sale_node(empty[-1], empty[-1]))
+    level = {i: capped_sale_leaf(*e) for i, e in enumerate(entries)}
+    levels = [level]
+    for l in range(CAPPED_SALE_DEPTH):
+        nxt = {}
+        for p in {i >> 1 for i in level}:
+            nxt[p] = _capped_sale_node(level.get(2 * p, empty[l]), level.get(2 * p + 1, empty[l]))
+        level = nxt
+        levels.append(level)
+    return levels, empty
+
+
+def capped_sale_root(entries):
+    """The ALLOCATIONS slot: the root of the 16-level tree whose leaf i is
+    entry i [(key, cap, bought)] of the list, every other leaf the zero key's
+    with a zero cap. The sale starts with every `bought` at zero."""
+    levels, empty = _capped_sale_levels(entries)
+    return levels[-1].get(0, empty[-1])
+
+
+def capped_sale_proof(entries, index):
+    """The proof the purchase program folds for entry `index`: one
+    (sibling, sibling_is_left) pair per level, leaf first."""
+    levels, empty = _capped_sale_levels(entries)
+    if not 0 <= index < len(levels[0]):
+        raise ValueError("no buyer at that position")
+    out, i = [], index
+    for l in range(CAPPED_SALE_DEPTH):
+        out.append((levels[l].get(i ^ 1, empty[l]), i & 1 == 1))
+        i >>= 1
+    return out
+
+
+def capped_sale_payment(amount, num, den):
+    """The least a purchase of `amount` pays the treasury: ceil(amount * num /
+    den), which the program checks as paid * den >= amount * num."""
+    for v in (amount, num, den):
+        if not 0 <= v < 1 << 64:
+            raise ValueError("an amount or a price part is a 64-bit number")
+    if den == 0:
+        raise ValueError("the price's denominator is zero")
+    return -(-amount * num // den)
