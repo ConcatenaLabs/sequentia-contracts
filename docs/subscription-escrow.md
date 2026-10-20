@@ -66,6 +66,19 @@ returns a subscription when an offering fails or a delivery cannot be made.
 `refund` needs no signature and opens at `DEADLINE`, so a subscriber is repaid
 even if the issuer and the platform both disappear.
 
+## Confidential coins
+
+Pay a subscription escrow with a transparent transfer. A confidential coin at
+an escrow address can only be released, never cancelled or refunded: `cancel`
+and `refund` read the coin's own asset and amount at its input
+(`OP_INSPECTINPUTASSET`, `OP_INSPECTINPUTVALUE`) and require them explicit, so
+neither leaf can spend a coin that hides them, while `release` reads only its
+output 0 and the issuer's signature. A subscriber who pays confidentially
+therefore loses the refund the deadline promises, and the release that can
+spend the coin also needs its blinding factors to balance. A platform built on
+this escrow refuses a confidential subscription before it is paid, and credits
+only explicit coins of `PAY_ASSET`.
+
 ## Timing
 
 `OP_CHECKLOCKTIMEVERIFY` sets a floor and no ceiling, so after the deadline
