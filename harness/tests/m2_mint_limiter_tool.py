@@ -139,7 +139,8 @@ class M2(SimBase, BitcoinTestFramework):
         self.generate(node, 1)
         vout = self.utxo_of(t_in, bytes.fromhex(info["scriptPubKey"])).vout
         coin = {"tx": self.raw(t_in), "vout": vout}
-        S = {"minted": 0, "elapsed": 0, "armed": 0}
+        # Counts and amounts go to the tool and come back as decimal strings.
+        S = {"minted": "0", "elapsed": 0, "armed": 0}
         mint_to = self.wallet_spk().hex()
 
         # Refused by the tool before any transaction: a coin one block old.
@@ -158,14 +159,17 @@ class M2(SimBase, BitcoinTestFramework):
         over = dict(req, amount=ALLOWANCE + 1)
         self.rec("tool/refuses_a_mint_over_the_allowance", self.tool("build", "--instance", self.inst_path,
                                                                      "--mnemonic-file", op_file, request=over, ok=False))
-        wrong = dict(req, state={"minted": 1, "elapsed": 0, "armed": 0})
+        big = dict(req, amount=2**53 + 1)
+        self.rec("tool/refuses_an_amount_number_above_2_53", self.tool("build", "--instance", self.inst_path,
+                                                                       "--mnemonic-file", op_file, request=big, ok=False))
+        wrong = dict(req, state={"minted": "1", "elapsed": 0, "armed": 0})
         self.rec("tool/refuses_a_coin_in_another_state", self.tool("build", "--instance", self.inst_path,
                                                                    "--mnemonic-file", op_file, request=wrong, ok=False))
         m1 = self.tool("build", "--instance", self.inst_path, "--mnemonic-file", op_file, request=req)
-        assert m1["next_state"] == {"minted": half, "elapsed": 2, "armed": 0}, m1
+        assert m1["next_state"] == {"minted": str(half), "elapsed": 2, "armed": 0}, m1
         tx1 = self.finish(m1, "mint/half")
         f = self.follows(coin, S, tx1, "follow/mint_half")
-        assert f["path"] == "mint" and f["next_state"] == m1["next_state"] and f["minted"] == half, f
+        assert f["path"] == "mint" and f["next_state"] == m1["next_state"] and f["minted"] == str(half), f
         coin, S = {"tx": self.raw(tx1), "vout": 0}, m1["next_state"]
 
         # The rest of the allowance, then a refusal, then the next window.
@@ -175,7 +179,7 @@ class M2(SimBase, BitcoinTestFramework):
                        request=self.request("mint", coin, S, entropy=z["entropy"], age=2, amount=half, mint_to=mint_to))
         tx2 = self.finish(m2, "mint/the_rest_of_the_allowance")
         coin, S = {"tx": self.raw(tx2), "vout": 0}, m2["next_state"]
-        assert S == {"minted": ALLOWANCE, "elapsed": 4, "armed": 0}, S
+        assert S == {"minted": str(ALLOWANCE), "elapsed": 4, "armed": 0}, S
         self.generate(node, 1)
         r = self.request("mint", coin, S, entropy=z["entropy"], age=2, amount=1, mint_to=mint_to)
         self.rec("tool/refuses_one_atom_over_in_the_window",
@@ -186,7 +190,7 @@ class M2(SimBase, BitcoinTestFramework):
         m3 = self.tool("build", "--instance", self.inst_path, "--mnemonic-file", op_file,
                        request=self.request("mint", coin, S, entropy=z["entropy"], age=need, amount=ALLOWANCE,
                                             mint_to=mint_to))
-        assert m3["next_state"] == {"minted": ALLOWANCE, "elapsed": 0, "armed": 0}, m3
+        assert m3["next_state"] == {"minted": str(ALLOWANCE), "elapsed": 0, "armed": 0}, m3
         tx3 = self.finish(m3, "mint/a_whole_allowance_in_the_next_window")
         f = self.follows(coin, S, tx3, "follow/new_window")
         assert f["next_state"] == m3["next_state"], f

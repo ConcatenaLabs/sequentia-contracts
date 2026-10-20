@@ -75,14 +75,18 @@ A spend, from a request:
 {
   "path": "mint",
   "coin": {"tx": "<hex of the transaction that made the covenant coin>", "vout": 0},
-  "state": {"minted": 0, "elapsed": 0, "armed": 0},
+  "state": {"minted": "0", "elapsed": 0, "armed": 0},
   "entropy": "<the asset's issuance entropy>",
   "age": 2,
-  "amount": 100000000,
+  "amount": "100000000",
   "mint_to": "<scriptPubKey hex that receives the minted units>",
-  "fee": {"coins": [{"tx": "<hex>", "vout": 1}], "atoms": 300, "change_to": "<scriptPubKey hex>"}
+  "fee": {"coins": [{"tx": "<hex>", "vout": 1}], "atoms": "300", "change_to": "<scriptPubKey hex>"}
 }
 ```
+
+Amounts of atoms (`amount`, `fee.atoms`, the state's `minted`) are decimal
+strings, as the tool writes them back, because a JSON number above 2^53 is not
+read exactly by every reader; a JSON number is accepted only up to 2^53.
 
 | `path` | Takes | Signed by |
 |---|---|---|
