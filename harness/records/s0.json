@@ -25,6 +25,6 @@
   "weight": 726,
   "expect": "mined",
   "mined": true,
-  "seconds": 0.01
+  "seconds": 0.1
  }
 }

@@ -5,16 +5,16 @@
  },
  "instance": {
   "template_hash": "ad33258c1eb94ba8a748cde489498fda5b80a1026839c25bca20b3d3e77367a7",
-  "PK": "31e08a371287612d01ae2b01a7fecec2a04221643f3706d69f4e66d8f9677f6b",
-  "address": "ert1pjmy457cxmkx6pz3r8jnqdhx7et9fxa98s2umzpp6ka6ae688mvnq7jz2vp",
-  "script_pubkey": "512096c95a7b06dd8da08a233ca606dcdecaca9374a782b9b1043ab775dce8e7db26",
-  "node_decodes_address_to": "512096c95a7b06dd8da08a233ca606dcdecaca9374a782b9b1043ab775dce8e7db26"
+  "PK": "b6a0a34ddb3ff776850f5ed56ed0aecca4089adfb9ea9896c9627fc7d487361a",
+  "address": "ert1pje7q9s88mc8jf34yxqedplxcdkylqd0h9k2ftsle0286zwmhcx9sf6sygh",
+  "script_pubkey": "5120967c02c0e7de0f24c6a43032d0fcd86d89f035f72d9495c3f97a8fa13b77c18b",
+  "node_decodes_address_to": "5120967c02c0e7de0f24c6a43032d0fcd86d89f035f72d9495c3f97a8fa13b77c18b"
  },
  "one_key/neg_key_not_in_data_leaf": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "122eabf4a7acdf090c2438a50b6a5b9c9d29bac09dac35225c8320298aa946ce",
+   "txid": "42468a3bfa24e9e86df92c75a963861e8c1062514f0bb5076bd1ffa1965e645f",
    "same_coin": true,
    "vsize": 239,
    "testmempoolaccept": true
@@ -23,14 +23,14 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 122eabf4a7acdf090c2438a50b6a5b9c9d29bac09dac35225c8320298aa946ce failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.1] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 42468a3bfa24e9e86df92c75a963861e8c1062514f0bb5076bd1ffa1965e645f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "one_key/neg_signature_by_another_key": {
   "rejected": true,
   "expect": "Assertion failed inside jet",
   "control": {
-   "txid": "122eabf4a7acdf090c2438a50b6a5b9c9d29bac09dac35225c8320298aa946ce",
+   "txid": "42468a3bfa24e9e86df92c75a963861e8c1062514f0bb5076bd1ffa1965e645f",
    "same_coin": true,
    "vsize": 239,
    "testmempoolaccept": true
@@ -39,7 +39,7 @@
   "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
   "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
   "block-log": [
-   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 122eabf4a7acdf090c2438a50b6a5b9c9d29bac09dac35225c8320298aa946ce failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+   "[httpworker.3] [validation.cpp:3744] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 42468a3bfa24e9e86df92c75a963861e8c1062514f0bb5076bd1ffa1965e645f failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
   ]
  },
  "one_key/spend": {
@@ -54,7 +54,7 @@
    "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000300"
   },
-  "txid": "122eabf4a7acdf090c2438a50b6a5b9c9d29bac09dac35225c8320298aa946ce",
+  "txid": "42468a3bfa24e9e86df92c75a963861e8c1062514f0bb5076bd1ffa1965e645f",
   "confirmed": true,
   "block_height": 106,
   "program_bytes": 102,
@@ -64,7 +64,7 @@
   "cost_bound_milli_wu": 71442,
   "cost_bound_wu": 72,
   "program_hex": "e35740a1062767410262830fa051aae40840a0da35620806006d038113600008f8717821091433a219ce42cf3ffb7c699fcd7d39b9a70e4843427f76e462685308969df9b098b85c30140cc2dacdba011804701c082e2638a36301027083f178205ac0507190",
-  "witness_hex": "31e08a371287612d01ae2b01a7fecec2a04221643f3706d69f4e66d8f9677f6ba9cac14d9e0fc8808d14a3dddba27717884dc45f51c73fa04172085a86518c4809b27eda1b36a836a2f6db0737e12fee7b89fddb1fc87b150262c3a897246e33",
+  "witness_hex": "b6a0a34ddb3ff776850f5ed56ed0aecca4089adfb9ea9896c9627fc7d487361aa898fef0b6caa1cbb1259030c858bce7b8042c4a6bdd1d5033d5d689b0cd07f8d659c4f354fbb2cd74d3bd75feb33d3bbf65c60b487ca53aceb3621a1d0be047",
   "witness_input0_bytes": 300
  }
 }

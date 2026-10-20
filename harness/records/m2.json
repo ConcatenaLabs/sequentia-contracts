@@ -1,0 +1,243 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "b2191453873ebe756324bfafc7f09445ed54e7b2f28500303254a8b238389a8a": 100000000,
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+ },
+ "instance/refuses_one_key_for_both": "mint-limiter: the operator key and the cold key are one key: the operator could lift its own brake",
+ "instance/refuses_a_token_of_another_asset": "mint-limiter: --token is not the explicit reissuance token of --asset: an explicit mint could never spend it",
+ "instance": {
+  "address": {
+   "elementsregtest": "ert1p2g4vdm7rxu8vgm7za6llsf0h586kz6r54640n2j5zwndh8w4uj6qw5ttg6",
+   "sequentia-testnet": "tb1p2g4vdm7rxu8vgm7za6llsf0h586kz6r54640n2j5zwndh8w4uj6qj7fn5y"
+  },
+  "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
+  "instance": 2,
+  "params": {
+   "ALLOWANCE": "000000003b9aca00",
+   "ASSET": "87fe2d23595a162bd7a5a18011a59e9ac3bc70d043ce22655a183a01a33d33fe",
+   "COLD_KEY": "e8ce6f9a86d6993d6d3a6af3a29c6e5d1129d8ac32a10e3079f932095dd96cad",
+   "OPERATOR_KEY": "9d9bd68d00558f8692c8b5db2d144f27f4233a667f29d313c02b3f373587fde9",
+   "RECOVERY_DELAY": "0002",
+   "TOKEN": "5a655d3c421e0647b9525c78e91d17ad68f5f0b0edf610077111f88418931910",
+   "WINDOW": "000a"
+  },
+  "slots": {
+   "ARMED": "00",
+   "ELAPSED": "0000",
+   "MINTED": "0000000000000000"
+  },
+  "template_hash": "77218080daacd33cb636f1411920eb5f2d6ee805cb94d8d0651ce1808c0b557b"
+ },
+ "tool/refuses_a_coin_one_block_old": "mint-limiter: a mint spends a coin at least 2 blocks old; this one is declared 1",
+ "tool/refuses_another_key": "mint-limiter: this mnemonic's contract key is not the instance's OPERATOR_KEY",
+ "tool/refuses_the_cold_key_for_a_mint": "mint-limiter: this mnemonic's contract key is not the instance's OPERATOR_KEY",
+ "tool/refuses_a_mint_over_the_allowance": "mint-limiter: a mint of 1000000001 would bring the window's count to 1000000001, above its allowance of 1000000000 (the window has not ended)",
+ "tool/refuses_a_coin_in_another_state": "mint-limiter: the coin's script is not the instance's in state State { minted: 1, elapsed: 0, armed: 0 }: 5120522ac6efc3370ec46fc2eebff825f7a1f5616874aeaaf9aa5413a6db9dd5e4b4",
+ "mint/half": {
+  "txid": "8b27044545b9d002533f1745573a07628f9f5848f160b2509ea25f067a0a4c77",
+  "vsize": 867,
+  "weight": 3468,
+  "program_bytes": 1339,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 796694,
+  "budget_wu": 6686,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 2,
+   "minted": 500000000
+  }
+ },
+ "follow/mint_half": {
+  "minted": 500000000,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 2,
+   "minted": 500000000
+  },
+  "path": "mint",
+  "state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 0
+  },
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1pyn8cgh2skgf6z5f96gp3020nge0wzrxklpyu0el3p2w38a6585xsrsdpe5",
+    "sequentia-testnet": "tb1pyn8cgh2skgf6z5f96gp3020nge0wzrxklpyu0el3p2w38a6585xsl60e92"
+   },
+   "txid": "8b27044545b9d002533f1745573a07628f9f5848f160b2509ea25f067a0a4c77",
+   "vout": 0
+  }
+ },
+ "mint/the_rest_of_the_allowance": {
+  "txid": "31d539e9ddfe148e44cd64d6e78923c81ffe33d77b9205f2e2a401d752fcf852",
+  "vsize": 867,
+  "weight": 3468,
+  "program_bytes": 1339,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 796694,
+  "budget_wu": 6686,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 4,
+   "minted": 1000000000
+  }
+ },
+ "tool/refuses_one_atom_over_in_the_window": "mint-limiter: a mint of 1 would bring the window's count to 1000000001, above its allowance of 1000000000 (the window has not ended)",
+ "mint/a_whole_allowance_in_the_next_window": {
+  "txid": "6e58ce3298d3312d2e18efb4bf34d137b20fa92aff1d65ec41753af77576fff7",
+  "vsize": 857,
+  "weight": 3425,
+  "program_bytes": 1296,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 791488,
+  "budget_wu": 6514,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 1000000000
+  }
+ },
+ "follow/new_window": {
+  "minted": 1000000000,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "path": "mint",
+  "state": {
+   "armed": 0,
+   "elapsed": 4,
+   "minted": 1000000000
+  },
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hqg3sr7q",
+    "sequentia-testnet": "tb1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hq5mjmz7"
+   },
+   "txid": "6e58ce3298d3312d2e18efb4bf34d137b20fa92aff1d65ec41753af77576fff7",
+   "vout": 0
+  }
+ },
+ "arm/signature": {
+  "arm_signature": "6786db2791d12eaba638afbb1ca9dd0cf3f36ba7688d3db7d20fc99c3a568dfb48f871d6457b09c48b252f11a373b4f8d83e68a1d08a7d0b93f95ef64a564373",
+  "cold_key": "e8ce6f9a86d6993d6d3a6af3a29c6e5d1129d8ac32a10e3079f932095dd96cad",
+  "message": "fad44551bbc05ff40798578e42e1e4fafebd8b24167bb61424ff3be2ac91fb26"
+ },
+ "tool/refuses_to_make_an_arm_signature_with_the_operator_key": "mint-limiter: this mnemonic's contract key is not the instance's COLD_KEY",
+ "tool/refuses_a_broken_arm_signature": "mint-limiter: arm_signature is not the cold key's signature over this instance's arm message",
+ "arm/applied": {
+  "txid": "ef1edd72126acdc45093fce663b8029f05bc68f671e7c725e25ba4b320ef990f",
+  "vsize": 719,
+  "weight": 2873,
+  "program_bytes": 1310,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 958643,
+  "budget_wu": 6570,
+  "next_state": {
+   "armed": 1,
+   "elapsed": 0,
+   "minted": 1000000000
+  }
+ },
+ "follow/arm": {
+  "next_state": {
+   "armed": 1,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "path": "arm",
+  "state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1phlekaj0ps0cgnw7tqpcgcvqfydxm39ccna45mw89sfhl6zhwz5rqldlcw7",
+    "sequentia-testnet": "tb1phlekaj0ps0cgnw7tqpcgcvqfydxm39ccna45mw89sfhl6zhwz5rqr8aqjq"
+   },
+   "txid": "ef1edd72126acdc45093fce663b8029f05bc68f671e7c725e25ba4b320ef990f",
+   "vout": 0
+  }
+ },
+ "tool/refuses_a_mint_while_braked": "mint-limiter: the brake is on: no mint until the cold key lifts it",
+ "disarm/lifted": {
+  "txid": "e233cedb7615809e550d08a43ab3831c1717e27f4ad6a84aaedbff6db8c2d47e",
+  "vsize": 661,
+  "weight": 2643,
+  "program_bytes": 1080,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 724285,
+  "budget_wu": 5650,
+  "next_state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 1000000000
+  }
+ },
+ "follow/disarm": {
+  "next_state": {
+   "armed": 0,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "path": "disarm",
+  "state": {
+   "armed": 1,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hqg3sr7q",
+    "sequentia-testnet": "tb1p4qvhnrh9pdgghhlj0p3e4gfwyr5sw0znqkrn99qpwlq56ks667hq5mjmz7"
+   },
+   "txid": "e233cedb7615809e550d08a43ab3831c1717e27f4ad6a84aaedbff6db8c2d47e",
+   "vout": 0
+  }
+ },
+ "arm/the_same_signature_again": {
+  "txid": "97549ff4b8ea6127849af8c129a61290fc88c84e2c267afc062f2fa6b210bd9b",
+  "vsize": 719,
+  "weight": 2873,
+  "program_bytes": 1310,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 958643,
+  "budget_wu": 6570,
+  "next_state": {
+   "armed": 1,
+   "elapsed": 0,
+   "minted": 1000000000
+  }
+ },
+ "tool/refuses_recovery_by_the_operator": "mint-limiter: this mnemonic's contract key is not the instance's COLD_KEY",
+ "recover/after_the_delay": {
+  "txid": "153bc197bf5a6154325f01e2bf71313336bd414d47062b1f5ea4ea8d62d27f30",
+  "vsize": 563,
+  "weight": 2249,
+  "program_bytes": 734,
+  "witness_bytes": 216,
+  "cost_bound_milli_wu": 336189,
+  "budget_wu": 4266,
+  "next_state": null
+ },
+ "follow/recover": {
+  "path": "recover",
+  "state": {
+   "armed": 1,
+   "elapsed": 0,
+   "minted": 1000000000
+  },
+  "token_to": [
+   {
+    "amount": 100000000,
+    "script_pubkey": "0014f1c3fe921b460670cccdf20cdc15ef03aef82b95",
+    "vout": 0
+   }
+  ],
+  "txid": "153bc197bf5a6154325f01e2bf71313336bd414d47062b1f5ea4ea8d62d27f30"
+ }
+}

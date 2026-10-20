@@ -14,6 +14,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Unit tests, lint fixtures, and the lint over every program
         run: cargo test --locked
+      - name: seqc reads Sequentia's transaction encoding with its feature
+        run: cargo build --locked --quiet --features sequentia-tx --bin seqc
       - name: Lint every SimplicityHL program outside the reject fixtures
         run: |
           cargo build --locked --quiet --bin seqc
@@ -37,6 +39,19 @@ jobs:
           if $seqc lint lints/fixtures/reject/import/simf/native_asset.simf; then
             echo "a program the lint cannot compile passed it"; exit 1
           fi
+
+  mint-limiter:
+    name: The mint-limiter tool builds and passes its unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/mint-limiter
+      - name: Unit tests and clippy
+        run: |
+          cargo test --locked --release --manifest-path tools/mint-limiter/Cargo.toml
+          cargo clippy --locked --release --manifest-path tools/mint-limiter/Cargo.toml -- -D warnings
 
   mirrors:
     name: Address mirrors (Python, JavaScript, Go) against the golden vectors
