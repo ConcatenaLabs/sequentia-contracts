@@ -1,0 +1,145 @@
+{
+ "whitelist": {
+  "a87beff1aec2f556d212a19b76354345d09f55532ed78ac6ac4c0d2f3cfc3100": 100000000,
+  "bitcoin": 100000000,
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
+ },
+ "instance/refuses_one_key_for_both": "token-covenants: the operator key and the cold key are one key: the cold key is what replaces a lost operator key",
+ "instance/refuses_a_token_of_another_asset": "token-covenants: --token is not the explicit reissuance token of --asset: an explicit mint could never spend it",
+ "instance": {
+  "address": {
+   "elementsregtest": "ert1p5yluznd4qwu9hydwmdv6rfe0djun6fzcspcl496kst4wmvn4jkfsy9w5rs",
+   "sequentia-testnet": "tb1p5yluznd4qwu9hydwmdv6rfe0djun6fzcspcl496kst4wmvn4jkfsc0vvlw"
+  },
+  "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
+  "instance": 2,
+  "params": {
+   "ASSET": "f6f9ac4efb867f59bba18dc2fa9ff2d5d528f09e78e4917da20da92d6a1af908",
+   "CAP": "000000003b9aca00",
+   "COLD_KEY": "d0ea98d534fbebb2bbf2605b9501368bfcfa995021848a5b6930644805f3f46e",
+   "OPERATOR_KEY": "221becdc4fad1ab7623f750c344f90747ab1b85ab1b19e0a90244967090cc111",
+   "TOKEN": "1e1764000312c6c068bf129ef4ab229834b3291deb0af393db76af27a7b331ec"
+  },
+  "slots": {
+   "MINTED": "0000000000000000"
+  },
+  "template_hash": "f93a2bffc93db5280ef17f6dc09e99fdee5e4253ccc152afdbebe135265b900d"
+ },
+ "tool/refuses_another_key": "token-covenants: this key is not the instance's OPERATOR_KEY",
+ "tool/refuses_the_cold_key_for_a_mint": "token-covenants: this key is not the instance's OPERATOR_KEY",
+ "tool/refuses_a_mint_over_the_cap": "token-covenants: a mint of 1000000001 would bring the total minted to 1000000001, above the cap of 1000000000",
+ "tool/refuses_a_coin_holding_another_count": "token-covenants: the coin's script is not the instance's with 1 minted: 5120a13fc14db503b85b91aedb59a1a72f6cb93d24588071fa975682eaedb2759593",
+ "mint/a_third_from_a_mnemonic": {
+  "txid": "2deeac932641ce9797076ffa8d515abf71d867b5c3d83afdb11d428e0b2b919e",
+  "vsize": 765,
+  "weight": 3057,
+  "program_bytes": 935,
+  "witness_bytes": 209,
+  "cost_bound_milli_wu": 524838,
+  "budget_wu": 5042,
+  "next_minted": "333333333"
+ },
+ "follow/mint": {
+  "amount": "333333333",
+  "minted": "0",
+  "next_minted": "333333333",
+  "path": "mint",
+  "successor": {
+   "address": {
+    "elementsregtest": "ert1p63af6nawdlg34f569c0x5szr095jgqfddmyygg07224ld065zk4svn4mt5",
+    "sequentia-testnet": "tb1p63af6nawdlg34f569c0x5szr095jgqfddmyygg07224ld065zk4ssehrh2"
+   },
+   "txid": "2deeac932641ce9797076ffa8d515abf71d867b5c3d83afdb11d428e0b2b919e",
+   "vout": 0
+  }
+ },
+ "tool/refuses_a_rekey_by_the_operator": "token-covenants: this key is not the instance's COLD_KEY",
+ "tool/refuses_a_rekey_to_one_key_for_both": "token-covenants: the operator key and the cold key are one key: the cold key is what replaces a lost operator key",
+ "rekey/to_a_raw_key": {
+  "txid": "a1944f8a4df153a398f6d1a664ae594f4b39efe2490d82f1c714ab1c753fdfc6",
+  "vsize": 610,
+  "weight": 2439,
+  "program_bytes": 817,
+  "witness_bytes": 273,
+  "cost_bound_milli_wu": 494766,
+  "budget_wu": 4834,
+  "next_minted": "333333333"
+ },
+ "follow/rekey": {
+  "minted": "333333333",
+  "next_instance": {
+   "address": {
+    "elementsregtest": "ert1pp04657u4qf7rggx44hvz03drcac9qnq67sx4tzupzvv8skupz48snp6s9g",
+    "sequentia-testnet": "tb1pp04657u4qf7rggx44hvz03drcac9qnq67sx4tzupzvv8skupz48s0tcgek"
+   },
+   "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
+   "instance": 2,
+   "params": {
+    "ASSET": "f6f9ac4efb867f59bba18dc2fa9ff2d5d528f09e78e4917da20da92d6a1af908",
+    "CAP": "000000003b9aca00",
+    "COLD_KEY": "d0ea98d534fbebb2bbf2605b9501368bfcfa995021848a5b6930644805f3f46e",
+    "OPERATOR_KEY": "af7c1edf5cda612d59c82addd4aaacd9c0f167e03ef671c0394c74c1a039b2a4",
+    "TOKEN": "1e1764000312c6c068bf129ef4ab229834b3291deb0af393db76af27a7b331ec"
+   },
+   "slots": {
+    "MINTED": "0000000013de4355"
+   },
+   "template_hash": "f93a2bffc93db5280ef17f6dc09e99fdee5e4253ccc152afdbebe135265b900d"
+  },
+  "path": "rekey",
+  "successor_script_pubkey": "51200bebaa7b95027c3420d5add827c5a3c770504c1af40d558b811318785b81154f",
+  "txid": "a1944f8a4df153a398f6d1a664ae594f4b39efe2490d82f1c714ab1c753fdfc6"
+ },
+ "tool/refuses_the_old_operator_key": "token-covenants: this key is not the instance's OPERATOR_KEY",
+ "tool/refuses_one_atom_over_the_room_left": "token-covenants: a mint of 666666668 would bring the total minted to 1000000001, above the cap of 1000000000",
+ "mint/the_room_left_by_a_raw_key": {
+  "txid": "6e277fee02850b4a9768d26ac436659139371a50500df7a5c1545330f7ac24f5",
+  "vsize": 765,
+  "weight": 3057,
+  "program_bytes": 935,
+  "witness_bytes": 209,
+  "cost_bound_milli_wu": 524838,
+  "budget_wu": 5042,
+  "next_minted": "1000000000"
+ },
+ "tool/refuses_any_mint_at_the_cap": "token-covenants: a mint of 1 would bring the total minted to 1000000001, above the cap of 1000000000",
+ "rekey/retired": {
+  "txid": "748073784ce54e7ddfa979f474fb68d22012d25f498446bb5b62fedd3031b1e5",
+  "vsize": 601,
+  "weight": 2404,
+  "program_bytes": 816,
+  "witness_bytes": 241,
+  "cost_bound_milli_wu": 494766,
+  "budget_wu": 4694,
+  "next_minted": "1000000000"
+ },
+ "follow/retired": {
+  "minted": "1000000000",
+  "next_instance": {
+   "address": {
+    "elementsregtest": "ert1ppxccwkkwzwszn2xplyfjn74t42mjy8g5ckvjleaq7pvdh7csunusc5gfk5",
+    "sequentia-testnet": "tb1ppxccwkkwzwszn2xplyfjn74t42mjy8g5ckvjleaq7pvdh7csunusy72322"
+   },
+   "genesis": "16af270696dbd3a65ed61a2f48459c8d8e9110c0c9937938109e7d7c87e8e42c",
+   "instance": 2,
+   "params": {
+    "ASSET": "f6f9ac4efb867f59bba18dc2fa9ff2d5d528f09e78e4917da20da92d6a1af908",
+    "CAP": "000000003b9aca00",
+    "COLD_KEY": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "OPERATOR_KEY": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+    "TOKEN": "1e1764000312c6c068bf129ef4ab229834b3291deb0af393db76af27a7b331ec"
+   },
+   "slots": {
+    "MINTED": "000000003b9aca00"
+   },
+   "template_hash": "f93a2bffc93db5280ef17f6dc09e99fdee5e4253ccc152afdbebe135265b900d"
+  },
+  "path": "rekey",
+  "successor_script_pubkey": "512009b1875ace13a029a8c1f91329faabaab7221d14c5992fe7a0f058dbfb10e4f9",
+  "txid": "748073784ce54e7ddfa979f474fb68d22012d25f498446bb5b62fedd3031b1e5"
+ },
+ "cap/minted_on_chain": {
+  "minted": 1000000000,
+  "cap": 1000000000
+ }
+}

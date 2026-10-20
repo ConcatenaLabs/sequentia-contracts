@@ -1,0 +1,326 @@
+{
+  "addresses": [
+    {
+      "address": {
+        "elementsregtest": "ert1p3vgjrc7gzsssjfrsdq94chap73wt8wdv7kr7vrrmg5jry978setq8rngmu",
+        "sequentia-testnet": "tb1p3vgjrc7gzsssjfrsdq94chap73wt8wdv7kr7vrrmg5jry978setqmf3s8z"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0ac4d28000f95d99beac1be8540c8387642f0395229e3761bbd2f05e464c61fab",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a40000000000000000000",
+          "hash": "ac4d28000f95d99beac1be8540c8387642f0395229e3761bbd2f05e464c61fab"
+        }
+      },
+      "merkle_root": "60b87e5698fbc1078ee0be188960961fc1da30d9bf052fdd5e30ff3f31fe6e97",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, nothing minted",
+      "output_key": "8b1121e3c81421092470680b5c5fa1f45cb3b9acf587e60c7b45243217c78656",
+      "output_key_parity": 0,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "51208b1121e3c81421092470680b5c5fa1f45cb3b9acf587e60c7b45243217c78656",
+      "slots": {
+        "MINTED": "0000000000000000"
+      },
+      "tweak": "4d1b9923c336e44f404e8f1ebc2aaa934a9296ad823223902425d10e80ccef32"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pjg27df58auc5dsk0urn9k9nx9qafk6u9y9numc6lqd7rcqu7386sgs8ecz",
+        "sequentia-testnet": "tb1pjg27df58auc5dsk0urn9k9nx9qafk6u9y9numc6lqd7rcqu7386s569pyu"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac099edd88cf9f5952c34d493b15fbabce1e66ba54aefcba328d80bdd1c71e81a2c",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a4000000016bcc41e9000",
+          "hash": "99edd88cf9f5952c34d493b15fbabce1e66ba54aefcba328d80bdd1c71e81a2c"
+        }
+      },
+      "merkle_root": "348fa2e8e83deeb7f94a4bae3affb68a4631286a83d085691f3801c3bfd83329",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, 250,000.00000000 minted",
+      "output_key": "9215e6a687ef3146c2cfe0e65b1666283a9b6b852167cde35f037c3c039e89f5",
+      "output_key_parity": 1,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "51209215e6a687ef3146c2cfe0e65b1666283a9b6b852167cde35f037c3c039e89f5",
+      "slots": {
+        "MINTED": "000016bcc41e9000"
+      },
+      "tweak": "d2e9a352850c6fd4d6325241578f685ec0ec2a99ce7c6681ed5bf840d882dfb7"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p2kt78tcscdlzkhl60nga6ry5lpammjgq29fl78fkzpusnueng20qkepwmx",
+        "sequentia-testnet": "tb1p2kt78tcscdlzkhl60nga6ry5lpammjgq29fl78fkzpusnueng20q2nrk8c"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0be164d95210d1f5474790ed82fdc3800db255cf2f56c3988890a854170ecba47",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a400000005af3107a4000",
+          "hash": "be164d95210d1f5474790ed82fdc3800db255cf2f56c3988890a854170ecba47"
+        }
+      },
+      "merkle_root": "d8c6e99470d6dba9d23ef9ce07b93f25553b4fc68f7b3df5b216500a016cc70c",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, the whole cap minted",
+      "output_key": "5597e3af10c37e2b5ffa7cd1dd0c94f87bbdc9005153ff1d36107909f333429e",
+      "output_key_parity": 1,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "51205597e3af10c37e2b5ffa7cd1dd0c94f87bbdc9005153ff1d36107909f333429e",
+      "slots": {
+        "MINTED": "00005af3107a4000"
+      },
+      "tweak": "251182c8915bf5fb8e356fa64299c2d6dd9ffb0eed6bdc4feff1f03976af29b2"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pcut8efjj6htcu74xkwkhtk5ygcucj3g6aq05wp7mp8hz0dfq9srsh7mmfc",
+        "sequentia-testnet": "tb1pcut8efjj6htcu74xkwkhtk5ygcucj3g6aq05wp7mp8hz0dfq9srst5er4x"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0ddda0ef22243a79e410ed4b2bed352b3ceef7bb2cb6cce5d9b39bf0cda73b174",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a4000000016bcc41e9000",
+          "hash": "ddda0ef22243a79e410ed4b2bed352b3ceef7bb2cb6cce5d9b39bf0cda73b174"
+        }
+      },
+      "merkle_root": "48cf61926eeed9168230fb2be9c04a243cb924bfe46b74bff4352df517b2bca2",
+      "name": "cap 1,000,000.00000000, rekeyed to operator key 3, cold key 2, 250,000.00000000 minted",
+      "output_key": "c7167ca652d5d78e7aa6b3ad75da84463989451ae81f4707db09ee27b5202c07",
+      "output_key_parity": 0,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "5120c7167ca652d5d78e7aa6b3ad75da84463989451ae81f4707db09ee27b5202c07",
+      "slots": {
+        "MINTED": "000016bcc41e9000"
+      },
+      "tweak": "1d55b42e1d61b15da78321108267249b89569f8e277f13b17de84e01285b0ee1"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p3m29dqxrud69fnpywl32n92nwx5sv89j7rx42laezltvr49pcn7qjqdya5",
+        "sequentia-testnet": "tb1p3m29dqxrud69fnpywl32n92nwx5sv89j7rx42laezltvr49pcn7qw20up2"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac085c72210ae939d6d43b6c3d05dda13edce79fe42637bf779dd48270598491e6b",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500000000000000000000000000000000",
+          "hash": "85c72210ae939d6d43b6c3d05dda13edce79fe42637bf779dd48270598491e6b"
+        }
+      },
+      "merkle_root": "ba79f83627de740dfd30a64e0a38b45badc694abbe7232a91ee56d559e4e6715",
+      "name": "cap 0, operator key 1, cold key 2: no mint possible",
+      "output_key": "8ed45680c3e37454cc2477e2a9955371a9061cb2f0cd557fb917d6c1d4a1c4fc",
+      "output_key_parity": 0,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "0000000000000000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "51208ed45680c3e37454cc2477e2a9955371a9061cb2f0cd557fb917d6c1d4a1c4fc",
+      "slots": {
+        "MINTED": "0000000000000000"
+      },
+      "tweak": "7c00cb5abd58f8275f943a56877ffb1a62aceed109b4dbe261e712420434bdf4"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1pztv8kahwmz3rt5uv7wk58y2wjk6j4y57rtp96rhvruw3qfrf5cdqzvr46z",
+        "sequentia-testnet": "tb1pztv8kahwmz3rt5uv7wk58y2wjk6j4y57rtp96rhvruw3qfrf5cdq7xpdxu"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0c3009b8aa213374274bdf66f4b987b486528eeed3748134d17f7b885a5e41f64",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9ffffffffffffffff8000000000000000",
+          "hash": "c3009b8aa213374274bdf66f4b987b486528eeed3748134d17f7b885a5e41f64"
+        }
+      },
+      "merkle_root": "3c76d3b7fa5c4548c8e5ec34388cd61cea6726392afd5d38204ed051aa098549",
+      "name": "cap 2^64-1, operator key 1, cold key 3, 2^63 minted",
+      "output_key": "12d87b76eed8a235d38cf3ad43914e95b52a929e1ac25d0eec1f1d102469a61a",
+      "output_key_parity": 1,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "ffffffffffffffff",
+        "COLD_KEY": "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "512012d87b76eed8a235d38cf3ad43914e95b52a929e1ac25d0eec1f1d102469a61a",
+      "slots": {
+        "MINTED": "8000000000000000"
+      },
+      "tweak": "821bdb10a8028ac7ac06e758f3e3122ea02979855f31345f2de74d612f98622b"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1p47k758dnhezenyy9jths3tpxysz58kfzerxzgh02v2yympfy6m6s6p34kp",
+        "sequentia-testnet": "tb1p47k758dnhezenyy9jths3tpxysz58kfzerxzgh02v2yympfy6m6sxtnd2l"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac08e1fef92a0e4947cba403f9d64d57ba92bc0356b766ac1d194cec86bf634310c",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87450929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac050929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac000005af3107a4000000016bcc41e9000",
+          "hash": "8e1fef92a0e4947cba403f9d64d57ba92bc0356b766ac1d194cec86bf634310c"
+        }
+      },
+      "merkle_root": "b5a76ce52533b5205913f8042bbae77e2adc745da7e7a54c366abcc40d1d0cd2",
+      "name": "retired: both keys the NUMS point, 250,000.00000000 minted",
+      "output_key": "afadea1db3be4599908592ef08ac26240543d922c8cc245dea62884d8524d6f5",
+      "output_key_parity": 0,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+        "OPERATOR_KEY": "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "5120afadea1db3be4599908592ef08ac26240543d922c8cc245dea62884d8524d6f5",
+      "slots": {
+        "MINTED": "000016bcc41e9000"
+      },
+      "tweak": "7a98b47ca93be844632ef5775177ebc8c5cb57a7a410c4de8445b757a8418f62"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1px07v3umuflq43t9yk3cs4aazfxf6u5hwp5ftttrzuwd2qvry4jas5ew9r7",
+        "sequentia-testnet": "tb1px07v3umuflq43t9yk3cs4aazfxf6u5hwp5ftttrzuwd2qvry4jasgnvalq"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac00f4faaa8aae949483c8687ea24e2155050779225dd552d43118e4ff7a6eab0f1",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a4000000001d1a94a2000",
+          "hash": "0f4faaa8aae949483c8687ea24e2155050779225dd552d43118e4ff7a6eab0f1"
+        }
+      },
+      "merkle_root": "b241ea34b6c635d5a734937da3c8f5015c3c5edf1e300a09edab788184e3ea73",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, 20,000.00000000 minted",
+      "output_key": "33fcc8f37c4fc158aca4b4710af7a24993ae52ee0d12b5ac62e39aa03064acbb",
+      "output_key_parity": 1,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "512033fcc8f37c4fc158aca4b4710af7a24993ae52ee0d12b5ac62e39aa03064acbb",
+      "slots": {
+        "MINTED": "000001d1a94a2000"
+      },
+      "tweak": "ab3e707a2d2f75621ae62fc9ec7d31184f0a8889e15b4526a82e224be5c38fcb"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1psd7m9ftk3weyg3us44lznltncz5548defpx7j2d7afwkn3te78esn7grr5",
+        "sequentia-testnet": "tb1psd7m9ftk3weyg3us44lznltncz5548defpx7j2d7afwkn3te78es052ml2"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "bf50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0132ea50ea55b62a475c6bf70e7166246a3f4cd0c765da694a9894ac7fbf178de",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a40000000082f79cd9000",
+          "hash": "132ea50ea55b62a475c6bf70e7166246a3f4cd0c765da694a9894ac7fbf178de"
+        }
+      },
+      "merkle_root": "ed153952019b12b7f7867923e908b180dc1533538d8a9a06f6390076d04ba63b",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, 90,000.00000000 minted",
+      "output_key": "837db2a5768bb2444790ad7e29fd73c0a94a9db9484de929beea5d69c579f1f3",
+      "output_key_parity": 1,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "5120837db2a5768bb2444790ad7e29fd73c0a94a9db9484de929beea5d69c579f1f3",
+      "slots": {
+        "MINTED": "0000082f79cd9000"
+      },
+      "tweak": "38ad415788d156266dfb9a167b30141a178af4e937d2c1bafab463a07973566e"
+    },
+    {
+      "address": {
+        "elementsregtest": "ert1psnw4a5ap8mawjt4ntacagwgcac6jzw3x7kpna5phzcv8406zssvqyhj0l2",
+        "sequentia-testnet": "tb1psnw4a5ap8mawjt4ntacagwgcac6jzw3x7kpna5phzcv8406zssvqcashr5"
+      },
+      "leaves": {
+        "cap": {
+          "control_block": "be50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac01ac606e742cd7bddf10e43f68eb7d2ea0ef47f62f176cc962409fe20a526ff43",
+          "hash": "1e2b9e357233a659fd9d627e047c2275548d53614a82330da1ba7e303271cf1d"
+        },
+        "state": {
+          "data": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f87479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee500005af3107a4000000001e8f1c10800",
+          "hash": "1ac606e742cd7bddf10e43f68eb7d2ea0ef47f62f176cc962409fe20a526ff43"
+        }
+      },
+      "merkle_root": "5e8b5f91534599cc55bf41901269775531e7a6c047eaa5ca6e8ed116a40a77f4",
+      "name": "cap 1,000,000.00000000, operator key 1, cold key 2, 21,000.00000000 minted",
+      "output_key": "84dd5ed3a13efae92eb35f71d43918ee35213a26f5833ed03716187abf428418",
+      "output_key_parity": 0,
+      "params": {
+        "ASSET": "54a2cfc4ecd61c94bc1e51000139ea528f2835365ce123e0e1abd6e1bb3cdb4f",
+        "CAP": "00005af3107a4000",
+        "COLD_KEY": "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "OPERATOR_KEY": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "TOKEN": "3451dc1e07263404995266b7ba2df763bae70984936b6edf7bd149d913d2f874"
+      },
+      "script_pubkey": "512084dd5ed3a13efae92eb35f71d43918ee35213a26f5833ed03716187abf428418",
+      "slots": {
+        "MINTED": "000001e8f1c10800"
+      },
+      "tweak": "09e2af8abb523ff61d4f93b0f06126fcd9f1eabf7d002e0286dca9cd3d131edc"
+    }
+  ],
+  "template_hash": "f93a2bffc93db5280ef17f6dc09e99fdee5e4253ccc152afdbebe135265b900d",
+  "vectors": 2
+}

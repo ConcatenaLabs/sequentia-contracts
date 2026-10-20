@@ -53,6 +53,19 @@ jobs:
           cargo test --locked --release --manifest-path tools/mint-limiter/Cargo.toml
           cargo clippy --locked --release --manifest-path tools/mint-limiter/Cargo.toml -- -D warnings
 
+  token-covenants:
+    name: The token-covenants tool builds and passes its unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/token-covenants
+      - name: Unit tests and clippy
+        run: |
+          cargo test --locked --release --manifest-path tools/token-covenants/Cargo.toml
+          cargo clippy --locked --release --manifest-path tools/token-covenants/Cargo.toml -- -D warnings
+
   mirrors:
     name: Address mirrors (Python, JavaScript, Go) against the golden vectors
     runs-on: ubuntu-latest
