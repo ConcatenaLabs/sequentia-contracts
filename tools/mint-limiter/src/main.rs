@@ -301,8 +301,10 @@ impl State {
         .collect()
     }
 
+    /// The count as a decimal string: a JSON number above 2^53 is not read
+    /// exactly by every reader (JavaScript's among them).
     fn json(self) -> Value {
-        json!({"minted": self.minted, "elapsed": self.elapsed, "armed": self.armed})
+        json!({"minted": self.minted.to_string(), "elapsed": self.elapsed, "armed": self.armed})
     }
 
     fn from_json(v: &Value) -> Res<Self> {
@@ -311,7 +313,7 @@ impl State {
                 .ok_or_else(|| format!("state.{k} is not a number"))
         };
         let s = State {
-            minted: n("minted")?,
+            minted: atoms(&v["minted"], "state.minted")?,
             elapsed: u16::try_from(n("elapsed")?).map_err(e)?,
             armed: u8::try_from(n("armed")?).map_err(e)?,
         };
@@ -327,8 +329,23 @@ impl State {
             return fail("--state is MINTED,ELAPSED,ARMED");
         };
         Self::from_json(
-            &json!({"minted": m.parse::<u64>().map_err(e)?, "elapsed": el.parse::<u64>().map_err(e)?, "armed": ar.parse::<u64>().map_err(e)?}),
+            &json!({"minted": m.to_string(), "elapsed": el.parse::<u64>().map_err(e)?, "armed": ar.parse::<u64>().map_err(e)?}),
         )
+    }
+}
+
+/// An amount of atoms: a decimal string, as this tool writes them, or a JSON
+/// number no larger than 2^53, which every reader parses exactly.
+fn atoms(v: &Value, what: &str) -> Res<u64> {
+    match v {
+        Value::String(s) if !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit()) && (s == "0" || !s.starts_with('0')) => {
+            s.parse::<u64>().map_err(|x| format!("{what}: {x}"))
+        }
+        Value::Number(n) => match n.as_u64() {
+            Some(x) if x <= 1 << 53 => Ok(x),
+            _ => fail(format!("{what}: a number above 2^53 is not read exactly everywhere; give it as a decimal string")),
+        },
+        _ => fail(format!("{what}: a whole number of atoms, as a decimal string")),
     }
 }
 
@@ -618,7 +635,7 @@ fn cmd_build(a: &Args) -> Res<Value> {
                     .ok_or("age: the coin's age in blocks, as the next block finds it")?,
             )
             .map_err(e)?;
-            let x = req["amount"].as_u64().ok_or("amount: the atoms to mint")?;
+            let x = atoms(&req["amount"], "amount: the atoms to mint")?;
             if x == 0 {
                 return fail("a reissuance of zero is not valid");
             }
@@ -685,7 +702,7 @@ fn cmd_build(a: &Args) -> Res<Value> {
     }
     // The fee coins, all of one asset, unsigned: the bridge's wallet signs them.
     let fee = &req["fee"];
-    let fee_atoms = fee["atoms"].as_u64().ok_or("fee.atoms")?;
+    let fee_atoms = atoms(&fee["atoms"], "fee.atoms")?;
     let mut fee_asset: Option<AssetId> = None;
     let mut fee_in = 0u64;
     for (i, f) in fee["coins"]
@@ -814,7 +831,7 @@ fn cmd_build(a: &Args) -> Res<Value> {
         });
     }
     if let Some((x, _)) = issue {
-        out["minted"] = json!(x);
+        out["minted"] = json!(x.to_string());
     }
     Ok(out)
 }
@@ -860,7 +877,7 @@ fn cmd_follow(a: &Args) -> Res<Value> {
                 if let Ok(n) = mint_next(&inst, state, u16::try_from(d & 0xffff).map_err(e)?, x) {
                     if let Some(v) = found("mint", n)? {
                         let mut v = v;
-                        v["minted"] = json!(x);
+                        v["minted"] = json!(x.to_string());
                         return Ok(v);
                     }
                 }
@@ -1137,6 +1154,27 @@ mod tests {
         i.params.insert("WINDOW".into(), "0001".into());
         assert!(check_params(&i).is_err());
         assert!(check_params(&inst()).is_ok());
+    }
+
+    #[test]
+    fn amounts_read_as_strings_and_small_numbers() {
+        assert_eq!(
+            atoms(&json!("18446744073709551615"), "x").ok(),
+            Some(u64::MAX)
+        );
+        assert_eq!(atoms(&json!(1000), "x").ok(), Some(1000));
+        assert_eq!(atoms(&json!("0"), "x").ok(), Some(0));
+        assert!(atoms(&json!(9_007_199_254_740_993u64), "x").is_err());
+        assert!(atoms(&json!("012"), "x").is_err());
+        assert!(atoms(&json!("1.5"), "x").is_err());
+        assert!(atoms(&json!("-1"), "x").is_err());
+        assert!(atoms(&json!(null), "x").is_err());
+        let s = State {
+            minted: u64::MAX,
+            elapsed: 3,
+            armed: 0,
+        };
+        assert_eq!(State::from_json(&s.json()).ok(), Some(s));
     }
 
     #[test]
