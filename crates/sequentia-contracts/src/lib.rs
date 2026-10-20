@@ -9,6 +9,7 @@
 //! chain (see [`lint`]).
 
 pub mod attestation;
+pub mod bond;
 pub mod descriptor;
 pub mod lint;
 pub mod pool;

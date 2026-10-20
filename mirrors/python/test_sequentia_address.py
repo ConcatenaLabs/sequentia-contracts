@@ -275,5 +275,36 @@ class PignusVault(unittest.TestCase):
                                  want, e["name"])
 
 
+class OracleBond(unittest.TestCase):
+    def test_bond_rules_agree_with_their_vectors(self):
+        v = json.loads(read(os.path.join(ROOT, "templates", "oracle_bond", "rules.json")))
+        self.assertEqual(tuple(v["reasons"]), sa.ORACLE_BOND_REASONS)
+        self.assertEqual(v["burn_script"], sa.ORACLE_BOND_BURN_SCRIPT.hex())
+        seen = set()
+        for c in v["conflict"]:
+            got = sa.oracle_bond_conflict(bytes.fromhex(c["bonded"]), bytes.fromhex(c["m1"]), bytes.fromhex(c["s1"]),
+                                          bytes.fromhex(c["m2"]), bytes.fromhex(c["s2"]))
+            self.assertEqual(got, c["reason"], c["name"])
+            self.assertEqual(got is None, c["conflict"], c["name"])
+            seen.add(got or "conflict")
+        self.assertEqual(seen, set(sa.ORACLE_BOND_REASONS) | {"conflict"})
+        for d in v["digests"]:
+            got = sa.oracle_bond_digest(d["kind"], d["genesis"], d["txid"], d["vout"], d["dest"])
+            self.assertEqual(got.hex(), d["digest"], d["name"])
+            self.assertTrue(sa.bip340_verify(bytes.fromhex(d["key"]), got, bytes.fromhex(d["signature"])), d["name"])
+            flipped = bytearray(bytes.fromhex(d["signature"]))
+            flipped[63] ^= 1
+            self.assertFalse(sa.bip340_verify(bytes.fromhex(d["key"]), got, bytes(flipped)), d["name"])
+        for b in v["burn"]:
+            self.assertEqual(str(sa.oracle_bond_burn_min(int(b["bond"]))), b["burn_min"])
+
+    def test_bip340_against_the_attestation_vectors(self):
+        v = json.loads(read(os.path.join(ROOT, "vectors", "attestations.json")))
+        for c in v["v2"]:
+            key, digest, sig = (bytes.fromhex(c[k]) for k in ("key", "digest", "signature"))
+            self.assertTrue(sa.bip340_verify(key, digest, sig), c["name"])
+            self.assertFalse(sa.bip340_verify(key, digest[::-1], sig), c["name"])
+
+
 if __name__ == "__main__":
     unittest.main()
