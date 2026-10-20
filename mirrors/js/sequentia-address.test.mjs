@@ -197,3 +197,31 @@ test('the pool split table hash and payouts agree with their vectors', async () 
     else assert.deepEqual(run().map(String), p.outputs, p.name);
   }
 });
+
+test('the Pignus vault liquidation rule agrees with its vectors', async () => {
+  const m = await import('./sequentia-address.mjs');
+  const v = JSON.parse(read(join(root, 'templates', 'pignus_vault', 'rules.json')));
+  for (const k of ['healthy', 'max_seizure', 'max_repay', 'liquidation']) assert.ok(v[k].length > 0, k);
+  for (const e of v.healthy) {
+    assert.equal(m.pignusVaultHealthy(e.collateral, e.debt, e.price, e.precision, e.liq_bp), e.healthy, e.name);
+  }
+  for (const e of v.max_seizure) {
+    assert.equal(String(m.pignusVaultMaxSeizure(e.repaid, e.price, e.precision, e.bonus_bp)), e.max_seizure, e.name);
+  }
+  for (const e of v.max_repay) {
+    assert.equal(String(m.pignusVaultMaxRepay(e.collateral, e.debt, e.price, e.precision, e.target_bp, e.bonus_bp)),
+      e.max_repay, e.name);
+  }
+  for (const e of v.liquidation) {
+    const run = () => m.pignusVaultLiquidation({ collateral: e.collateral, debt: e.debt, lastTime: e.last_time,
+      time: e.time, price: e.price, precision: e.precision, liqBp: e.liq_bp, targetBp: e.target_bp,
+      bonusBp: e.bonus_bp, paid: e.paid, kept: e.kept, matured: e.matured });
+    if (e.refused) {
+      assert.throws(run, (err) => err.message === e.refused, e.name);
+    } else {
+      const out = run();
+      assert.deepEqual({ repaid: String(out.repaid), seized: String(out.seized), closes: out.closes,
+        debt_after: String(out.debtAfter), last_time_after: out.lastTimeAfter }, e.result, e.name);
+    }
+  }
+});

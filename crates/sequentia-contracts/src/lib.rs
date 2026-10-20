@@ -13,6 +13,7 @@ pub mod descriptor;
 pub mod lint;
 pub mod pool;
 pub mod simplex;
+pub mod vault;
 
 use std::collections::HashMap;
 use std::sync::Arc;

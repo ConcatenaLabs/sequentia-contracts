@@ -1,0 +1,83 @@
+/* Wide arithmetic at 192 bits: products of three 64-bit numbers, their sums
+ * and comparisons, from 64-bit jets.
+ *
+ * A number is (high, middle, low), three 64-bit limbs, most significant
+ * first. The product of three u64 is below 2^192, so `w192_mul3` cannot fail;
+ * `w192_add` refuses a sum at or above 2^192, which a caller rules out by the
+ * bounds of what it adds. A contract that compares products of an amount, a
+ * price and a ratio then has no amount at which its arithmetic gives out.
+ *
+ * The comparisons take no branch on the values: a program pruned for one
+ * spend follows the same path on any other values, and a comparison that
+ * fails does so at the assertion that uses it.
+ * Include with `// include wide_arith192`.
+ */
+
+/* a * b * c, all 192 bits. */
+fn w192_mul3(a: u64, b: u64, c: u64) -> (u64, u64, u64) {
+    let (h, l): (u64, u64) = <u128>::into(jet::multiply_64(a, b));
+    let (l1, l0): (u64, u64) = <u128>::into(jet::multiply_64(l, c));
+    let (top, mid): (u64, u64) = <u128>::into(jet::full_multiply_64(h, c, l1, 0));
+    (top, mid, l0)
+}
+
+/* a + b; refuses a sum that does not fit in 192 bits. */
+fn w192_add(a: (u64, u64, u64), b: (u64, u64, u64)) -> (u64, u64, u64) {
+    let (a2, a1, a0): (u64, u64, u64) = a;
+    let (b2, b1, b0): (u64, u64, u64) = b;
+    let (c0, s0): (bool, u64) = jet::add_64(a0, b0);
+    let (c1, s1): (bool, u64) = jet::full_add_64(c0, a1, b1);
+    let (c2, s2): (bool, u64) = jet::full_add_64(c1, a2, b2);
+    assert!(jet::eq_1(<bool>::into(c2), 0));
+    (s2, s1, s0)
+}
+
+/* a < b, as a bit. The comparison takes no branch on the values, so a
+ * program pruned for one spend runs the same path on any other values. */
+fn w192_lt_bit(a: (u64, u64, u64), b: (u64, u64, u64)) -> u1 {
+    let (a2, a1, a0): (u64, u64, u64) = a;
+    let (b2, b1, b0): (u64, u64, u64) = b;
+    let low: u1 = jet::or_1(<bool>::into(jet::lt_64(a1, b1)), jet::and_1(<bool>::into(jet::eq_64(a1, b1)), <bool>::into(jet::lt_64(a0, b0))));
+    jet::or_1(<bool>::into(jet::lt_64(a2, b2)), jet::and_1(<bool>::into(jet::eq_64(a2, b2)), low))
+}
+
+/* a < b. */
+fn w192_lt(a: (u64, u64, u64), b: (u64, u64, u64)) -> bool {
+    <u1>::into(w192_lt_bit(a, b))
+}
+
+/* a <= b. */
+fn w192_le(a: (u64, u64, u64), b: (u64, u64, u64)) -> bool {
+    <u1>::into(jet::complement_1(w192_lt_bit(b, a)))
+}
+
+/* a * b; refuses a product that does not fit in 64 bits. */
+fn w192_mul_small(a: u64, b: u64) -> u64 {
+    let (h, l): (u64, u64) = <u128>::into(jet::multiply_64(a, b));
+    assert!(jet::eq_64(h, 0));
+    l
+}
+
+/* One step of 10^p: while p >= k, multiply by f = 10^k and take k off p. */
+fn w192_pow10_step(xp: (u64, u8), k: u8, f: u64) -> (u64, u8) {
+    let (x, p): (u64, u8) = xp;
+    match jet::le_8(k, p) {
+        true => {
+            let (borrow, q): (bool, u8) = jet::subtract_8(p, k);
+            (w192_mul_small(x, f), q)
+        },
+        false => (x, p),
+    }
+}
+
+/* 10^p for p <= 18, the largest power of ten below 2^63; refuses a larger p. */
+fn w192_pow10(p: u8) -> u64 {
+    assert!(jet::le_8(p, 18));
+    let xp: (u64, u8) = w192_pow10_step((1, p), 16, 10000000000000000);
+    let xp: (u64, u8) = w192_pow10_step(xp, 8, 100000000);
+    let xp: (u64, u8) = w192_pow10_step(xp, 4, 10000);
+    let xp: (u64, u8) = w192_pow10_step(xp, 2, 100);
+    let (x, rest): (u64, u8) = w192_pow10_step(xp, 1, 10);
+    assert!(jet::eq_8(rest, 0));
+    x
+}
