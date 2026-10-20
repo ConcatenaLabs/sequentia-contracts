@@ -15,7 +15,7 @@
 //! and its wallet itself, hands the tool the coins as the transactions that
 //! made them, and broadcasts what the tool returns once its wallet has signed
 //! the fee coins. `build` returns a transaction whose covenant input is
-//! finalized: the program is compiled from the template this tool sits beside,
+//! finalized: the program is compiled from the template built into the tool,
 //! placed in its tree, run and pruned against the final transaction, so a spend
 //! the covenant would refuse is never returned, and its cost is checked against
 //! the budget its witness earns. The covenant's signature commits to every
@@ -57,6 +57,16 @@ use smplx_sdk::transaction::{
 /// The template this tool spends, by its hash: `sequentia/mint-limiter`, version 1.
 const TEMPLATE_HASH: &str = "77218080daacd33cb636f1411920eb5f2d6ee805cb94d8d0651ce1808c0b557b";
 const LEAF: &str = "limiter";
+/// The template, built into the binary so that an installed tool needs no
+/// checkout beside it: its descriptor, its source and the helpers the source
+/// includes. `template` checks them as it would a directory's.
+const DESCRIPTOR: &str = include_str!("../../../templates/mint_limiter/descriptor.json");
+const SOURCE_NAME: &str = "mint_limiter.simf";
+const SOURCE: &str = include_str!("../../../templates/mint_limiter/mint_limiter.simf");
+const HELPERS: &[(&str, &str)] = &[(
+    "output_reader",
+    include_str!("../../../helpers/output_reader.simf"),
+)];
 /// BIP68's type flag: a relative lock in units of 512 seconds.
 const TIME_FLAG: u32 = 1 << 22;
 /// The least age, in blocks, of a coin a mint spends.
@@ -165,30 +175,54 @@ const USAGE: &str =
 struct Template {
     descriptor: Descriptor,
     model: Model,
-    dir: PathBuf,
+    /// Each Simplicity leaf's source by name, its helper includes resolved.
+    sources: BTreeMap<String, String>,
 }
 
+/// The built-in template's sources, expanded from the helpers built in.
+fn builtin_sources() -> Res<BTreeMap<String, String>> {
+    let text = sequentia_contracts::expand_with(SOURCE, &mut |name| {
+        HELPERS
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, t)| t.to_string())
+            .ok_or_else(|| format!("no helper {name} is built into this tool"))
+    })?;
+    Ok(BTreeMap::from([(SOURCE_NAME.to_string(), text)]))
+}
+
+/// The template: the one built in, or with `--template DIR` a directory's
+/// copy, which must be the same template.
 fn template(a: &Args) -> Res<Template> {
-    let dir = match a.opt("template") {
-        Some(d) => PathBuf::from(d),
-        None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/mint_limiter"),
+    let (descriptor, sources, at) = match a.opt("template") {
+        Some(d) => {
+            let dir = PathBuf::from(d);
+            let descriptor = Descriptor::load(&dir.join("descriptor.json"))?;
+            let raw = std::fs::read_to_string(dir.join(SOURCE_NAME)).map_err(e)?;
+            let sources =
+                BTreeMap::from([(SOURCE_NAME.to_string(), sequentia_contracts::expand(&raw)?)]);
+            (descriptor, sources, dir.display().to_string())
+        }
+        None => (
+            Descriptor::parse(DESCRIPTOR)?,
+            builtin_sources()?,
+            "the built-in template".to_string(),
+        ),
     };
-    let descriptor = Descriptor::load(&dir.join("descriptor.json"))?;
     if descriptor.template_hash != TEMPLATE_HASH {
         return fail(format!(
-            "{}: template {} is not the mint limiter this tool spends, {TEMPLATE_HASH}",
-            dir.display(),
+            "{at}: template {} is not the mint limiter this tool spends, {TEMPLATE_HASH}",
             descriptor.template_hash
         ));
     }
-    // Compiles each source with the pinned compiler and checks its root,
-    // lints, witness and cost bound against the descriptor.
-    descriptor.validate(&dir)?;
+    // Compiles each source with the pinned compiler and checks its source
+    // hash, root, lints, witness and cost bound against the descriptor.
+    descriptor.validate_sources(&sources)?;
     let model = descriptor.model()?;
     Ok(Template {
         descriptor,
         model,
-        dir,
+        sources,
     })
 }
 
@@ -413,9 +447,11 @@ fn contract(
         Ok(match n {
             TreeNode::Branch(a, b) => TapTree::branch(walk(t, a, values)?, walk(t, b, values)?),
             TreeNode::Simplicity { name, program } => {
-                let raw = std::fs::read_to_string(t.dir.join(&program.source)).map_err(e)?;
-                let text = sequentia_contracts::expand(&raw)?;
-                let p = Program::new(text, &NoArguments).with_debug_symbols(false);
+                let text = t
+                    .sources
+                    .get(&program.source)
+                    .ok_or_else(|| format!("leaf {name}: no source {}", program.source))?;
+                let p = Program::new(text.clone(), &NoArguments).with_debug_symbols(false);
                 let cmr = hex(&p.try_cmr().map_err(e)?);
                 if cmr != program.cmr {
                     return fail(format!(
@@ -1183,5 +1219,25 @@ mod tests {
         let d = Descriptor::load(&dir.join("descriptor.json")).unwrap();
         assert_eq!(d.template_hash, TEMPLATE_HASH);
         d.validate(&dir).unwrap();
+    }
+
+    #[test]
+    fn the_built_in_template_is_the_checkouts() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/mint_limiter");
+        let file = std::fs::read_to_string(dir.join(SOURCE_NAME)).unwrap();
+        let built = builtin_sources().unwrap();
+        assert_eq!(
+            built[SOURCE_NAME],
+            sequentia_contracts::expand(&file).unwrap()
+        );
+        let args = |values: BTreeMap<String, String>| Args {
+            command: "build".to_string(),
+            values,
+            flags: Vec::new(),
+        };
+        let t = template(&args(BTreeMap::new())).unwrap();
+        assert_eq!(t.descriptor.template_hash, TEMPLATE_HASH);
+        let given = BTreeMap::from([("template".to_string(), dir.display().to_string())]);
+        assert_eq!(template(&args(given)).unwrap().sources, t.sources);
     }
 }

@@ -58,13 +58,31 @@ pub fn helpers_dir() -> std::path::PathBuf {
 /// compiled program, and so its commitment root, depends only on the text this
 /// returns.
 pub fn expand(source: &str) -> Result<String, String> {
+    let dir = helpers_dir();
+    expand_with(source, &mut |name| {
+        let path = dir.join(format!("{name}.simf"));
+        std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))
+    })
+}
+
+/// [`expand`] with the helpers' texts from `helper`, which is given a helper's
+/// name and returns its text, rather than from `helpers/`. The same splicing,
+/// so the two never resolve one source differently. A program that carries its
+/// helpers inside its binary expands with this and reads no file.
+///
+/// # Errors
+/// A bad helper name, or the first error `helper` returns.
+pub fn expand_with(
+    source: &str,
+    helper: &mut dyn FnMut(&str) -> Result<String, String>,
+) -> Result<String, String> {
     let mut seen = std::collections::BTreeSet::new();
-    expand_in(source, &helpers_dir(), &mut seen)
+    expand_in(source, helper, &mut seen)
 }
 
 fn expand_in(
     source: &str,
-    dir: &std::path::Path,
+    helper: &mut dyn FnMut(&str) -> Result<String, String>,
     seen: &mut std::collections::BTreeSet<String>,
 ) -> Result<String, String> {
     if !source
@@ -82,10 +100,8 @@ fn expand_in(
                     return Err(format!("include: bad helper name {name:?}"));
                 }
                 if seen.insert(name.to_string()) {
-                    let path = dir.join(format!("{name}.simf"));
-                    let text = std::fs::read_to_string(&path)
-                        .map_err(|e| format!("include {name}: {}: {e}", path.display()))?;
-                    out.push_str(&expand_in(&text, dir, seen)?);
+                    let text = helper(name).map_err(|e| format!("include {name}: {e}"))?;
+                    out.push_str(&expand_in(&text, helper, seen)?);
                     if !out.ends_with('\n') {
                         out.push('\n');
                     }
