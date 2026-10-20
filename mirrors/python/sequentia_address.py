@@ -790,6 +790,80 @@ def pignus_vault_liquidation(collateral, debt, last_time, time, price, precision
 
 
 
+# ---- The oracle bond (templates/oracle_bond) --------------------------------
+
+ORACLE_PRICE_TAG = "Sequentia/oracle/price"
+ORACLE_BOND_TAG = "Sequentia/oracle/bond"
+ORACLE_BOND_NOTICE, ORACLE_BOND_WITHDRAW = 1, 2
+ORACLE_BOND_BURN_SCRIPT = bytes([0x6A])
+ORACLE_BOND_REASONS = ("length", "version", "key", "signature", "pair", "precision", "time", "price")
+
+
+def bip340_verify(key, digest, sig):
+    """BIP340: whether `sig` (64 bytes) is `key`'s (32-byte x-only) signature
+    over the 32-byte `digest`."""
+    key, digest, sig = bytes(key), bytes(digest), bytes(sig)
+    if len(key) != 32 or len(digest) != 32 or len(sig) != 64:
+        return False
+    try:
+        pt = _lift_x(int.from_bytes(key, "big"))
+    except ValueError:
+        return False
+    r, s = int.from_bytes(sig[:32], "big"), int.from_bytes(sig[32:], "big")
+    if r >= P or s >= N:
+        return False
+    e = int.from_bytes(tagged("BIP0340/challenge", sig[:32] + key + digest), "big") % N
+    R = _add(_mul(s, G), _mul(N - e, pt))
+    return R is not None and R[1] % 2 == 0 and R[0] == r
+
+
+def oracle_bond_conflict(bonded, m1, s1, m2, s2):
+    """Whether two signed format-2 messages are a conflict the bond of the key
+    `bonded` is slashed for: None when they are, else the first reason in
+    ORACLE_BOND_REASONS that they are not. Beacons are not compared."""
+    bonded, m1, m2 = bytes(bonded), bytes(m1), bytes(m2)
+    if len(m1) != 142 or len(m2) != 142:
+        return "length"
+    if m1[0] != 2 or m2[0] != 2:
+        return "version"
+    if m1[1:33] != bonded or m2[1:33] != bonded:
+        return "key"
+    if not (bip340_verify(bonded, tagged(ORACLE_PRICE_TAG, m1), s1)
+            and bip340_verify(bonded, tagged(ORACLE_PRICE_TAG, m2), s2)):
+        return "signature"
+    if m1[33:97] != m2[33:97]:
+        return "pair"
+    if m1[105] != m2[105]:
+        return "precision"
+    if m1[106:110] != m2[106:110]:
+        return "time"
+    if m1[97:105] == m2[97:105]:
+        return "price"
+    return None
+
+
+def oracle_bond_burn_min(c):
+    """The least a slash burns from a bond coin of `c` atoms: half, rounded up."""
+    if not isinstance(c, int) or isinstance(c, bool) or not 0 <= c < 1 << 64:
+        raise ValueError("amount out of range")
+    return c - c // 2
+
+
+def oracle_bond_digest(kind, genesis, txid, vout, dest=None):
+    """The digest the oracle key signs to give notice on (kind 1) or to
+    withdraw (kind 2, `dest` the SHA256 of the destination script) the coin
+    `txid:vout`; `genesis` and `txid` in internal byte order."""
+    if kind not in (ORACLE_BOND_NOTICE, ORACLE_BOND_WITHDRAW) or (dest is None) != (kind == ORACLE_BOND_NOTICE):
+        raise ValueError("a notice names no destination and a withdrawal one")
+    m = bytes([kind]) + unhex(genesis, 32) if isinstance(genesis, str) else bytes([kind]) + bytes(genesis)
+    m += (unhex(txid, 32) if isinstance(txid, str) else bytes(txid)) + int(vout).to_bytes(4, "big")
+    if dest is not None:
+        m += unhex(dest, 32) if isinstance(dest, str) else bytes(dest)
+    if len(m) != (69 if dest is None else 101):
+        raise ValueError("genesis, txid and destination are 32 bytes each")
+    return tagged(ORACLE_BOND_TAG, m)
+
+
 # ---------------------------------------------------------------------------
 # The capped sale (templates/capped_sale): the allocation tree
 # ---------------------------------------------------------------------------

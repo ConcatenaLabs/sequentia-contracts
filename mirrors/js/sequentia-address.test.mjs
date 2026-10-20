@@ -226,6 +226,33 @@ test('the Pignus vault liquidation rule agrees with its vectors', async () => {
   }
 });
 
+test('the oracle bond rules agree with their vectors', async () => {
+  const m = await import('./sequentia-address.mjs');
+  const v = JSON.parse(read(join(root, 'templates', 'oracle_bond', 'rules.json')));
+  assert.deepEqual(v.reasons, m.ORACLE_BOND_REASONS);
+  assert.equal(v.burn_script, Buffer.from(m.ORACLE_BOND_BURN_SCRIPT).toString('hex'));
+  const h = (x) => new Uint8Array(Buffer.from(x, 'hex'));
+  const seen = new Set();
+  for (const c of v.conflict) {
+    const got = m.oracleBondConflict(h(c.bonded), h(c.m1), h(c.s1), h(c.m2), h(c.s2));
+    assert.equal(got, c.reason, c.name);
+    assert.equal(got === null, c.conflict, c.name);
+    seen.add(got ?? 'conflict');
+  }
+  assert.deepEqual([...seen].sort(), [...m.ORACLE_BOND_REASONS, 'conflict'].sort());
+  for (const d of v.digests) {
+    const got = m.oracleBondDigest(d.kind, d.genesis, d.txid, d.vout, d.dest);
+    assert.equal(Buffer.from(got).toString('hex'), d.digest, d.name);
+    assert.ok(m.bip340Verify(h(d.key), got, h(d.signature)), d.name);
+    const flipped = h(d.signature);
+    flipped[63] ^= 1;
+    assert.ok(!m.bip340Verify(h(d.key), got, flipped), d.name);
+  }
+  for (const b of v.burn) assert.equal(String(m.oracleBondBurnMin(b.bond)), b.burn_min);
+  const a = JSON.parse(read(join(root, 'vectors', 'attestations.json')));
+  for (const c of a.v2) assert.ok(m.bip340Verify(h(c.key), h(c.digest), h(c.signature)), c.name);
+});
+
 test('the capped sale allocation tree and payment agree with their vectors', async () => {
   const m = await import('./sequentia-address.mjs');
   const v = JSON.parse(read(join(root, 'templates', 'capped_sale', 'allocations.json')));

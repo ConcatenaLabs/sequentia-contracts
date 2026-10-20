@@ -738,6 +738,74 @@ export function poolSplitPayouts(numerators, denom, capBp, collected, withheld) 
   return [net - paid, ...shares];
 }
 
+// ---- The oracle bond (templates/oracle_bond) --------------------------------
+
+export const ORACLE_PRICE_TAG = 'Sequentia/oracle/price';
+export const ORACLE_BOND_TAG = 'Sequentia/oracle/bond';
+export const ORACLE_BOND_NOTICE = 1;
+export const ORACLE_BOND_WITHDRAW = 2;
+export const ORACLE_BOND_BURN_SCRIPT = new Uint8Array([0x6a]);
+export const ORACLE_BOND_REASONS = ['length', 'version', 'key', 'signature', 'pair', 'precision', 'time', 'price'];
+
+const sameBytes = (a, b) => Buffer.from(a).equals(Buffer.from(b));
+
+// BIP340: whether `sig` (64 bytes) is `key`'s (32-byte x-only) signature over
+// the 32-byte `digest`.
+export function bip340Verify(key, digest, sig) {
+  if (key.length !== 32 || digest.length !== 32 || sig.length !== 64) return false;
+  let pt;
+  try {
+    pt = liftX(big(key));
+  } catch {
+    return false;
+  }
+  const r = big(sig.slice(0, 32));
+  const s = big(sig.slice(32));
+  if (r >= P || s >= N) return false;
+  const e = mod(big(tagged('BIP0340/challenge', concat(sig.slice(0, 32), key, digest))), N);
+  const R = add(mul(s, G), mul(mod(N - e, N), pt));
+  return R !== null && R[1] % 2n === 0n && R[0] === r;
+}
+
+// Whether two signed format-2 messages are a conflict the bond of the key
+// `bonded` is slashed for: null when they are, else the first reason in
+// ORACLE_BOND_REASONS that they are not. Beacons are not compared.
+export function oracleBondConflict(bonded, m1, s1, m2, s2) {
+  if (m1.length !== 142 || m2.length !== 142) return 'length';
+  if (m1[0] !== 2 || m2[0] !== 2) return 'version';
+  if (!sameBytes(m1.slice(1, 33), bonded) || !sameBytes(m2.slice(1, 33), bonded)) return 'key';
+  if (!bip340Verify(bonded, tagged(ORACLE_PRICE_TAG, m1), s1)
+    || !bip340Verify(bonded, tagged(ORACLE_PRICE_TAG, m2), s2)) return 'signature';
+  if (!sameBytes(m1.slice(33, 97), m2.slice(33, 97))) return 'pair';
+  if (m1[105] !== m2[105]) return 'precision';
+  if (!sameBytes(m1.slice(106, 110), m2.slice(106, 110))) return 'time';
+  if (sameBytes(m1.slice(97, 105), m2.slice(97, 105))) return 'price';
+  return null;
+}
+
+// The least a slash burns from a bond coin of `c` atoms: half, rounded up.
+export function oracleBondBurnMin(c) {
+  const v = pignusAmount(c, 'amount');
+  return v - v / 2n;
+}
+
+// The digest the oracle key signs to give notice on (kind 1) or to withdraw
+// (kind 2, `dest` the SHA256 of the destination script) the coin txid:vout;
+// genesis and txid in internal byte order, as 32 bytes or 64 hex characters.
+export function oracleBondDigest(kind, genesis, txid, vout, dest = null) {
+  const b32 = (x) => (typeof x === 'string' ? unhex(x, 32) : new Uint8Array(x));
+  if ((kind !== ORACLE_BOND_NOTICE && kind !== ORACLE_BOND_WITHDRAW) || (dest === null) !== (kind === ORACLE_BOND_NOTICE)) {
+    throw new Error('a notice names no destination and a withdrawal one');
+  }
+  const v = Buffer.alloc(4);
+  v.writeUInt32BE(vout, 0);
+  const parts = [new Uint8Array([kind]), b32(genesis), b32(txid), v];
+  if (dest !== null) parts.push(b32(dest));
+  const m = concat(...parts);
+  if (m.length !== (dest === null ? 69 : 101)) throw new Error('genesis, txid and destination are 32 bytes each');
+  return tagged(ORACLE_BOND_TAG, m);
+}
+
 // ---- The Pignus vault, version 2 (templates/pignus_vault) -------------------
 // Amounts and prices are BigInts or decimal strings; precisions and ratios are
 // numbers. Every comparison is the program's, made exactly.
