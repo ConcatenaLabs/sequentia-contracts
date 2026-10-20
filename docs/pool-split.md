@@ -54,7 +54,7 @@ the fee may go to the claimer, so up to the cap of every claim goes to whoever
 claims first, a block producer included: the cap is what the members agree to
 give up for a claim to happen without them. A claim that keeps nothing back pays its fee from
 a coin the claimer brings, in any asset the network accepts; the covenant
-allows it, and the claim builder in `tools/pool-claim` does not build it.
+allows it, and the claim tool does not build it.
 
 `floor(net × n / DENOM)` is computed without overflow as
 `q × n + floor(r × n / DENOM)` with `(q, r) = divmod(net, DENOM)`; the twin's
@@ -62,7 +62,7 @@ allows it, and the claim builder in `tools/pool-claim` does not build it.
 2^31 and its amounts below 2^63.
 
 The table's numerators are positive and sum to `DENOM`, which is from 1 to
-2^31 − 1, and `WITHHOLD_CAP_BP` is at most 10,000. The claim builder refuses a
+2^31 − 1, and `WITHHOLD_CAP_BP` is at most 10,000. The claim tool refuses a
 record that breaks any of these; the covenant itself only refuses a claim whose
 rows from 1 would be owed more than `net`, so a table summing above `DENOM`
 could never be claimed.
@@ -94,6 +94,70 @@ reproduce every one of them.
 - Spend a coinbase reward before it matures. That is the chain's rule, not the
   covenant's: on the real chains a coinbase output waits 1,000 blocks.
 
+## Using it as a pool
+
+Write the pool's record, a JSON file:
+
+```json
+{"pool_record": 1,
+ "template": "sequentia/pool-split",
+ "denom": 10000,
+ "withhold_cap_bp": 100,
+ "rows": [{"label": "pool", "address": "tb1q...", "numerator": 500},
+          {"label": "alice", "address": "tb1q...", "numerator": 6000},
+          {"label": "bob", "script": "5120...", "numerator": 3500}]}
+```
+
+Then derive the covenant's address and commit the pool to it:
+
+```sh
+tools/pool-claim/pool_claim.py address --record pool.json
+sequentia-cli -named announcepayout mode=direct payout_script=<script_pubkey from above>
+```
+
+`announcepayout` binds only after the chain's notice period, and from then on
+every block the pool's signer produces pays its reward to the covenant, one
+coinbase output per fee asset. The record is what anyone needs to claim, so the
+pool publishes it beside its announcement.
+
+## Claiming
+
+```sh
+T=tools/pool-claim/pool_claim.py
+CLI="sequentia-cli -datadir=/path/to/node"
+$T status --record pool.json --cli "$CLI"                  # mature and immature value, by asset
+$T claim  --record pool.json --cli "$CLI" --dry-run        # build and check, broadcast nothing
+$T claim  --record pool.json --cli "$CLI"                  # every mature coin of the richest asset
+$T claim  --record pool.json --cli "$CLI" --asset <id> --coin <txid>:<n> --keep max --claimer <address>
+$T verify --record pool.json --cli "$CLI" --tx <hex>       # check a claim someone else built
+```
+
+`claim` reads the pool's coins from the node, keeps the mature ones (1,000
+confirmations on the testnet and mainnet; `--maturity` on a custom chain, whose
+default is 100), and claims one asset's coins in one transaction. It pays the fee
+in that asset at the node's floor (`--fee-rate` sets atoms per vbyte), from what
+it withholds; `--keep` adds an amount for the claimer, and `--keep max` keeps
+whatever the cap leaves beyond the fee. It pads a Simplicity claim with an annex
+when the program costs more than its witness earns. Before broadcasting it
+checks its own claim as `verify` does, then asks the node with
+`testmempoolaccept`.
+
+It refuses, before the chain would, a coin that is not yet mature, a withheld
+amount over the cap, a row whose share would be zero, and an asset the node does
+not accept for fees. `verify` refuses a claim with any row paid other than its
+share, to another script, in another asset or with a nonce, a claim over the
+cap, a coin of the pool in another asset, and an immature coin. The tool exits 3
+with the reason on standard error.
+
+It needs Python 3 and, for a Simplicity claim, `seqc` built from this repository
+(`cargo build --release --bin seqc`).
+
+A claim is worth making once what it collects outgrows its fee by the cap's
+inverse: with a 1% cap, a claim must collect about a hundred times its fee. A
+pool whose blocks pay small rewards lets them accumulate and claims many coins
+at once; each coin beyond the first adds about 57 vbytes to a Simplicity claim
+and 63 to the twin's.
+
 ## Measured
 
 On regtest against the node, each claim confirmed (`harness/records/p1.json`):
@@ -112,11 +176,23 @@ fields carry the same figures.
 ## Tests
 
 `harness/tests/p1_pool_split.py` claims with each template from coins the wallet
-paid in, each claim built by `tools/pool-claim/pool_claim.py`, and refuses, in
-the mempool and in a block forced with `generateblock`, each against the claim
-it was changed from: one atom moved between two rows;
+paid in, and refuses, in the mempool and in a block forced with `generateblock`,
+each against the claim it was changed from: one atom moved between two rows;
 two rows' scripts swapped; a row's output with a nonce; a witness naming another
 withheld amount; a withheld amount one atom over the cap; a follower's value left
 out of the rows and taken; a coin of the pool in another asset beside the claim;
 the follow leaf at input 0, and beside a foreign input 0; nine inputs to the
 twin; and a 70-coin claim padded one byte short.
+
+`harness/tests/p2_pool_split_pos.py` runs the covenant as a pool's payout script
+on a proof-of-stake chain with the real chains' coinbase maturity of 1,000. The
+pool announces a direct payout to the Simplicity covenant's script, then to the
+twin's address; every block's reward, in the policy asset and in an issued
+asset, is paid to the covenant in force. A claim at 17 and at 999 confirmations
+is refused by the tool, by the mempool and in a block
+(`bad-txns-premature-spend-of-coinbase`); at 1,000 the tool claims every reward
+of each asset through each covenant, and each row's output is its exact share. A
+wrong share and a withheld amount over the cap are refused in a block against an
+accepted control. `generateblock` cannot build a block on a proof-of-stake chain
+(`bad-posvrf-missing`), so the test forces a transaction into a block the staker
+produced, through the same `TestBlockValidity` check (`testproposedblock`).

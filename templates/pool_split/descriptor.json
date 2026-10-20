@@ -117,7 +117,7 @@
     }
   ],
   "measured": {
-    "source": "harness/records/p1.json",
+    "source": "harness/records/p1.json; the proof-of-stake claims in harness/records/p2.json",
     "claim_one_coin": {
       "transaction": "one coin, three rows (P2WPKH, P2TR, P2PKH), the fee from what the claim withholds",
       "vsize": 931,

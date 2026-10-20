@@ -56,6 +56,8 @@ jobs:
         run: python3 mirrors/python/test_sequentia_address.py -v
       - name: JavaScript
         run: node --test mirrors/js/sequentia-address.test.mjs
+      - name: Pool claim tool, offline
+        run: python3 tools/pool-claim/test_pool_claim.py -v
       - name: Go
         working-directory: mirrors/go
         run: |
