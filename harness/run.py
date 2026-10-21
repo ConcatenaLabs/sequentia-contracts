@@ -44,6 +44,7 @@ TESTS = [
     ("p2", "p2_pool_split_pos", "The pool split covenant as a pool's payout script on a proof-of-stake chain, maturity 1,000"),
     ("m1", "m1_mint_limiter", "The mint limiter: mints within a window's allowance, the window's reset, the brake and the recovery"),
     ("m2", "m2_mint_limiter_tool", "The mint-limiter tool: every path it builds is mined, and each is read back"),
+    ("m3", "m3_mint_limiter_sign", "The mint-limiter tool signs a mint inside a transaction built elsewhere: a round-shaped mint mined, one atom over the allowance refused"),
     ("u1", "u1_supply_cap", "The supply cap: mints up to the cap on each side of a rekey, the retirement; every violation refused"),
     ("u2", "u2_supply_cap_tool", "The token-covenants tool's supply cap: every path it builds is mined, and each is read back"),
     ("v1", "v1_verifier_token", "The verifier token: a halt that burns the verifier records it, the resume mints it back there; every violation refused"),
@@ -108,8 +109,8 @@ def main():
     if not a.no_build:
         subprocess.check_call(["cargo", "build", "--release", "--locked", "--features", "sequentia-tx",
                                "--bin", "seqc"], cwd=ROOT)
-        # m2 drives the mint-limiter tool, which builds in its own workspace.
-        if any(t[0] == "m2" for t in chosen) and not os.environ.get("MINT_LIMITER"):
+        # m2 and m3 drive the mint-limiter tool, which builds in its own workspace.
+        if any(t[0] in ("m2", "m3") for t in chosen) and not os.environ.get("MINT_LIMITER"):
             subprocess.check_call(["cargo", "build", "--release", "--locked", "--manifest-path",
                                    os.path.join(ROOT, "tools", "mint-limiter", "Cargo.toml")], cwd=ROOT)
         # u2 and v2 drive the token-covenants tool, which builds in its own workspace too.
