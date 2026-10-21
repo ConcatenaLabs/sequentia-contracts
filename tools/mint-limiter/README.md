@@ -114,6 +114,48 @@ on, a mnemonic that is not the path's key, or a coin that is not the instance
 in the state given.
 
 ```text
+mint-limiter sign --instance I --mnemonic-file F < request.json
+```
+
+A mint at input 0 of a transaction built elsewhere, for a program that builds
+its own transactions and reissues straight into the outputs it pays (an Arca
+operator mints a round's refresh liquidity into the round's batch output this
+way):
+
+```json
+{
+  "tx": "<hex of the transaction, its other inputs not yet signed>",
+  "prevouts": ["<hex of the output each input spends, in input order>"],
+  "state": {"minted": "0", "elapsed": 0, "armed": 0},
+  "entropy": "<the asset's issuance entropy>"
+}
+```
+
+Input 0 must spend the instance's coin in the state given and carry a
+reissuance of the asset against the explicit token, of an explicit amount, its
+sequence the coin's age in blocks (at least 2); output 0 must be the successor
+in the state the mint leads to, the token's whole amount, explicitly and with
+no nonce; the transaction's version must be 2 or more, and every issuance in it
+of denomination 8 (the PSET the program is run from reads every issuance as
+8). Everything else in the transaction is the caller's. The tool checks what
+`build` checks of the mints it builds, signs `sig_all_hash` over the whole
+transaction with the operator key, satisfies and prunes the program, and
+returns the transaction with input 0's witness (`hex`, and the stack alone as
+`witness`), the operator's `signature`, the `next_state`, the `successor` and
+the program's size, cost bound and budget. The caller's wallet signs its own
+inputs afterwards; their signatures, and the witness, change nothing the
+covenant's signature covers.
+
+```text
+mint-limiter sighash --instance I < request.json
+```
+
+The message a signature on input 0 covers, the program's `sig_all_hash`, for
+the same request without `entropy`. It signs and checks nothing beyond the
+coin at input 0: a reviewer uses it to see what a spend commits to, and a
+harness to sign a spend the covenant must refuse.
+
+```text
 mint-limiter follow --instance I < request.json
 ```
 
@@ -128,3 +170,6 @@ not make, such as the brake.
 `cargo test --release --manifest-path tools/mint-limiter/Cargo.toml` runs the
 unit tests. `harness/run.py m2` runs the tool against a regtest node: every
 path is built, signed by the wallet, mined, and read back with `follow`.
+`harness/run.py m3` runs `sign` on a transaction shaped as an Arca round and
+mines it, checks `sighash` against the harness's own, and forces the same
+round minting one atom over the allowance into a block, which refuses it.

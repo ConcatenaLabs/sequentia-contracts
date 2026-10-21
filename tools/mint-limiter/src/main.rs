@@ -8,6 +8,8 @@
 //! mint-limiter address   --instance I [--state MINTED,ELAPSED,ARMED]
 //! mint-limiter arm-signature --instance I --mnemonic-file COLD
 //! mint-limiter build     --instance I [--mnemonic-file F]   < request.json
+//! mint-limiter sign      --instance I --mnemonic-file F      < request.json
+//! mint-limiter sighash   --instance I                        < request.json
 //! mint-limiter follow    --instance I                        < request.json
 //! ```
 //!
@@ -36,6 +38,7 @@ use serde_json::{json, Value};
 use sequentia_contracts::descriptor::{Descriptor, Model, Node as TreeNode};
 use sequentia_contracts::simplicityhl::elements::encode::{deserialize, serialize_hex};
 use sequentia_contracts::simplicityhl::elements::hashes::{sha256, Hash};
+use sequentia_contracts::simplicityhl::elements::pset::PartiallySignedTransaction;
 use sequentia_contracts::simplicityhl::elements::secp256k1_zkp::{
     schnorr, Keypair, Message, Secp256k1, XOnlyPublicKey,
 };
@@ -167,7 +170,7 @@ impl Args {
 }
 
 const USAGE: &str =
-    "usage: mint-limiter (key | instance | address | arm-signature | build | follow) [options]; see tools/mint-limiter/README.md";
+    "usage: mint-limiter (key | instance | address | arm-signature | build | sign | sighash | follow) [options]; see tools/mint-limiter/README.md";
 
 // ---------------------------------------------------------------------------
 // The template and the instance
@@ -872,6 +875,242 @@ fn cmd_build(a: &Args) -> Res<Value> {
     Ok(out)
 }
 
+/// A transaction built elsewhere whose input 0 spends the covenant's coin,
+/// with the output each input spends, read from a `sign` or `sighash`
+/// request; and the transaction as a PSET carrying those outputs, the form
+/// the program's environment is read from.
+struct Given {
+    tx: Transaction,
+    prevouts: Vec<TxOut>,
+    pst: PartiallySignedTransaction,
+}
+
+fn given(req: &Value) -> Res<Given> {
+    let raw = req["tx"]
+        .as_str()
+        .ok_or("tx: the hex of the transaction, its covenant input not yet signed")?;
+    let tx: Transaction = deserialize(&unhex(raw)?).map_err(|x| format!("tx: {x}"))?;
+    let list = req["prevouts"]
+        .as_array()
+        .ok_or("prevouts: the hex of the output each input spends, in input order")?;
+    if list.len() != tx.input.len() {
+        return fail(format!(
+            "{} spent outputs for {} inputs: every input's is needed, the signature covers them all",
+            list.len(),
+            tx.input.len()
+        ));
+    }
+    let mut prevouts = Vec::with_capacity(list.len());
+    for (i, p) in list.iter().enumerate() {
+        let h = p
+            .as_str()
+            .ok_or_else(|| format!("prevouts[{i}]: the hex of an output"))?;
+        prevouts.push(deserialize::<TxOut>(&unhex(h)?).map_err(|x| format!("prevouts[{i}]: {x}"))?);
+    }
+    if tx.version < 2 {
+        return fail("the transaction's version is below 2: consensus enforces no relative lock, so no mint's age holds");
+    }
+    // Sequentia's PSET carries no issuance denomination and reads every one
+    // as 8, so the transaction the program is run against is this one only
+    // when each of its issuances says 8 (the denomination is not in the
+    // program's signature hash either way).
+    for (i, input) in tx.input.iter().enumerate() {
+        if input.has_issuance() && input.asset_issuance.denomination != 8 {
+            return fail(format!(
+                "input {i}'s issuance has denomination {}; this tool signs only beside issuances of denomination 8",
+                input.asset_issuance.denomination
+            ));
+        }
+    }
+    let mut pst = PartiallySignedTransaction::from_tx(tx.clone());
+    for (i, (input, p)) in pst.inputs_mut().iter_mut().zip(&prevouts).enumerate() {
+        // The PSET marks an issuance (and a peg-in) in the high bits of the
+        // output index; the transaction it gives back must name the outpoint
+        // spent.
+        input.previous_output_index = tx.input[i].previous_output.vout;
+        input.witness_utxo = Some(p.clone());
+    }
+    let back = pst.extract_tx().map_err(e)?;
+    if back.txid() != tx.txid() {
+        return fail("the transaction does not survive the PSET's encoding unchanged");
+    }
+    Ok(Given { tx, prevouts, pst })
+}
+
+/// The program's tree in `state`, with the covenant's coin at input 0 of `g`:
+/// the instance in that state, holding the token explicitly. Returns the
+/// tree and the token's amount.
+fn covenant_input(
+    t: &Template,
+    inst: &Instance,
+    state: State,
+    g: &Given,
+) -> Res<(ContractTree, u64)> {
+    let (tree, _) = contract(t, inst, state)?;
+    let coin = &g.prevouts[0];
+    if coin.script_pubkey != tree.script_pubkey() {
+        return fail(format!(
+            "input 0 does not spend the instance in state {:?}: it spends {}",
+            state,
+            hex(coin.script_pubkey.as_bytes())
+        ));
+    }
+    let token = param_asset(inst, "TOKEN")?;
+    match explicit(coin) {
+        Some((a, amount)) if a == token => Ok((tree, amount)),
+        Some((a, _)) => fail(format!("input 0's coin holds {a}, not the token {token}")),
+        None => fail("input 0's coin is confidential; the covenant reads only explicit coins"),
+    }
+}
+
+/// A mint at input 0 of a transaction built elsewhere, such as an Arca round
+/// that reissues straight into the outputs it pays: checked as `build`
+/// checks the mints it builds, then signed and satisfied in place.
+fn cmd_sign(a: &Args) -> Res<Value> {
+    a.only(&["instance", "template", "mnemonic-file"])?;
+    let t = template(a)?;
+    let inst = instance(a)?;
+    let net = network(&inst)?;
+    let mut text = String::new();
+    std::io::stdin().read_to_string(&mut text).map_err(e)?;
+    let req = sequentia_contracts::descriptor::parse_json(&text)?;
+    let state = State::from_json(&req["state"])?;
+    let g = given(&req)?;
+    let (tree, amount) = covenant_input(&t, &inst, state, &g)?;
+    let asset = param_asset(&inst, "ASSET")?;
+    let token = param_asset(&inst, "TOKEN")?;
+
+    // Input 0's reissuance: the asset, of an explicit amount, against the
+    // explicit token.
+    let input = &g.tx.input[0];
+    if !input.has_issuance() {
+        return fail(
+            "input 0 carries no issuance: a mint reissues the asset on the covenant's input",
+        );
+    }
+    let issuance = input.asset_issuance;
+    let entropy = sha256::Midstate::from_str(
+        req["entropy"]
+            .as_str()
+            .ok_or("entropy: the asset's issuance entropy")?,
+    )
+    .map_err(e)?;
+    if AssetId::from_entropy(entropy) != asset {
+        return fail("this entropy issues another asset than the instance's");
+    }
+    if AssetId::reissuance_token_from_entropy(entropy, false) != token {
+        return fail("this entropy's explicit reissuance token is not the instance's token");
+    }
+    // A reissuance from an explicit token carries any nonce but zero, which
+    // marks a new issuance; the token itself is the coin's, explicitly.
+    if issuance.asset_blinding_nonce.as_ref() == &[0u8; 32] {
+        return fail(
+            "input 0's issuance is a new issuance, not a reissuance: its blinding nonce is zero",
+        );
+    }
+    if issuance.asset_entropy != entropy.to_byte_array() {
+        return fail("input 0 reissues under another entropy than the asset's");
+    }
+    let x = match issuance.amount {
+        confidential::Value::Explicit(x) if x > 0 => x,
+        confidential::Value::Explicit(_) => return fail("a reissuance of zero is not valid"),
+        _ => return fail(
+            "input 0's reissued amount is not explicit; the covenant counts explicit mints only",
+        ),
+    };
+    if !matches!(
+        issuance.inflation_keys,
+        confidential::Value::Null | confidential::Value::Explicit(0)
+    ) {
+        return fail("input 0's issuance also issues reissuance tokens");
+    }
+
+    // The age the input's own sequence declares: a relative lock in blocks.
+    let d = input.sequence.to_consensus_u32();
+    if d & (1 << 31) != 0 {
+        return fail("input 0's sequence has its disable bit set: it declares no age");
+    }
+    if d & TIME_FLAG != 0 {
+        return fail(
+            "input 0's sequence is a lock in time; a mint declares its coin's age in blocks",
+        );
+    }
+    let age = u16::try_from(d & 0xffff).map_err(e)?;
+    let next = mint_next(&inst, state, age, x)?;
+
+    // Output 0: the successor, the token's whole amount in the next state.
+    let (succ, sd) = contract(&t, &inst, next)?;
+    let out0 = g.tx.output.first().ok_or("the transaction pays nothing")?;
+    if out0.script_pubkey != succ.script_pubkey()
+        || explicit(out0) != Some((token, amount))
+        || !out0.nonce.is_null()
+    {
+        return fail(format!(
+            "output 0 is not the covenant's successor: the token's whole amount, {amount}, explicitly and with no nonce, at the instance in state {next:?}"
+        ));
+    }
+
+    let program = tree.program(LEAF).map_err(e)?;
+    let sig = signer_for(a, &inst, net, "OPERATOR_KEY")?
+        .sign_program(&g.pst, &program, 0, &net, None, &SigMessage::Sighash)
+        .map_err(e)?
+        .serialize();
+    let wv = witness(&program, &inst, state, "mint", &sig)?;
+    let spend = program
+        .finalize_spend(&g.pst, &wv, 0, &net)
+        .map_err(|x| format!("the covenant refuses this spend: {x}"))?;
+    let rule: BudgetRule = net.simplicity_budget();
+    if !rule.covers(spend.cost, &spend.stack) {
+        return fail("the spend's witness does not earn its cost bound; this tool does not pad");
+    }
+    let budget = rule.report(spend.cost, &spend.stack);
+    let mut tx = g.tx.clone();
+    tx.input[0].witness.script_witness = spend.stack.clone();
+    Ok(json!({
+        "path": "mint",
+        "txid": tx.txid().to_string(),
+        "hex": serialize_hex(&tx),
+        "witness": spend.stack.iter().map(|w| hex(w)).collect::<Vec<_>>(),
+        "signature": hex(&sig),
+        "state": state.json(),
+        "next_state": next.json(),
+        "age": age,
+        "minted": x.to_string(),
+        "successor": {
+            "txid": tx.txid().to_string(), "vout": 0, "amount": amount,
+            "script_pubkey": hex(succ.script_pubkey().as_bytes()),
+            "address": t.descriptor.addresses(&sd.output_key)?,
+        },
+        "program_bytes": spend.stack[1].len(),
+        "witness_bytes": spend.stack[0].len(),
+        "cost_bound_milli_wu": budget.cost_milliweight,
+        "budget_wu": budget.budget,
+    }))
+}
+
+/// The message a signature on input 0 covers: the program's `sig_all_hash`
+/// for the covenant in `state`. It signs nothing and checks no path: a
+/// reviewer uses it to see what a spend's signature commits to, and a test
+/// harness to sign a spend the covenant must refuse.
+fn cmd_sighash(a: &Args) -> Res<Value> {
+    a.only(&["instance", "template"])?;
+    let t = template(a)?;
+    let inst = instance(a)?;
+    let net = network(&inst)?;
+    let mut text = String::new();
+    std::io::stdin().read_to_string(&mut text).map_err(e)?;
+    let req = sequentia_contracts::descriptor::parse_json(&text)?;
+    let state = State::from_json(&req["state"])?;
+    let g = given(&req)?;
+    let (tree, _) = covenant_input(&t, &inst, state, &g)?;
+    let program = tree.program(LEAF).map_err(e)?;
+    let env = program.get_env(&g.pst, 0, &net).map_err(e)?;
+    Ok(json!({
+        "sig_all_hash": hex(&env.c_tx_env().sighash_all().to_byte_array()),
+        "txid": g.tx.txid().to_string(),
+    }))
+}
+
 /// What a transaction that spends the covenant's coin did to it.
 fn cmd_follow(a: &Args) -> Res<Value> {
     a.only(&["instance", "template"])?;
@@ -1095,6 +1334,8 @@ fn run() -> Res<Value> {
         "arm-signature" => cmd_arm_signature(&a),
         "build" => cmd_build(&a),
         "follow" => cmd_follow(&a),
+        "sign" => cmd_sign(&a),
+        "sighash" => cmd_sighash(&a),
         _ => fail(USAGE),
     }
 }

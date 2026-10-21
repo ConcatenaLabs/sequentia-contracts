@@ -189,8 +189,11 @@ path with `tools/mint-limiter` and mines it at the same sizes.
 
 `tools/mint-limiter` builds and signs every path. It reaches no node and holds no
 credential: a bridge reads the chain and its wallet, hands the tool the coins,
-has its wallet sign the fee coin and broadcasts. Its `README.md` gives the
-commands and the request format.
+has its wallet sign the fee coin and broadcasts. A program that builds its own
+transactions mints into them instead with `sign`: it puts the covenant at
+input 0 with the reissuance and the successor at output 0, and the tool checks,
+signs and satisfies that input in place. Its `README.md` gives the commands and
+the request format.
 
 ## Moving a token in
 
