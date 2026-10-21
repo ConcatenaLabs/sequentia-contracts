@@ -1,0 +1,270 @@
+/* Arca's resting order, `arca/order-2`: the fill leaf of an order that rests
+ * in an Arca tree as a leaf, which the operator fills with the maker offline
+ * and which nobody, the maker included, fills without the operator.
+ *
+ * The leaf is a taproot output with the NUMS internal key and four leaves:
+ *
+ *     root = TapBranch( TapBranch(C, L), TapBranch(F, D) )
+ *
+ *   C  the standard rebindable collaborative path of an Arca leaf (tapscript),
+ *      the maker's key and the operator's, under the coin's salt;
+ *   L  the landing (tapscript): one exit delay after the leaf reaches the
+ *      chain, anyone moves it, whole, into SeqDEX's own order for the same
+ *      terms;
+ *   F  this program;
+ *   D  the hidden data leaf H_TapData(P), the order's parameters:
+ *
+ *   ASSET_A      the asset the order sells, the coin's own
+ *   ASSET_B      the asset a fill pays in
+ *   RATE_NUM     the price: RATE_NUM atoms of ASSET_B ...
+ *   RATE_DEN     ... for every RATE_DEN atoms of ASSET_A
+ *   MIN_LOT      the least a fill takes, and the least a remainder holds
+ *   OWNER        the maker's leaf key, in C
+ *   OPERATOR     the operator's key S
+ *   SALT         this coin's salt
+ *   EXIT_UNITS   the exit delay, in 512-second units
+ *   LAND_LEAF    the tapleaf hash of L
+ *   CREDIT_0..3  the keys of the next four credits, the next one first
+ *
+ * A FILL, with the coin at input k, needs the operator's signature and pays
+ * the maker:
+ *
+ *   - S signs SHA256(T ‖ SALT ‖ asset_in ‖ value_in ‖ m ‖ output_hash(0) ‖ …
+ *     ‖ output_hash(m-1)), T = SHA256(SHA256("Arca/order-fill") ‖ genesis),
+ *     m the outputs it authorises (2, 3 or 4, from the witness). It names the
+ *     coin by its salt, asset and value, never its outpoint, so it holds
+ *     whatever outpoint an unroll gives the coin;
+ *   - output 2k pays the maker's credit: ASSET_B, explicitly and with no
+ *     nonce, at least ceil(fill × RATE_NUM / RATE_DEN), to the vtxo-1 leaf of
+ *     CREDIT_0 and S under the salt SHA256(SHA256("Arca/order-credit") ‖
+ *     SALT), with the exit delay EXIT_UNITS;
+ *   - a partial fill leaves at output 2k+1 the remainder: ASSET_A, explicitly
+ *     and with no nonce, at least MIN_LOT, at the order-2 leaf of the same
+ *     parameters but SALT' = SHA256(SHA256("Arca/order-rest") ‖ SALT) and the
+ *     credit keys moved up one (the last zero);
+ *   - the fill is at least MIN_LOT and at least one atom, and CREDIT_0 is not
+ *     zero: an order fills at most four times along one lineage.
+ *
+ * PATH is true for a partial fill and false for a whole one. No branch
+ * depends on a value but PATH and m, and each witness value is read in a
+ * statement of its own, so the pruned program is one constant for each PATH
+ * and m, whatever the order and whatever k.
+ */
+// include output_reader
+
+/* SHA256 of the tapscript leaf (0xc4) holding the 216-byte rebindable
+ * two-party script of `owner` and `operator` under the constant `k`. */
+fn collab_leaf(owner: u256, operator: u256, k: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x69ffb55ab8c81c21f58b2adcb0835a08608af59d042f033764339cd8e6ba33e7);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x69ffb55ab8c81c21f58b2adcb0835a08608af59d042f033764339cd8e6ba33e7);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0xc4d8);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, 0x825188765155a569);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x7620);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, k);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0xcdc87ecdc97c7e7e7e7c7e7c00ce7e00cf7c7e7e00d152937e7ea87b7c7e7c76);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x51a06351ce7e51cf7c7e7e51d152937e7ea87b7c7e7c687652a06352ce7e52cf);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x7c7e7e52d152937e7ea87b7c7e7c687653a06353ce7e53cf7c7e7e53d152937e);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, 0x7ea87b7c7e7c6875);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0xa87d);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x20);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0xc220);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0xc1);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256 of the tapscript leaf (0xc4) holding the 40-byte exit
+ * `<delay> OP_CHECKSEQUENCEVERIFY OP_DROP <key> OP_CHECKSIG`: a time-based
+ * delay of `units` is the three-byte number [lo, hi, 0x40]. */
+fn exit_leaf(units: u16, key: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x69ffb55ab8c81c21f58b2adcb0835a08608af59d042f033764339cd8e6ba33e7);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x69ffb55ab8c81c21f58b2adcb0835a08608af59d042f033764339cd8e6ba33e7);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0xc428);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x03);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, jet::left_rotate_16(8, units));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, 0x40b27520);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0xac);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256(a ‖ b). */
+fn hash_pair(a: u256, b: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, a);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, b);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* K = SHA256(SHA256("ArcaRbd1" ‖ genesis) ‖ salt): the constant a rebindable
+ * script pushes, bound to this chain and the salt. */
+fn leaf_constant(salt: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, 0x4172636152626431);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    hash_pair(jet::sha_256_ctx_8_finalize(ctx), salt)
+}
+
+/* SHA256 of the scriptPubKey OP_1 <key> of the taproot output with the NUMS
+ * internal key and the tree `root`. */
+fn output_of(root: u256) -> u256 {
+    let key: Pubkey = jet::build_taptweak(0x50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0, root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* The data leaf's hash over the parameters, in the template's order. */
+fn data_leaf(terms: (u256, u256, u64, u64, u64), keys: (u256, u256, u256), place: (u16, u256), credits: (u256, u256, u256, u256)) -> u256 {
+    let (asset_a, asset_b, num, den, min_lot): (u256, u256, u64, u64, u64) = terms;
+    let (owner, operator, salt): (u256, u256, u256) = keys;
+    let (units, land): (u16, u256) = place;
+    let (c0, c1, c2, c3): (u256, u256, u256, u256) = credits;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_a);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_b);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, num);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, den);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, min_lot);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, salt);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, units);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, land);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, c0);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, c1);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, c2);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, c3);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* Refuses a < b for 128-bit a and b: b - a must not borrow. */
+fn assert_le_128(a: u128, b: u128) {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    let (borrow, lo): (bool, u64) = jet::subtract_64(bl, al);
+    let (underflow, hi): (bool, u64) = jet::full_subtract_64(borrow, bh, ah);
+    assert!(jet::eq_1(<bool>::into(underflow), 0));
+}
+
+/* The digest the operator signs: T ‖ SALT ‖ asset_in ‖ value_in ‖ m ‖ the
+ * hashes of outputs 0..m-1. */
+fn fill_digest(salt: u256, held: (u256, u64), m: u8) -> u256 {
+    let (asset, value): (u256, u64) = held;
+    let tag: u256 = hash_pair(0x4f727a3c29b71a76d333579aaa5e6098d4c710729fb80585be54ebc94e895e96, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, tag);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, salt);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, value);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, m);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(0)));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(1)));
+    let ctx: Ctx8 = match jet::le_8(3, m) {
+        true => {
+            let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(2)));
+            match jet::eq_8(m, 4) {
+                true => jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::output_hash(3))),
+                false => {
+                    assert!(jet::eq_8(m, 3));
+                    ctx
+                },
+            }
+        },
+        false => {
+            assert!(jet::eq_8(m, 2));
+            ctx
+        },
+    };
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn main() {
+    // Each value is read in a statement of its own, so no two witness values
+    // share a node whatever they hold, and the pruned program does not depend
+    // on them.
+    let asset_a: u256 = witness::ASSET_A;
+    let asset_b: u256 = witness::ASSET_B;
+    let num: u64 = witness::RATE_NUM;
+    let den: u64 = witness::RATE_DEN;
+    let min_lot: u64 = witness::MIN_LOT;
+    let owner: u256 = witness::OWNER;
+    let operator: u256 = witness::OPERATOR;
+    let salt: u256 = witness::SALT;
+    let units: u16 = witness::EXIT_UNITS;
+    let land: u256 = witness::LAND_LEAF;
+    let c0: u256 = witness::CREDIT_0;
+    let c1: u256 = witness::CREDIT_1;
+    let c2: u256 = witness::CREDIT_2;
+    let c3: u256 = witness::CREDIT_3;
+    let sig: Signature = witness::OPERATOR_SIG;
+    let m: u8 = witness::M;
+    let partial: bool = witness::PATH;
+
+    let terms: (u256, u256, u64, u64, u64) = (asset_a, asset_b, num, den, min_lot);
+
+    // The parameters are the data leaf's: it is the first hash of the
+    // control block's path, and the path is two hashes long.
+    assert!(jet::eq_256(data_leaf(terms, (owner, operator, salt), (units, land), (c0, c1, c2, c3)), unwrap(jet::tappath(0))));
+    let beside: u256 = unwrap(jet::tappath(1));
+    assert!(is_none::<u256>(jet::tappath(2)));
+
+    // The coin holds ASSET_A, explicitly.
+    let (held, locked): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, asset_a));
+
+    // The operator authorises this fill: outputs 0..m-1 for this coin.
+    jet::bip_0340_verify((operator, fill_digest(salt, (held, locked), m)), sig);
+
+    // Input k owns outputs 2k and 2k+1.
+    let k: u32 = jet::current_index();
+    let (carry, credit_at): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let (carry1, rest_at): (bool, u32) = jet::increment_32(credit_at);
+    assert!(jet::eq_1(<bool>::into(carry1), 0));
+
+    // What leaves the coin: all of it, or all but the remainder at 2k+1,
+    // which rests again as this order under the next salt and the credit keys
+    // moved up one.
+    let filled: u64 = match partial {
+        true => {
+            let next: u256 = hash_pair(0x857ce28f34fc2f2eecd031ecb3c7681ad6c35e5a3d8af20ac4145b8eed85344b, salt);
+            let rest_data: u256 = data_leaf(terms, (owner, operator, next), (units, land), (c1, c2, c3, 0));
+            let rest_left: u256 = jet::build_tapbranch(collab_leaf(owner, operator, leaf_constant(next)), land);
+            let rest_right: u256 = jet::build_tapbranch(jet::tapleaf_hash(), rest_data);
+            let rest_root: u256 = jet::build_tapbranch(rest_left, rest_right);
+            let (rest_asset, rest, rest_script): (u256, u64, u256) = out_explicit(rest_at);
+            assert!(jet::eq_256(rest_asset, asset_a));
+            assert!(jet::eq_256(rest_script, output_of(rest_root)));
+            out_no_nonce(rest_at);
+            assert!(jet::le_64(min_lot, rest));
+            minus(locked, rest)
+        },
+        false => locked,
+    };
+    assert!(jet::le_64(min_lot, filled));
+    assert!(jet::lt_64(0, filled));
+
+    // The credit: at least ceil(filled × num / den) of ASSET_B, to the
+    // maker's next credit leaf, under a salt that descends from this coin's.
+    let exhausted: bool = jet::eq_256(c0, 0);
+    assert!(jet::eq_1(<bool>::into(exhausted), 0));
+    let credit_salt: u256 = hash_pair(0x520234becd6a398d80f7f6cef7bff123c06f04e2c4e896e85c414f8862e5306a, salt);
+    let credit_root: u256 = jet::build_tapbranch(collab_leaf(c0, operator, leaf_constant(credit_salt)), exit_leaf(units, c0));
+    let (paid_asset, paid, paid_script): (u256, u64, u256) = out_explicit(credit_at);
+    assert!(jet::eq_256(paid_asset, asset_b));
+    assert!(jet::eq_256(paid_script, output_of(credit_root)));
+    out_no_nonce(credit_at);
+    assert_le_128(jet::multiply_64(filled, num), jet::multiply_64(paid, den));
+}
