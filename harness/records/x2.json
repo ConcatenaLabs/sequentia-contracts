@@ -1,0 +1,292 @@
+{
+ "whitelist": {
+  "bitcoin": 100000000,
+  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000,
+  "738cd2b72b92ef3d4d46bf6a9f648f1372af8059a55b1077c30b8f09c838449b": 100000000,
+  "157d27058172695f390eadd76aea4a620c3905470e654ff02964c73d55753dd6": 100000000
+ },
+ "instance": {
+  "template_hash": "d68cecbf19c501abc78987833bec226e4a081ef19e484c0b060d3033b4239f60",
+  "cmr": "c676964fbb78174782e24f18b5fb3fdd65a844d7317ca43b84547807461ca659",
+  "max_cost_wu": 469,
+  "params": {
+   "ASSET_A": "37510f7fa7639f78361bd70a7e60307ebefffef2fffac7342a52640cc879fa50",
+   "ASSET_B": "9b4438c8098f0bc377105ba55980af72138f649f6abf464d3def922bb7d28c73",
+   "RATE_NUM": "0000000000000003",
+   "RATE_DEN": "0000000000000002",
+   "MIN_LOT": "0000000000002710",
+   "MAKER": "3870a6a1e9c7120671d9e1693259f8bfce2bb025d82bc59bc1a939f7fcbdd7e8",
+   "EXPIRY": "000000a7",
+   "REFUND_KEY": "8bbd92506263cc8afadaa4176ed953a08b9385f929877032deba7d915859333d",
+   "GUARD_ASSET": "e28a7bd59a1c8f1c23dabdda50cd89b738c6595326855a9582a63fcdbddf133c",
+   "GUARD_AMOUNT": "00000000000003e8"
+  },
+  "address": "ert1parrrvqzlun2pvte7hu75cyjnjv9rucukydzlw0awqyq9gpzzw7lqrw8hwl",
+  "data_leaf_bytes": 196
+ },
+ "funded": {
+  "O": "Utxo(a33cddc3036e4865460ee9931685266774374e07b73a1d10dd03a35d135af7f1:2)",
+  "R": "Utxo(2af65df7aa90cf9a05bb93c00345c53d5ae49bb39a1cc027f8763bd222becfe1:2)"
+ },
+ "guard/neg_no_guard_coin_the_payment_coin_at_input_0": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 76ec3e6e7417d97419fab93d64125ba35fb52eba0f521f3a50ec82b71ac1781e failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_the_guard_coin_at_input_2_not_0": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 83331611306e6e2dcb01411c11565b854369aa55d00f3d184cda156faf7cef58 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_the_order_at_input_0": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "at_input": 1,
+   "testmempoolaccept": true,
+   "vsize": 1111
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 483a7624fd73bad9812704b72882ff9dc5ca1359602f5bbd060ec1d9aa8b6822 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_a_guard_coin_of_another_asset": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on f6752c730d0133b5e91811d24db93934bb7192e4464653cf2408f0a334535ea6 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_a_guard_coin_one_atom_short": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 016329030bb4e50a340034fe0b2b95c3defce19efa3baaf3bbeb4ee70133adc4 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_a_guard_coin_one_atom_over": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.3] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 9751a2939b4318a086b0ff3d659627bd0a28967a988b14d4a39afa57ea82bd7e failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "guard/neg_a_confidential_guard_coin_valid_proofs": {
+  "rejected": true,
+  "expect": "Assertion failed",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 78d036d1d0e403b9115775708209878f6226add8ecf579a923843811fd9bb21d failed with mempool-script-verify-flag-failed (Assertion failed)"
+  ]
+ },
+ "fill/neg_payment_one_atom_under_the_price_beside_the_guard": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+   "same_coin": true,
+   "vsize": 1111,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.2] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on b40b20b47aefcd5508a5d83ddb8c99b2ce30791342cf5600ebd50219e1b110e9 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "fill/partial_at_input_1_beside_the_guard": {
+  "size": 2561,
+  "vsize": 1111,
+  "weight": 4442,
+  "nin": 4,
+  "nout": 7,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00020000",
+   "asset": "157d27058172695f390eadd76aea4a620c3905470e654ff02964c73d55753dd6",
+   "value": "0.00020000"
+  },
+  "txid": "28c1cc33489180b9c1030fee66aee55487887b9d5b940abf2652b8869356da5d",
+  "confirmed": true,
+  "block_height": 117,
+  "input_1": {
+   "program_bytes": 1286,
+   "witness_bytes": 197,
+   "stack_serialized_bytes": 1587,
+   "budget_wu": 6398,
+   "cost_bound_milli_wu": 468209,
+   "cost_bound_wu": 469
+  },
+  "filled": 400000001,
+  "paid": 600000002,
+  "k": 1,
+  "guard": {
+   "asset": "G",
+   "amount": 1000
+  },
+  "witness_input0_bytes": 107
+ },
+ "fill/whole_at_input_1_beside_the_guard": {
+  "size": 2372,
+  "vsize": 1005,
+  "weight": 4019,
+  "nin": 4,
+  "nout": 6,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00020000",
+   "asset": "157d27058172695f390eadd76aea4a620c3905470e654ff02964c73d55753dd6",
+   "value": "0.00020000"
+  },
+  "txid": "96e47ac155c2cc8ab1e3403d38348da582ea2b35a714c9a7c1c0b3252e879e4f",
+  "confirmed": true,
+  "block_height": 118,
+  "input_1": {
+   "program_bytes": 1177,
+   "witness_bytes": 197,
+   "stack_serialized_bytes": 1478,
+   "budget_wu": 5962,
+   "cost_bound_milli_wu": 424859,
+   "cost_bound_wu": 425
+  },
+  "filled": 599999999,
+  "paid": 899999999,
+  "witness_input0_bytes": 107
+ },
+ "refund/neg_without_the_guard_the_order_at_input_0": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ecad6a46a06d75749abeac391c767449ed0e93a394607302cfd35a61a3ff4817",
+   "same_coin": true,
+   "at_input": 1,
+   "testmempoolaccept": true,
+   "vsize": 709
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 70e2bf47b9dfd8cc02096f27b2a188cb2a205d479f9b870954f454dd52cfd4b8 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "refund/neg_a_guard_coin_of_another_asset": {
+  "rejected": true,
+  "expect": "Assertion failed inside jet",
+  "control": {
+   "txid": "ecad6a46a06d75749abeac391c767449ed0e93a394607302cfd35a61a3ff4817",
+   "same_coin": true,
+   "vsize": 709,
+   "testmempoolaccept": true
+  },
+  "reject-reason": "mempool-script-verify-flag-failed (Assertion failed inside jet)",
+  "rpc-error": "mempool-script-verify-flag-failed (Assertion failed inside jet) (code -26)",
+  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Assertion failed inside jet) (code -25)",
+  "block-log": [
+   "[httpworker.1] [validation.cpp:3755] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on e0257f8f143092caf1edf9c95bbc948452e5f8f47c953b4a8b78095f19e15a13 failed with mempool-script-verify-flag-failed (Assertion failed inside jet)"
+  ]
+ },
+ "refund/by_height_beside_the_guard": {
+  "size": 1705,
+  "vsize": 709,
+  "weight": 2833,
+  "nin": 3,
+  "nout": 4,
+  "testmempoolaccept": true,
+  "fees": {
+   "base": "0.00020000",
+   "asset": "157d27058172695f390eadd76aea4a620c3905470e654ff02964c73d55753dd6",
+   "value": "0.00020000"
+  },
+  "txid": "ecad6a46a06d75749abeac391c767449ed0e93a394607302cfd35a61a3ff4817",
+  "confirmed": true,
+  "block_height": 168,
+  "input_1": {
+   "program_bytes": 731,
+   "witness_bytes": 261,
+   "stack_serialized_bytes": 1098,
+   "budget_wu": 4442,
+   "cost_bound_milli_wu": 365110,
+   "cost_bound_wu": 366
+  },
+  "expiry": 167,
+  "witness_input0_bytes": 107
+ },
+ "refund_program": {
+  "bytes": 731,
+  "hex": "e8c3740a1d028740a1d028740a1d028740a1d028740a1d02841871c71c71c71c71b59c71c71c71c70b51061c71c71c71c6d271c71c71c2d017021b811c71c71c6e2d38e38e16441871c71b8e0e38580dc7871b8a4502c42de170c20c3102841c61c81420c38e38e40a1071c71c71c814276741081420c37298c38e38e166d5720420506da7e591871c71c70b400da8141b849b95261c71c71c2d0d5700420506e263f2d8c38e38e38e16901b902837199b98330e38e38e38e38e385b4070f40a0dc843f35261c71c71c71c71c71c2dc039148141b92c6e620c38e38e38e38e16b6ab4108141b94c7e72cc38e38e38e38e385b0072a9028372d8dced9871c71c71c71c70b600e5d20506e618fceb1871c71c71c71c71c2da039648141b997d588201801c180e27038e00e4481c9c0395c072f00e6280e65c0e6940e6ac0e6d40e6f80e7140e72c9b000047c38bc10848a19d10ce721679ffdbe34cfe6be9cdcd3872421a13fbb72313429844b4efcd84c5c2e816050330b6b36e804601160020e04038024a68881aff5160cc0c9f8ecead8b401fa97eef5fc60752e98d247561a4da6ce965e0c038081900d69b200000000047c28300ab4e0388200e09f0e22068212284181e2303003404e7990618814373837d4117120671d935311563277b133e5c2a486b72ed4ccb3ccde95b1c35bf9ba10c300c0264838c390283741c0760142627dc7e5b9c70b001c76071d1f95a71c2dccdb90200e40a4507e87e040b600a0e0a071001c56171b80d00e82b3a050d04a87a1632719dd1a355b54017b423f0c5567aeec0e19cd33b73cec839b2f7167e8383f41b38a0580dd0829b21dcd6500040b001c8a40a1899b7be14ea5814810cfba13383a128d4655c6271f71fe341065530fa1680c3e8fa7c020380190dd1047701c002a3f4221c2ad8c0409c1c0e2c16d01c5c0e1a0f1181c4a13985038cc5c56038d45caf01c6e2e5d80e390744e01d1400745201d1500745601d1600745a01d1700745e01d180"
+ },
+ "fill_program": {
+  "Left(true)": {
+   "bytes": 1286,
+   "hex": "e986ba050e8143a050e8143a050e8143a050e8143a050e81420c38e38e38e38e38dace38e38e38e385a8830e38e38e38e36938e38e38e1680b810dc08e38e38e37169c71c70b220c38e38dc7071c2c06e3c38dc522816216f0b861061881420e30e40a1061c71c72050838e38e38e40a13b3a0840a1061b94c61c71c70b36ab902102836d3f2c8c38e38e385a006d40a0dc24dca930e38e38e1686ab802102837131f96c61c71c71c70b480dc8141b8ccdcc19871c71c71c71c71c2da0387a0506e421f9a930e38e38e38e38e38e16e01c8a40a0dc963731061c71c71c71c70b5b55a0840a0dca63f39661c71c71c71c71c2d8039548141b96c6e76cc38e38e38e38e385b0072e90283730c7e758c38e38e38e38e38e16d01cb240a0dccbeac4100c00e0c071381c70072240e4e01cae03978073140732e0734a073560736a0737c0738a073964d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e1740b0281985b59b74023008b001070201c012534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601c040c806b4d900000000023e1418055a701c4100704f87110341091420c0f1181801a0273cc830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfcdd0861806013241c61c8141ba0e03b00a1313ee3f2dce385800e3b038e8fcad38e16e66dc810072052283f43f0205b0050705038800e2b0b8dc068074159d0283f4321fa170507e8543f4270a0fd090283f422a0c150b10b58dd0728141ba0dcc38e40a129f87030409d14c6e4620506e88d0f2300a13137224e40a0dd1001e4a0142627d82620a06c038201c248141b9c63741e1c70b001cc581cc5240e5ea0506e87911a5c4108141b8ecc4c020583368100733a7e888334c710420506de90370a80da073527e481c71c71c71c72050ce55755d1320a731b6342aa9629e6c7bf0507865aa08bd59aca45d9b370bf381c6e1077c3403a28c0733a274529b99b40a0dd1b81e66c0a13137330720506e8cf0f346050989f61fa2d8e3be1a810073ac2d616803501c0c0e16071010283747b987e4a9c71c70b201cf201cf19fa160c4fc3820205800e7b00e7acfc6bf0d20e8d8212284181e7ec0c00d048b2079f3e7c8100c4073f891401cdd83820fd20930e38e38e38e38e3f448982ad380640803a044dd08871c71c709ac5d171d157a68c810274789b9c3312073102a0398703a08cfd22c30547e9178201b40e04170a0188b8b40662e4200d22e4700d60e4d03cbf0398109cc19f8b8dd2401401c560741da6cc000000000000000010267a701c810074211f9a4380e57a0506e571ba3d0e38e38e38e16901d0a8074299b9606e9391c71c71c71c71c70b600e86303a188fc3c0e529f8b4dd20538e38e38e16869b72041b9486e9019c71c71c70b400d62d63749404e94c9fa4a4720506e9099ba42870a80e55a0506e559ba45071ba45471c2c02cda679021028372dd2073fc2a039fd03a2644c40e857069038301c380e230389891401d0be2e4000e86117210074318b92a03a1941ca30b95203a1a05cb201d0d40e5c85d00e03a1b41d01e1740b00e8700741081d0501741680e8740741b01d0a60742d01d0bc6e73def14bca67c10a4cfc913a9af10d64c58aacfbc8a0b5fdd489e425bd4e6680c03a1bc2746781d0fa2e87501d0fe2e8b901d1022e8c501d1060e97301d2ea03a5dc074bc80e97b01d2fa03a5fc074c080e98301d30a00",
+   "path_byte": "40"
+  },
+  "Left(false)": {
+   "bytes": 1177,
+   "hex": "e96aba050e8143a050e8143a050e8143a050e8143a050e81420c38e38e38e38e38dace38e38e38e385a8830e38e38e38e36938e38e38e1680b810dc08e38e38e37169c71c70b220c38e38dc7071c2c06e3c38dc522816216f0b861061881420e30e40a1061c71c72050838e38e38e40a13b3a0840a1061b94c61c71c70b36ab902102836d3f2c8c38e38e385a006d40a0dc24dca930e38e38e1686ab802102837131f96c61c71c71c70b480dc8141b8ccdcc19871c71c71c71c71c2da0387a0506e421f9a930e38e38e38e38e38e16e01c8a40a0dc963731061c71c71c71c70b5b55a0840a0dca63f39661c71c71c71c71c2d8039548141b96c6e76cc38e38e38e38e385b0072e90283730c7e758c38e38e38e38e38e16d01cb240a0dccbeac4100c00e0c071381c70072240e4e01cae03978073140732e0734a073560736a0737c0738a073964d800023e1c5e0842450ce8867390b3cffedf1a67f35f4e6e69c39210d09fddb9189a14c225a77e6c262e1740b0281985b59b74023008b001070201c012534440d7fa8b066064fc76756c5a00fd4bf77afe303a974c6923ab0d26d3674b2f0601c040c806b4d900000000023e1418055a701c4100704f87110341091420c0f1181801a0273cc830c40a1b9c1bea08b890338ec9a988ab193bd899f2e152435b976a6659e66f4ad8e1adfcdd0861806013241c61c8141ba0e03b00a1313ee3f2dce385800e3b038e8fcad38e16e66dc810072052283f43f0205b0050705038800e2b0b8dc068074159d0283f4321fa170507e8543f4270a0fd090283f422a0c150b10b58dd0728141ba0dcc38e40a129f87030409d14c6e4620506e88d0f2300a13137224e40a0dd1001e4a0142627d82620a06c038201c248141b9c63741e1c70b001cc581cc5240e5ea0506e87911a5c4108141b8ecc4c020583368100733a7e888334c710420506de90370a80da073527e481c71c71c71c720506e79ce38e39bb576ea2c7890f07ed99dd1c17e4e74174d89f6f362a96220ef1f880190468738300d01351fa318c38e38e38e38e374680a34e0190200e73136600000000000000000813469c0720401ce99f8d4ef8680746080e6ec4e8c3373728141ba3e83cdc8142626e6d8e40a0dd1da1e7040a1313ec3f46a1c77c350200e7d05ac2d006a038181c2c0e2020506e90a986e8a538e38e38e385a40740281d0087e87930dd22438e38e38e38e38e16c01d02a0740a1f901f0d20e9009091420c0f41201801a091640f40e740d8201880e82548a00e7901c107e511ba328e38e38e385a1a6dc8107e8ba30dd19271c71c71c2d00360b60dd21613a4be7e90c1c8141ba364dd1b470ab4d19021028373ea61ba3c0e374791c70b00b3699e40840a0db520738c2a039c503a1844c40e81f069038381c40071281c5048a00e8271720c074148b93403a0ac5cac01d05a0e5d85cd000e8301735203a0c81cdd05ce780e835073ae173bc03a0e01cf481cf805cfa80e83c073fc0740d81d044074131b9cf7bc52f299f042933f244ea6bc43593162ab3ef2282d7f752279096f5399a0300e83709d12e074228ba0f4074238ba204074248ba2340742583a55c074ac80e95b01d2ba03a57c074b080e96301d2ca03a59c074b480",
+   "path_byte": "00"
+  }
+ }
+}

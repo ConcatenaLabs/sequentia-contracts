@@ -1,0 +1,192 @@
+/* A SeqDEX order that moves only beside a guard coin: a maker's coin of ASSET_A
+ * that any taker fills, in part or in whole, by paying ASSET_B to the maker at
+ * the order's price, and that the maker takes back after its expiry, exactly
+ * as `seqdex/order` does, with one more rule on every path: input 0 of the
+ * spending transaction holds exactly GUARD_AMOUNT of GUARD_ASSET, explicitly.
+ *
+ * The guard is what lets an asset whose rules are enforced by a covenant at
+ * input 0 sit in an order. OpenDAMP's verifier is such a covenant: it holds q
+ * of its verifier asset V at input 0 of every transfer of its asset. An order
+ * guarded by (V, q) can then be filled or refunded only in a transaction that
+ * also spends the verifier, and the verifier scans everything the order's coin
+ * pays out. An order with no guard would let its asset leave on the order's
+ * own terms alone: a fill constrains the payment and the remainder, never the
+ * taker's output.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(terms)))
+ *
+ * One program serves every guarded order: its terms sit in the data leaf
+ * beside it, in this order, and the spender repeats them in the witness:
+ *
+ *   ASSET_A       the asset the order sells, the coin's own asset
+ *   ASSET_B       the asset a fill pays in
+ *   RATE_NUM      the price: RATE_NUM atoms of ASSET_B ...
+ *   RATE_DEN      ... for every RATE_DEN atoms of ASSET_A
+ *   MIN_LOT       the least a fill takes, and the least a remainder holds
+ *   MAKER         SHA256 of the scriptPubKey that receives the payments
+ *   EXPIRY        a lock time: below 500,000,000 a block height, else a Unix
+ *                 time, which consensus compares with the median time past
+ *   REFUND_KEY    the x-only key that takes the coin back after EXPIRY
+ *   GUARD_ASSET   the asset input 0 must hold
+ *   GUARD_AMOUNT  how much of it, exactly
+ *
+ * The coin at input k owns outputs 2k and 2k+1, for any k of at least 1:
+ * input 0 is the guard's, so the order's outputs never include output 0.
+ *
+ *   GUARD   every path. The coin is not input 0, and input 0 holds exactly
+ *           GUARD_AMOUNT of GUARD_ASSET, its asset and its amount explicit.
+ *   FILL    anyone. The coin holds ASSET_A explicitly. A partial fill leaves
+ *           at output 2k+1 a remainder of ASSET_A, explicitly and with no
+ *           nonce, at this same script (the same program and the same terms)
+ *           and of at least MIN_LOT; a whole fill leaves nothing, and output
+ *           2k+1 is then the taker's. What leaves the coin, the fill, is at
+ *           least MIN_LOT and at least one atom. Output 2k pays MAKER at least
+ *           ceil(fill × RATE_NUM / RATE_DEN) of ASSET_B, explicitly and with
+ *           no nonce. The comparison is made on 128-bit products, so every
+ *           64-bit amount and price fills.
+ *   REFUND  the refund key, once the transaction's lock time reaches EXPIRY:
+ *           a BIP340 signature over jet::sig_all_hash(), which commits to the
+ *           chain, every input and output and this leaf.
+ *
+ * The spender chooses the path in PATH: Left(true) a partial fill, Left(false)
+ * a whole fill, Right(()) the refund. No branch of a fill depends on a value,
+ * and no two terms are read where equal values could share a node, so a
+ * fill's pruned program is one constant for every order and every k, and its
+ * witness is the data leaf's bytes followed by PATH. A caller builds a fill
+ * with no compiler. The refund's program is one of two constants, by whether
+ * EXPIRY is a height or a time.
+ */
+// include output_reader
+
+/* The data leaf's hash over the terms, in the template's order. */
+fn terms_leaf(assets: (u256, u256), rate: (u64, u64), min_lot: u64, maker: u256, refund: (u32, Pubkey), guard: (u256, u64)) -> u256 {
+    let (asset_a, asset_b): (u256, u256) = assets;
+    let (num, den): (u64, u64) = rate;
+    let (expiry, key): (u32, Pubkey) = refund;
+    let (guard_asset, guard_amount): (u256, u64) = guard;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_a);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_b);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, num);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, den);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, min_lot);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, maker);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, expiry);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, guard_asset);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, guard_amount);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Input 0 is another coin, and holds exactly `amount` of `asset`, its asset
+ * and amount explicit. */
+fn guard(asset: u256, amount: u64) {
+    assert!(jet::lt_32(0, jet::current_index()));
+    let (a0, v0): (Asset1, Amount1) = unwrap(jet::input_amount(0));
+    let id: u256 = match a0 {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    let value: u64 = match v0 {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    assert!(jet::eq_256(id, asset));
+    assert!(jet::eq_64(value, amount));
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* Refuses a < b for 128-bit a and b: b - a must not borrow. No branch
+ * depends on the values, so the pruned program does not either. */
+fn assert_le_128(a: u128, b: u128) {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    let (borrow, lo): (bool, u64) = jet::subtract_64(bl, al);
+    let (underflow, hi): (bool, u64) = jet::full_subtract_64(borrow, bh, ah);
+    assert!(jet::eq_1(<bool>::into(underflow), 0));
+}
+
+fn fill(assets: (u256, u256), rate: (u64, u64), min_lot: u64, maker: u256, partial: bool) {
+    let (asset_a, asset_b): (u256, u256) = assets;
+    let (num, den): (u64, u64) = rate;
+
+    // The coin holds ASSET_A, explicitly.
+    let (held, locked): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, asset_a));
+
+    // Input k owns outputs 2k and 2k+1.
+    let k: u32 = jet::current_index();
+    let (carry, credit): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let (carry1, rest_at): (bool, u32) = jet::increment_32(credit);
+    assert!(jet::eq_1(<bool>::into(carry1), 0));
+
+    // What leaves the coin: all of it, or all but the remainder at 2k+1.
+    let filled: u64 = match partial {
+        true => {
+            let (rest_asset, rest, rest_script): (u256, u64, u256) = out_explicit(rest_at);
+            assert!(jet::eq_256(rest_asset, asset_a));
+            assert!(jet::eq_256(rest_script, jet::current_script_hash()));
+            out_no_nonce(rest_at);
+            assert!(jet::le_64(min_lot, rest));
+            minus(locked, rest)
+        },
+        false => locked,
+    };
+    assert!(jet::le_64(min_lot, filled));
+    assert!(jet::lt_64(0, filled));
+
+    // The payment: at least ceil(filled × num / den) of ASSET_B to MAKER,
+    // that is filled × num <= paid × den, both products at 128 bits.
+    let (paid_asset, paid, paid_script): (u256, u64, u256) = out_explicit(credit);
+    assert!(jet::eq_256(paid_asset, asset_b));
+    assert!(jet::eq_256(paid_script, maker));
+    out_no_nonce(credit);
+    assert_le_128(jet::multiply_64(filled, num), jet::multiply_64(paid, den));
+}
+
+fn refund(expiry: u32, key: Pubkey, sig: Signature) {
+    match jet::lt_32(expiry, 500000000) {
+        true => jet::check_lock_height(expiry),
+        false => jet::check_lock_time(expiry),
+    };
+    jet::bip_0340_verify((key, jet::sig_all_hash()), sig);
+}
+
+fn main() {
+    // Each term is read in a statement of its own, so that no two witness
+    // values are read in one environment: two equal values read side by side
+    // (a price of 1:1, say) would be one shared node, and the program would
+    // then depend on the terms.
+    let asset_a: u256 = witness::ASSET_A;
+    let asset_b: u256 = witness::ASSET_B;
+    let num: u64 = witness::RATE_NUM;
+    let den: u64 = witness::RATE_DEN;
+    let min_lot: u64 = witness::MIN_LOT;
+    let maker: u256 = witness::MAKER;
+    let expiry: u32 = witness::EXPIRY;
+    let refund_key: Pubkey = witness::REFUND_KEY;
+    let guard_asset: u256 = witness::GUARD_ASSET;
+    let guard_amount: u64 = witness::GUARD_AMOUNT;
+
+    // The terms are the data leaf's, and the tree is this leaf and the data
+    // leaf alone.
+    assert!(jet::eq_256(terms_leaf((asset_a, asset_b), (num, den), min_lot, maker, (expiry, refund_key), (guard_asset, guard_amount)), unwrap(jet::tappath(0))));
+    assert!(is_none::<u256>(jet::tappath(1)));
+
+    // The guard, before either path.
+    guard(guard_asset, guard_amount);
+
+    match witness::PATH {
+        Left(partial: bool) => fill((asset_a, asset_b), (num, den), min_lot, maker, partial),
+        Right(u: ()) => refund(expiry, refund_key, witness::REFUND_SIG),
+    };
+}
