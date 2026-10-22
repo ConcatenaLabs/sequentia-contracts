@@ -287,7 +287,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | Test | What it proves |
 |---|---|
 | `s0` | On a chain where Simplicity is not active, a keyless spend of a `0xbe` output is refused by the mempool and accepted in a block |
-| `s1` | A one-key program; wrong key, a flipped program bit and a key-path attempt refused; a `sig_all_hash` signature with an annex, refused when the signed hash omits the annex and accepted when it commits to it |
+| `s1` | A one-key program; wrong key, a flipped program bit and a key-path attempt refused; a `sig_all_hash` signature with an annex, refused in a block when the signed hash omits the annex and mined when it commits to it; relay refuses both, since the program needs no annex |
 | `s2` | A covenant tree node at radix 2, 4 and 8 in three encodings, with the tapscript node's violations refused, and a child carrying a nonce refused by every form |
 | `s3` | A custom signature hash that names no outpoint, rebound to a second coin, with and without binding the coin's asset and amount |
 | `s4` | State in a taproot data leaf, moved forward by a spend and swept after expiry |
@@ -317,7 +317,7 @@ directories go under `harness/tmp/` and are removed when a test passes.
 | `x3` | The SeqDEX order, version 2: every spend and refusal of `x1` again under its root, and a fill with an annex of 3 and of 1,000 bytes refused in the mempool and in a block beside the same fill without one |
 | `x2` | The guarded SeqDEX order from its descriptor: filled in part and in whole at input 1 and refunded by height, each beside a guard coin of exactly the guard amount at input 0. Refused, each against an accepted control: no guard coin (the payment coin at input 0), the guard coin at input 2 instead of 0, the order itself at input 0, a guard coin of another asset, one atom short, one atom over, a confidential guard coin with valid proofs, a payment one atom under the price beside the guard; the refund without the guard and with a guard of another asset. Every spend's pruned program is the constant `fills.json` holds |
 | `p2` | The same covenants as a pool's payout script on a proof-of-stake chain with coinbase maturity 1,000: every block's reward paid to them, a claim refused at 17 and 999 confirmations and accepted at 1,000, every reward claimed in exact shares in two assets, and a wrong share and a withheld amount over the cap refused in a block |
-| `s1c`, `s1d` | The budget to the byte, the annex cap, program size and cost ceilings, budget bought with witness data |
+| `s1c`, `s1d` | The budget to the byte, the annex to the byte (relay takes the smallest annex that buys the budget and refuses one byte more), the annex cap, program size and cost ceilings, budget bought with witness data |
 
 Each test writes `harness/records/<id>.json`: for every spend the program and
 witness bytes, the transaction's vsize and weight, the static cost bound and the

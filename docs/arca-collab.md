@@ -40,7 +40,7 @@ the owner's signature and the operator's. The program requires:
 |---|---|
 | `H_TapData(OWNER ‖ OPERATOR ‖ SALT)` is the first hash of the control block's path | Parameters the coin does not commit to |
 | `1 ≤ n ≤ 16`, `1 ≤ m ≤ 4`, `k < n`, and inputs `0..n-1` and outputs `0..m-1` exist | A spend that names no input, or this coin outside what it names |
-| The spend carries no annex | An annex attached by whoever holds the spend: the digest covers none, so one could be inflated at will (relay takes up to 100,000 bytes on a Simplicity leaf) and would hide the spend from a reader that counts its witness items |
+| The spend carries no annex | An annex attached by whoever holds the spend: the digest covers none, so one could be inflated at will (relay takes only an annex the program's cost needs, but a block producer takes any) and would hide the spend from a reader that counts its witness items |
 | `OWNER` and then `OPERATOR` sign, BIP340, `SHA256(K ‖ k ‖ n ‖ I ‖ m ‖ O)` | Any spend the pair was not made for: the coin at another index, beside another coin than the ones named, a coin of another asset or amount, other outputs or outputs in another order, another salt, another chain |
 
 where, in the bytes signed:

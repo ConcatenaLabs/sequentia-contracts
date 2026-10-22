@@ -11,7 +11,7 @@ A refusal is compared by its verdict: the mempool's answer and reason, and wheth
 | test | spends | programs | refusals and outcomes | sizes changed | refusals changed |
 |---|---:|---:|---:|---:|---:|
 | S1 one key | 1 | 1 | 3 | 0 | 0 |
-| S1 ceilings (annex) | 7 | 1 | 3 | 0 | 0 |
+| S1 ceilings (annex) | 6 | 1 | 3 | 0 | 0 |
 | S1 ceilings (witness data) | 5 | 0 | 0 | 0 | 0 |
 | S2 tree node | 27 | 18 | 30 | 0 | 0 |
 | S3 custom signature hash | 12 | 12 | 76 | 0 | 0 |
@@ -45,7 +45,6 @@ Only in the 0.4.1 run: `p2pk/annex8_reject`, `p2pk/spend_2`.
 | spend | vsize 0.4.1 | vsize 0.7.2 | program B 0.4.1 / 0.7.2 | witness B 0.4.1 / 0.7.2 | cost bound WU 0.4.1 / 0.7.2 | budget WU 0.4.1 / 0.7.2 |
 |---|---:|---:|---:|---:|---:|---:|
 | `e1/exact_annex` | 1140 | 1140 | 549 / 549 | 0 / 0 | 15665 / 15665 | 15666 / 15666 |
-| `e2/K29/annex_100000_standard` | 25354 | 25354 | 684 / 684 | 0 / 0 | 394400 / 394400 | 403094 / 403094 |
 | `e4/N1000/program` | 12451 | 12451 | 49074 / 49074 | 0 / 0 | 2808 / 2808 | 196634 / 196634 |
 | `e4/N4000/program` | 50535 | 50535 | 201408 / 201408 | 0 / 0 | 11229 / 11229 | 805978 / 805978 |
 | `e4/N8100/program` | 103443 | 103443 | 413041 / 413041 | 0 / 0 | 22737 / 22737 | 1652510 / 1652510 |
@@ -58,10 +57,14 @@ Other recorded facts that differ:
 
 | record | 0.4.1 | 0.7.2 |
 |---|---|---|
-| `e0/expects_annex` | {"rust_bitmachine_executed": false, "rust_error": "Jet failed during execution", "node_testmempoolaccept": true} | {"rust_bitmachine_executed": true, "rust_error": null, "node_testmempoolaccept": true} |
-| `e4/N1000/program` | {"compile_seconds": 3.6} | {"compile_seconds": 0.9} |
-| `e4/N4000/program` | {"compile_seconds": 48.8} | {"compile_seconds": 4.0} |
-| `e4/N8100/program` | {"compile_seconds": 195.8} | {"compile_seconds": 8.5} |
+| `e0/expects_annex` | {"rust_bitmachine_executed": false, "rust_error": "Jet failed during execution", "node_testmempoolaccept": true} | {"rust_bitmachine_executed": true, "rust_error": null, "node_testmempoolaccept": false} |
+| `e4/N1000/program` | {"compile_seconds": 3.6} | {"compile_seconds": 1.1} |
+| `e4/N4000/program` | {"compile_seconds": 48.8} | {"compile_seconds": 4.5} |
+| `e4/N8100/program` | {"compile_seconds": 195.8} | {"compile_seconds": 8.6} |
+
+Only in the 0.7.2 run: `e2/K29/min_annex_standard`.
+
+Only in the 0.4.1 run: `e2/K29/annex_100000_standard`.
 
 ## S1 ceilings (witness data)
 

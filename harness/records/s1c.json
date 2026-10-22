@@ -1,7 +1,7 @@
 {
  "whitelist": {
   "bitcoin": 100000000,
-  "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137": 100000000
+  "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0": 100000000
  },
  "policy": {
   "MAX_STANDARD_TX_WEIGHT": 400000,
@@ -12,25 +12,22 @@
  "e0/expects_annex": {
   "rust_bitmachine_executed": true,
   "rust_error": null,
-  "node_testmempoolaccept": true,
-  "node_reject": null
+  "node_testmempoolaccept": false,
+  "node_reject": "mempool-script-verify-flag-failed (Simplicity annex must be zeros after its tag)"
  },
- "e0/expects_annex_spend": {
-  "size": 299,
+ "e0/expects_annex_mempool": {
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Simplicity annex must be zeros after its tag)",
   "vsize": 197,
   "weight": 785,
-  "nin": 1,
-  "nout": 2,
-  "testmempoolaccept": true,
-  "fees": {
-   "base": "0.00000300",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
-   "value": "0.00000300"
-  },
-  "txid": "c110e5a347fe8520fa16e1dd6300031baa9f06893d8531ba2686374e290e74f1",
-  "confirmed": true,
-  "block_height": 106,
-  "witness_input0_bytes": 130
+  "expect": "Simplicity annex must be zeros after its tag"
+ },
+ "e0/expects_annex_block": {
+  "vsize": 197,
+  "weight": 785,
+  "expect": "mined",
+  "mined": true,
+  "seconds": 0.01
  },
  "e0/expects_none": {
   "rust_bitmachine_executed": true,
@@ -47,10 +44,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00000300",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00000300"
   },
-  "txid": "7924b15e0c443731c8ff6f08bdba5d3e8141f77d7bb6c8121d7f0c75353944f7",
+  "txid": "b750e96bfc70d60f50b75e87ccb25ddbdae53933d0215bd12312a3d1df975ed4",
   "confirmed": true,
   "block_height": 108,
   "witness_input0_bytes": 120
@@ -83,16 +80,16 @@
   "rejected": true,
   "expect": "Program's execution cost could exceed budget",
   "control": {
-   "txid": "66367def86c4abd6296645db230893e6433c6803b905dc3d0855fedfb9544f7b",
+   "txid": "dc2dd272eccc7acdf5d76e96ef18e0ab467e6d15d79b6fc32f2c5d00c92334e4",
    "same_coin": true,
    "vsize": 1140,
    "testmempoolaccept": true
   },
   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)",
-  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
+  "block-error": "TestBlockValidity failed: mandatory-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
   "block-log": [
-   "[httpworker.3] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on ca4409efb95c15b4de1e32f1900f956bd104a65e6af879c9841381cf70a11cd5 failed with mempool-script-verify-flag-failed (Program's execution cost could exceed budget)"
+   "[httpworker.2] [validation.cpp:3774] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 5b7574cdd32c1be6d301480403f629c609b3e33952fc75239eb9b58e57010a6c failed with mandatory-script-verify-flag-failed (Program's execution cost could exceed budget)"
   ]
  },
  "e1/one_byte_short": {
@@ -109,17 +106,24 @@
   "rejected": true,
   "expect": "Program's execution cost could exceed budget",
   "control": {
-   "txid": "66367def86c4abd6296645db230893e6433c6803b905dc3d0855fedfb9544f7b",
+   "txid": "dc2dd272eccc7acdf5d76e96ef18e0ab467e6d15d79b6fc32f2c5d00c92334e4",
    "same_coin": true,
    "vsize": 1140,
    "testmempoolaccept": true
   },
   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)",
-  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
+  "block-error": "TestBlockValidity failed: mandatory-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
   "block-log": [
-   "[httpworker.2] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 817c9aa2989c99a69c335b9972485a0437a528b8bd6330129460b4fcae0bddb9 failed with mempool-script-verify-flag-failed (Program's execution cost could exceed budget)"
+   "[httpworker.1] [validation.cpp:3774] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 8519dd09a7d9c269a609ad09609c435fdef259ccb471d4941bcbc15e5571f21b failed with mandatory-script-verify-flag-failed (Program's execution cost could exceed budget)"
   ]
+ },
+ "e1/one_byte_over_mempool": {
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Simplicity annex is larger than the program's cost needs)",
+  "vsize": 1140,
+  "weight": 4560,
+  "expect": "Simplicity annex is larger than the program's cost needs"
  },
  "e1/exact_annex": {
   "size": 4073,
@@ -130,10 +134,10 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00001190",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00001190"
   },
-  "txid": "66367def86c4abd6296645db230893e6433c6803b905dc3d0855fedfb9544f7b",
+  "txid": "dc2dd272eccc7acdf5d76e96ef18e0ab467e6d15d79b6fc32f2c5d00c92334e4",
   "confirmed": true,
   "block_height": 110,
   "program_bytes": 549,
@@ -152,32 +156,46 @@
   "annex_item_bytes_needed": 97827,
   "program_bytes": 684
  },
- "e2/K29/annex_100000_standard": {
-  "size": 100930,
-  "vsize": 25354,
-  "weight": 101416,
+ "e2/K29/min_annex_standard": {
+  "size": 98757,
+  "vsize": 24811,
+  "weight": 99243,
   "nin": 1,
   "nout": 2,
   "testmempoolaccept": true,
   "fees": {
-   "base": "0.00025404",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
-   "value": "0.00025404"
+   "base": "0.00024861",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
+   "value": "0.00024861"
   },
-  "txid": "fc0ea2dcfb4cec94af93f0d0559b2ad1d2f25f08272e55fd8170ad405613b229",
+  "txid": "b883774cd8c7876abd3ba27021769bc57de3ab0607fe0f6f46cc698924c4dd48",
   "confirmed": true,
   "block_height": 112,
   "program_bytes": 684,
   "witness_bytes": 0,
-  "stack_serialized_bytes": 100761,
-  "budget_wu": 403094,
+  "stack_serialized_bytes": 98588,
+  "budget_wu": 394402,
   "cost_bound_milli_wu": 394399914,
   "cost_bound_wu": 394400,
   "program_hex": "e82948841878920542c46cd07248150b21b71b798720e30e3e070a85a02d8370b41c920542c86e2241c920542c86e2936e30e3f0b30e3f0e38542cc2d6371a9b8d8c39071871f038542d016c1b904839240a8590dc8941c920542c86e481b71871f90461c7e429c2a16616b1b938839240a8590dca341c920542c86e551b71871f93861c7e4f9c2a16616b1b96c6e3430e3f204c38fc8438542cc2d6373046e60cc39071871f038542d016c26d29e6ab7b96f9815ee51de799d72c2bb20d0976b6594bf0b3561e16e080eb0e35408b4b0b701b576b9b098ba6b7ce366dbc549232b7fad007872b98e8f36f9366a90858300aad4998cbba3ad90dd4ecc8d26de8bbd3faa440a7f659daa75258b9cee1f02daeb5c904fecb80f8c3c02c13f7c13c213570697ad1d9b9523299e918590634dd0687a0cc2ad8c041758a00e6245800e62c5900e6345a00731e2d40399116c01cc98b700e6545c000732e2e0403999170401ccd8b8300e6745c200733e2e14039a1170c01cd18b8700e6945c40039a7171100e6a45c48039ab171300e6b45c50039af171500e6c45c58039b3171700e6d45c60039b7171900e6e45c68039bb171b00e6f45c70039bf171d00e7041c870392a072880e5784e5a317e2f75668343b634eec8b2c3bd43dc78e95dc103796ffa658202579f54cd59d9796a2e5b85cba0198710330397e139842f3082e6182e6240641da0640731c07336139a02f3402e6882e6940641e0c06407354139af2f35e2e6c42e6d00641e1c064073720738e073a8139d92f3b22e76c2e7780641e28032039e309cf4179e8173d4173da0320f1801901cf901d00013a014bd00a2e8070ba0280641e3903203a03c2740a17a0505d02c1740c00c83c8103203a0782740f1ba0350286c40a10263f7436b4160acbef1c36fba4be4d95df181a968afeab5eac247adff748601801a0",
   "witness_hex": "",
-  "witness_input0_bytes": 100761
+  "witness_input0_bytes": 98588
  },
- "e2/K29/seconds_accept_and_mine": 1.27,
+ "e2/K29/seconds_accept_and_mine": 1.55,
+ "e2/K29/annex_100000_mempool": {
+  "testmempoolaccept": false,
+  "reject-reason": "mempool-script-verify-flag-failed (Simplicity annex is larger than the program's cost needs)",
+  "vsize": 25354,
+  "weight": 101416,
+  "expect": "Simplicity annex is larger than the program's cost needs"
+ },
+ "e2/K29/annex_100000_block": {
+  "vsize": 25354,
+  "weight": 101416,
+  "expect": "mined",
+  "mined": true,
+  "seconds": 0.39
+ },
  "e2/K29/annex_100001_mempool": {
   "testmempoolaccept": false,
   "reject-reason": "bad-witness-nonstandard",
@@ -190,7 +208,7 @@
   "weight": 101417,
   "expect": "mined",
   "mined": true,
-  "seconds": 0.41
+  "seconds": 0.43
  },
  "e2/K30/need": {
   "cost_milli": 407926186,
@@ -220,15 +238,15 @@
   "expect": "Program's execution cost could exceed budget",
   "reject-reason": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget)",
   "rpc-error": "mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -26)",
-  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
+  "block-error": "TestBlockValidity failed: mandatory-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
   "control": {
-   "txid": "67a53e30e0af1a49bfe28d692f6bf9c4160528f6e9121dbdda98bd53eae9cf52",
+   "txid": "ba0cdfb9b91e816fa80b8520d4f6a76163be4ecafdf33cf84d5a6efd01e3bfb1",
    "same_coin": true,
    "vsize": 25657,
    "mined": true
   },
   "block-log": [
-   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on edf4842149c9d62b43d7e4e6ebb168154ccad84eac78fa6a25b76f0efefd9942 failed with mempool-script-verify-flag-failed (Program's execution cost could exceed budget)"
+   "[httpworker.3] [validation.cpp:3774] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 4a897f5e3762300639470e358038197ea4a993ece05699f88f54911ec1a578e5 failed with mandatory-script-verify-flag-failed (Program's execution cost could exceed budget)"
   ]
  },
  "e4/N1000/program": {
@@ -240,7 +258,7 @@
   "cost_bound_wu": 2808,
   "program_hex": "(49074 bytes)",
   "witness_hex": "",
-  "compile_seconds": 0.9,
+  "compile_seconds": 1.1,
   "size": 49315,
   "vsize": 12451,
   "weight": 49801,
@@ -263,12 +281,12 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00012501",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00012501"
   },
-  "txid": "dff10c80c300d83dfeceba9f8e5a92902ad988ca318987536fa4de852e3829c1",
+  "txid": "832039d4c858c4af4dbcb68d4cd82717f765106d30c2fe8b10c36352b6cc7bf1",
   "confirmed": true,
-  "block_height": 118,
+  "block_height": 120,
   "witness_input0_bytes": 49146
  },
  "e4/N4000/program": {
@@ -280,7 +298,7 @@
   "cost_bound_wu": 11229,
   "program_hex": "(201408 bytes)",
   "witness_hex": "",
-  "compile_seconds": 4.0,
+  "compile_seconds": 4.5,
   "size": 201651,
   "vsize": 50535,
   "weight": 202137,
@@ -303,12 +321,12 @@
   "testmempoolaccept": true,
   "fees": {
    "base": "0.00050585",
-   "asset": "50fa79c80c64522a34c7fafff2feffbe7e30607e0ad71b36789f63a77f0f5137",
+   "asset": "57ba5c732a3933f8fe2d54cf088184669f8b718180589c29265e20b6c99080f0",
    "value": "0.00050585"
   },
-  "txid": "a3677fdc7fd3da2e16bc3ac0f26f3b927b812e73cce4a01010e439fb06f2ca45",
+  "txid": "25157e9974d9625018614fd026663921a71735913154fa45b9f4c3779b63b94a",
   "confirmed": true,
-  "block_height": 120,
+  "block_height": 122,
   "witness_input0_bytes": 201482
  },
  "e4/N8100/program": {
@@ -320,7 +338,7 @@
   "cost_bound_wu": 22737,
   "program_hex": "(413041 bytes)",
   "witness_hex": "",
-  "compile_seconds": 8.5,
+  "compile_seconds": 8.6,
   "size": 413284,
   "vsize": 103443,
   "weight": 413770,
@@ -339,7 +357,7 @@
   "weight": 413770,
   "expect": "mined",
   "mined": true,
-  "seconds": 0.33
+  "seconds": 0.2
  },
  "e3/K295_u8/need": {
   "cost_milli": 3992388266,
@@ -373,7 +391,7 @@
   "weight": 998740,
   "expect": "mined",
   "mined": true,
-  "seconds": 3.1
+  "seconds": 4.42
  },
  "e3/K296_u8/need": {
   "cost_milli": 4005914538,
@@ -407,10 +425,10 @@
   "weight": 1002984,
   "expect": "Program's execution cost could exceed budget",
   "mined": false,
-  "block-error": "TestBlockValidity failed: mempool-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
+  "block-error": "TestBlockValidity failed: mandatory-script-verify-flag-failed (Program's execution cost could exceed budget) (code -25)",
   "block-log": [
-   "[httpworker.1] [util/system.h:51] [error] ERROR: ConnectBlock(): CheckInputScripts on 06a87cb017d25723ee3556fe368df2a43db2a850add83e85ced507071ba87052 failed with mempool-script-verify-flag-failed (Program's execution cost could exceed budget)"
+   "[httpworker.3] [validation.cpp:3774] [ConnectBlock] ERROR: ConnectBlock(): CheckInputScripts on 5e1a7faf836a746b5f4d248e8c575026b88a19bad8c0c9a86864e516ba2d0faf failed with mandatory-script-verify-flag-failed (Program's execution cost could exceed budget)"
   ],
-  "seconds": 0.25
+  "seconds": 0.06
  }
 }
