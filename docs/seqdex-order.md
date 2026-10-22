@@ -155,9 +155,15 @@ without one: version 2 refuses each, version 1 takes each. A refund still needs 
 (version 1), recorded in `harness/records/x3.json` and `x1.json` and in each
 descriptor's `measured`. Each transaction pays its fee in a third issued asset;
 none touches the policy asset. X3 runs every spend and refusal of X1 again under
-version 2's root, and refuses a fill with an annex of 3 and of 1,000 bytes in
-the mempool and in a block (`Assertion failed`), beside the same fill without
-one; X1 offers the same annexed fills to version 1, whose mempool takes them.
+version 2's root, and refuses a fill with an annex of 3 and of 1,000 bytes, and
+a zero annex of 1,000 bytes, in a block (`Assertion failed`), beside the same
+fill without one. The mempool refuses each too: for the program's failure on a
+node before Sequentia 25.2.4, and for the annex itself on a node from it, which
+relays an annex on a Simplicity leaf only when it is zeros and as large as the
+program's cost needs. X1 offers the same annexed fills to version 1, whose
+mempool takes them before 25.2.4 and from it refuses them for the annex alone;
+the program itself takes them, so a block producer can still pad a version 1
+fill.
 
 | Spend | vsize | Program | Witness | Cost bound | Budget |
 |---|---|---|---|---|---|

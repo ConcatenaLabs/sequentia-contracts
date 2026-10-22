@@ -35,6 +35,8 @@ from simplicity import *  # noqa: E402,F401,F403
 from test_framework.key import tweak_add_pubkey  # noqa: E402
 
 J, A = "Assertion failed inside jet", "Assertion failed"
+# A node from Sequentia 25.2.4 refuses, at relay, an annex the program's cost does not need.
+RELAY_ANNEX = "Simplicity annex"
 NONFINAL, NONFINAL_MEMPOOL = "bad-txns-nonfinal", "non-final"
 FEE = 20_000                                 # atoms of Z, the fee asset
 PATH_T = "Either<bool, ()>"
@@ -559,20 +561,30 @@ class X1(SimBase, BitcoinTestFramework):
                                   for k, v in self.fill_program.items()})
 
     def annexed(self, control, make):
-        """`make()`, the control's fill, with an annex of 3 and of 1,000 bytes on
-        the order's input: nothing a fill carries signs it, so anyone who
-        relays the fill could add one. Version 2 refuses it in the mempool and
-        in a block, beside the control; version 1 takes it."""
-        for n in (3, 1000):
+        """`make()`, the control's fill, with an annex of 3 and of 1,000 bytes
+        and a zero annex of 1,000 bytes on the order's input: nothing a fill
+        carries signs it, so anyone who relays or mines the fill could add one.
+        Version 2 refuses it in a block, beside the control; the mempool
+        refuses it too, for the program's failure on a node before Sequentia
+        25.2.4 and for the annex itself on one from it, which relays an annex
+        only when it is zeros and as large as the program's cost needs.
+        Version 1's program takes one: its mempool takes it before 25.2.4,
+        and from 25.2.4 refuses it for the annex alone."""
+        for n, fill in ((3, 0xab), (1000, 0xab), (1000, 0x00)):
             t = self.reuse(control, make())
             st = t.wit.vtxinwit[0].scriptWitness.stack
-            st.append(b"\x50" + bytes([0xab]) * (n - 1))
+            st.append(b"\x50" + bytes([fill]) * (n - 1))
             assert len(st) == 5 and st[-1][0] == 0x50
-            label = "fill/%s_annex_of_%d_bytes" % ("neg" if self.ANNEX_REFUSED else "version_1_takes_an", n)
+            kind = "a_zero_annex" if fill == 0 else "an_annex"
+            reason = self.accept(t).get("reject-reason") or ""
+            relay = reason if RELAY_ANNEX in reason else None
             if self.ANNEX_REFUSED:
-                self.reject(t, label, A, control=control)
+                self.reject(t, "fill/neg_%s_of_%d_bytes" % (kind[kind.index("_") + 1:], n), A, control=control,
+                            mempool=(relay.split("(", 1)[1].rstrip(")") if relay else None))
+            elif relay:
+                self.try_mempool(t, "fill/version_1_%s_of_%d_bytes_refused_by_relay_alone" % (kind[kind.index("_") + 1:], n), relay.split("(", 1)[1].rstrip(")"))
             else:
-                self.try_mempool(t, label, "accepted")
+                self.try_mempool(t, "fill/version_1_takes_%s_of_%d_bytes" % (kind, n), "accepted")
 
     def rec_refund_program(self, kind, tx):
         st = tx.wit.vtxinwit[0].scriptWitness.stack
