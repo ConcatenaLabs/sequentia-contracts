@@ -1,0 +1,147 @@
+/* Arca's collaborative path, `arca/collab-2`: the path an owner and the
+ * operator spend a `vtxo-2` leaf, or its checkpoint, by together. It names
+ * no outpoint, so a pair made while the tree is off the chain holds whatever
+ * outpoint an unroll gives the coin; and it binds the coin's index and every
+ * input the signers name, so a pair fits one place in one shape of
+ * transaction.
+ *
+ * The output is a taproot output with the NUMS internal key:
+ *
+ *     leaf:        root = TapBranch( TapBranch(F, D), E )
+ *     checkpoint:  root = TapBranch( TapBranch(F, D), SWEEP )
+ *
+ *   F  this program;
+ *   D  the hidden data leaf H_TapData(OWNER ‖ OPERATOR ‖ SALT);
+ *   E  the leaf's exit, `<delay> OP_CHECKSEQUENCEVERIFY OP_DROP <A>
+ *      OP_CHECKSIG` (tapscript), the same as a vtxo-1 leaf's;
+ *   SWEEP  a checkpoint's sweep with notice (tapscript).
+ *
+ * Both OWNER and OPERATOR sign, BIP340, one digest:
+ *
+ *   SHA256( K ‖ k ‖ n ‖ I ‖ m ‖ O )
+ *   K  SHA256(SHA256("ArcaRbd1" ‖ genesis) ‖ SALT), the salt's own constant;
+ *   k  this input's index, 4 bytes, and k < n;
+ *   n  the inputs the signers name, 1 to 16;
+ *   I  SHA256 of input_utxo_hash(0) ‖ … ‖ input_utxo_hash(n-1): each named
+ *      input's asset, amount and script, never its outpoint;
+ *   m  the outputs the signers commit to, 1 to 4;
+ *   O  SHA256 of output_hash(0) ‖ … ‖ output_hash(m-1).
+ *
+ * Inputs after n and outputs after m are free, so whoever broadcasts can
+ * attach a fee coin and its change in any asset.
+ *
+ * Both loops run to a fixed index past the largest n and m (inputs 16 and
+ * 17, output 4), so every spend runs the same branches and the pruned
+ * program is one constant whatever n, m, k and the keys. Each witness value
+ * is read in a statement of its own.
+ */
+
+/* SHA256(a ‖ b). */
+fn hash_pair(a: u256, b: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, a);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, b);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* K = SHA256(SHA256("ArcaRbd1" ‖ genesis) ‖ salt). */
+fn leaf_constant(salt: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, 0x4172636152626431);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    hash_pair(jet::sha_256_ctx_8_finalize(ctx), salt)
+}
+
+/* The data leaf's hash over the parameters. */
+fn data_leaf(owner: u256, operator: u256, salt: u256) -> u256 {
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, operator);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, salt);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* Input i joins I while i < n. */
+fn named_input(acc: Ctx8, n: u8, i: u8) -> Ctx8 {
+    match jet::lt_8(i, n) {
+        true => {
+            let at: u32 = <(u16, u16)>::into((0, <(u8, u8)>::into((0, i))));
+            jet::sha_256_ctx_8_add_32(acc, unwrap(jet::input_utxo_hash(at)))
+        },
+        false => acc,
+    }
+}
+
+/* One step over the inputs takes inputs 2j and 2j+1; the loop ends after
+ * inputs 16 and 17, past the largest n, so every spend runs both branches. */
+fn input_step(acc: Ctx8, n: u8, j: u4) -> Either<Ctx8, Ctx8> {
+    let i: u8 = <(u4, u4)>::into((0, j));
+    let (carry, even): (bool, u8) = jet::add_8(i, i);
+    let (carry1, odd): (bool, u8) = jet::increment_8(even);
+    let acc: Ctx8 = named_input(acc, n, even);
+    let acc: Ctx8 = named_input(acc, n, odd);
+    match jet::eq_8(i, 8) {
+        true => Left(acc),
+        false => Right(acc),
+    }
+}
+
+/* One step over the outputs: output i joins O while i < m; the loop ends at
+ * 5, after output 4, past the largest m. */
+fn output_step(acc: Ctx8, m: u8, j: u4) -> Either<Ctx8, Ctx8> {
+    let i: u8 = <(u4, u4)>::into((0, j));
+    match jet::lt_8(i, m) {
+        true => {
+            let at: u32 = <(u16, u16)>::into((0, <(u8, u8)>::into((0, i))));
+            Right(jet::sha_256_ctx_8_add_32(acc, unwrap(jet::output_hash(at))))
+        },
+        false => match jet::eq_8(i, 5) {
+            true => Left(acc),
+            false => Right(acc),
+        },
+    }
+}
+
+fn main() {
+    let owner: u256 = witness::OWNER;
+    let operator: u256 = witness::OPERATOR;
+    let salt: u256 = witness::SALT;
+    let n: u8 = witness::N;
+    let m: u8 = witness::M;
+    let owner_sig: Signature = witness::OWNER_SIG;
+    let operator_sig: Signature = witness::OPERATOR_SIG;
+
+    // The parameters are the data leaf's: the first hash of the control
+    // block's path.
+    assert!(jet::eq_256(data_leaf(owner, operator, salt), unwrap(jet::tappath(0))));
+
+    // n from 1 to 16 and m from 1 to 4; this coin is one of the n.
+    assert!(jet::lt_8(0, n));
+    assert!(jet::le_8(n, 16));
+    assert!(jet::lt_8(0, m));
+    assert!(jet::le_8(m, 4));
+    let k: u32 = jet::current_index();
+    let n32: u32 = <(u16, u16)>::into((0, <(u8, u8)>::into((0, n))));
+    assert!(jet::lt_32(k, n32));
+
+    let named: Ctx8 = match for_while::<input_step>(jet::sha_256_ctx_8_init(), n) {
+        Left(ctx: Ctx8) => ctx,
+        Right(ctx: Ctx8) => panic!(),
+    };
+    let committed: Ctx8 = match for_while::<output_step>(jet::sha_256_ctx_8_init(), m) {
+        Left(ctx: Ctx8) => ctx,
+        Right(ctx: Ctx8) => panic!(),
+    };
+
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, leaf_constant(salt));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, k);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, n);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::sha_256_ctx_8_finalize(named));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, m);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::sha_256_ctx_8_finalize(committed));
+    let digest: u256 = jet::sha_256_ctx_8_finalize(ctx);
+
+    jet::bip_0340_verify((owner, digest), owner_sig);
+    jet::bip_0340_verify((operator, digest), operator_sig);
+}
