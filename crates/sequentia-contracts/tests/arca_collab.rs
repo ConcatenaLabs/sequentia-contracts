@@ -395,6 +395,12 @@ fn spends_the_program_accepts_and_refuses() {
         let d = digest(GENESIS, &p, 0, &s.utxos[..1], &s.tx.output[..5]);
         run_with(&source, &p, &s, 1, 5, pair(d), None, GENESIS)
     });
+    // An annex on the spend: the digest covers none, so the program takes
+    // none.
+    let mut annexed = spend(&p, cmr, 1, 0, 2, 10_000_000);
+    annexed.tx.input[0].witness.script_witness = vec![vec![1], vec![2], vec![3], vec![0x50, 0xaa, 0xbb]];
+    let d_annexed = digest(GENESIS, &p, 0, &annexed.utxos[..1], &annexed.tx.output[..2]);
+    refuse("an annex on the spend", run_with(&source, &p, &annexed, 1, 2, pair(d_annexed), None, GENESIS));
     refuse("n past the transaction's inputs", {
         let s = spend(&p, cmr, 1, 0, 2, 10_000_000);
         let mut t = Spend { tx: s.tx.clone(), utxos: s.utxos.clone(), k: 0 };
