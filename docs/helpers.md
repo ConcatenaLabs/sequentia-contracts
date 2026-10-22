@@ -227,7 +227,7 @@ The program sizes include each test's parameters, which are compiled in. The
 
 Every refusal below was refused by the mempool with
 `mempool-script-verify-flag-failed (…)`, and in a block with
-`TestBlockValidity failed: mempool-script-verify-flag-failed (…) (code -25)`,
+`TestBlockValidity failed: mandatory-script-verify-flag-failed (…) (code -25)`,
 each with the same detail, which the test asserts. The detail is `Assertion
 failed inside jet` where a jet's check failed, and `Assertion failed` where
 execution failed outside a jet: an `assert!` on a computed value, an `unwrap`
