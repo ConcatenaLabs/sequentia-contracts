@@ -1,0 +1,213 @@
+/* A SeqDEX pool: a maker's two coins, one of BASE and one of QUOTE, at one
+ * address, which anyone fills from either side at the pool's quotes and which
+ * only the maker withdraws.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(terms)))
+ *
+ * One program serves every pool: its terms sit in the data leaf beside it, in
+ * this order, and the spender repeats them in the witness:
+ *
+ *   BASE           one of the two assets
+ *   QUOTE          the other
+ *   BID_NUM        the pool buys BASE paying at most BID_NUM atoms of QUOTE ...
+ *   BID_DEN        ... for every BID_DEN atoms of BASE
+ *   ASK_NUM        the pool sells BASE asking at least ASK_NUM atoms of QUOTE ...
+ *   ASK_DEN        ... for every ASK_DEN atoms of BASE
+ *   MIN_LOT        the least BASE a fill moves
+ *   RESERVE_BASE   the least BASE a fill that pays BASE out leaves in the pool
+ *   RESERVE_QUOTE  the least QUOTE a fill that pays QUOTE out leaves
+ *   MAKER_KEY      the x-only key that withdraws
+ *
+ * A pool is two coins at this address, the BASE coin at input j and the QUOTE
+ * coin at input j+1. The BASE coin judges the whole move; it owns outputs 2j
+ * and 2j+1, which are the pool again.
+ *
+ *   FILL      anyone, run by the BASE coin. Input j+1 is a coin at this same
+ *             script holding QUOTE explicitly. Output 2j holds BASE and output
+ *             2j+1 QUOTE, explicitly, with no nonce, at this same script. With
+ *             x0, y0 in and x1, y1 out:
+ *               sell: the pool pays out db = x0 - x1 of BASE, at least
+ *                     MIN_LOT and one atom, keeps x1 >= RESERVE_BASE, and takes
+ *                     in dq = y1 - y0 of QUOTE with dq * ASK_DEN >= db * ASK_NUM;
+ *               buy:  the pool takes in db = x1 - x0 of BASE, at least MIN_LOT
+ *                     and one atom, pays out dq = y0 - y1 of QUOTE, keeps
+ *                     y1 >= RESERVE_QUOTE, and dq * BID_DEN <= db * BID_NUM.
+ *             The products are compared at 128 bits, so every 64-bit amount
+ *             and price fills, and each side rounds in the pool's favour.
+ *   PAIR      the QUOTE coin: input j-1 is a coin at this same script holding
+ *             BASE explicitly. That coin's program judges the move.
+ *   WITHDRAW  the maker: MAKER_KEY signs jet::sig_all_hash(), which commits to
+ *             the chain, every input and output and this input. Either coin.
+ *
+ * Every spend carries no annex. A fill and a pair sign nothing, so nothing
+ * would bind an annex anyone relaying the spend could attach; the withdrawal
+ * refuses one too, and no path's cost comes near its budget.
+ *
+ * The spender chooses the path in PATH: Left(true) a fill in which the pool
+ * sells BASE, Left(false) one in which it buys BASE, Right(Left(())) the pair,
+ * Right(Right(())) the withdrawal. No branch depends on a value, and each term
+ * is read in a statement of its own, so each path's pruned program is one
+ * constant for every pool and every j.
+ */
+// include output_reader
+
+/* The data leaf's hash over the terms, in the template's order. */
+fn terms_leaf(assets: (u256, u256), bid: (u64, u64), ask: (u64, u64), floors: (u64, u64, u64), key: Pubkey) -> u256 {
+    let (base, quote): (u256, u256) = assets;
+    let (bid_num, bid_den): (u64, u64) = bid;
+    let (ask_num, ask_den): (u64, u64) = ask;
+    let (min_lot, reserve_base, reserve_quote): (u64, u64, u64) = floors;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, base);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, quote);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, bid_num);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, bid_den);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, ask_num);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, ask_den);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, min_lot);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, reserve_base);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, reserve_quote);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* Refuses a < b for 128-bit a and b: b - a must not borrow. No branch
+ * depends on the values, so the pruned program does not either. */
+fn assert_le_128(a: u128, b: u128) {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    let (borrow, lo): (bool, u64) = jet::subtract_64(bl, al);
+    let (underflow, hi): (bool, u64) = jet::full_subtract_64(borrow, bh, ah);
+    assert!(jet::eq_1(<bool>::into(underflow), 0));
+}
+
+/* (asset id, amount) of input i, refusing a confidential one and an input
+ * that does not exist. */
+fn in_explicit(i: u32) -> (u256, u64) {
+    let (asset, amount): (Asset1, Amount1) = unwrap(jet::input_amount(i));
+    let id: u256 = match asset {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    let value: u64 = match amount {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u64) => explicit,
+    };
+    (id, value)
+}
+
+/* The amount of `asset` that output i holds at this same script, explicitly
+ * and with no nonce. */
+fn successor(i: u32, asset: u256) -> u64 {
+    let (id, value, script): (u256, u64, u256) = out_explicit(i);
+    assert!(jet::eq_256(id, asset));
+    assert!(jet::eq_256(script, jet::current_script_hash()));
+    out_no_nonce(i);
+    value
+}
+
+/* What moves: at least MIN_LOT and at least one atom. */
+fn moves(db: u64, min_lot: u64) {
+    assert!(jet::le_64(min_lot, db));
+    assert!(jet::lt_64(0, db));
+}
+
+fn fill(assets: (u256, u256), bid: (u64, u64), ask: (u64, u64), floors: (u64, u64, u64), sell: bool) {
+    let (base, quote): (u256, u256) = assets;
+    let (bid_num, bid_den): (u64, u64) = bid;
+    let (ask_num, ask_den): (u64, u64) = ask;
+    let (min_lot, reserve_base, reserve_quote): (u64, u64, u64) = floors;
+
+    // This coin holds BASE, explicitly; the next input is the pool's QUOTE coin.
+    let (held, x0): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, base));
+    let j: u32 = jet::current_index();
+    let (carry, partner): (bool, u32) = jet::increment_32(j);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    assert!(jet::eq_256(unwrap(jet::input_script_hash(partner)), jet::current_script_hash()));
+    let (partner_asset, y0): (u256, u64) = in_explicit(partner);
+    assert!(jet::eq_256(partner_asset, quote));
+
+    // Outputs 2j and 2j+1 are the pool again.
+    let (carry1, at_base): (bool, u32) = jet::add_32(j, j);
+    assert!(jet::eq_1(<bool>::into(carry1), 0));
+    let (carry2, at_quote): (bool, u32) = jet::increment_32(at_base);
+    assert!(jet::eq_1(<bool>::into(carry2), 0));
+    let x1: u64 = successor(at_base, base);
+    let y1: u64 = successor(at_quote, quote);
+
+    match sell {
+        true => {
+            let db: u64 = minus(x0, x1);
+            moves(db, min_lot);
+            assert!(jet::le_64(reserve_base, x1));
+            let dq: u64 = minus(y1, y0);
+            // dq / db >= ask_num / ask_den
+            assert_le_128(jet::multiply_64(db, ask_num), jet::multiply_64(dq, ask_den));
+        },
+        false => {
+            let db: u64 = minus(x1, x0);
+            moves(db, min_lot);
+            let dq: u64 = minus(y0, y1);
+            assert!(jet::le_64(reserve_quote, y1));
+            // dq / db <= bid_num / bid_den
+            assert_le_128(jet::multiply_64(dq, bid_den), jet::multiply_64(db, bid_num));
+        },
+    };
+}
+
+fn pair(assets: (u256, u256)) {
+    let (base, quote): (u256, u256) = assets;
+    // This coin holds QUOTE, explicitly; the input before it is the pool's
+    // BASE coin, whose program judges the move.
+    let (held, y0): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, quote));
+    let (borrow, before): (bool, u32) = jet::decrement_32(jet::current_index());
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    assert!(jet::eq_256(unwrap(jet::input_script_hash(before)), jet::current_script_hash()));
+    let (partner_asset, x0): (u256, u64) = in_explicit(before);
+    assert!(jet::eq_256(partner_asset, base));
+}
+
+fn main() {
+    // Each term is read in a statement of its own, so that no two witness
+    // values are read in one environment: two equal values read side by side
+    // would be one shared node, and the program would then depend on the terms.
+    let base: u256 = witness::BASE;
+    let quote: u256 = witness::QUOTE;
+    let bid_num: u64 = witness::BID_NUM;
+    let bid_den: u64 = witness::BID_DEN;
+    let ask_num: u64 = witness::ASK_NUM;
+    let ask_den: u64 = witness::ASK_DEN;
+    let min_lot: u64 = witness::MIN_LOT;
+    let reserve_base: u64 = witness::RESERVE_BASE;
+    let reserve_quote: u64 = witness::RESERVE_QUOTE;
+    let maker_key: Pubkey = witness::MAKER_KEY;
+
+    // No annex, on any path: whoever relays a spend could otherwise attach
+    // one, growing it to the relay's size limit at the relay's lowest fee
+    // rate under the same txid. No path needs one for its budget.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
+
+    // The terms are the data leaf's, and the tree is this leaf and the data
+    // leaf alone.
+    assert!(jet::eq_256(terms_leaf((base, quote), (bid_num, bid_den), (ask_num, ask_den), (min_lot, reserve_base, reserve_quote), maker_key), unwrap(jet::tappath(0))));
+    assert!(is_none::<u256>(jet::tappath(1)));
+
+    match witness::PATH {
+        Left(sell: bool) => fill((base, quote), (bid_num, bid_den), (ask_num, ask_den), (min_lot, reserve_base, reserve_quote), sell),
+        Right(other: Either<(), ()>) => match other {
+            Left(u: ()) => pair((base, quote)),
+            Right(v: ()) => jet::bip_0340_verify((maker_key, jet::sig_all_hash()), witness::MAKER_SIG),
+        },
+    };
+}

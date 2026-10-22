@@ -1,0 +1,227 @@
+/* A SeqDEX round order: a maker's coin of ASSET_A that fills only in a
+ * clearing round its clearer signs, at the one price the round publishes, and
+ * that the maker takes back after its expiry.
+ *
+ * The output is
+ *
+ *     P2TR(NUMS, TapBranch(TapLeaf_0xbe(CMR), H_TapData(terms)))
+ *
+ * One program serves every order: its terms sit in the data leaf beside it,
+ * in this order, and the spender repeats them in the witness:
+ *
+ *   ASSET_A     the asset the order sells, the coin's own asset
+ *   ASSET_B     the asset a fill pays in
+ *   LIMIT_NUM   the least the order accepts: LIMIT_NUM atoms of ASSET_B ...
+ *   LIMIT_DEN   ... for every LIMIT_DEN atoms of ASSET_A
+ *   MIN_LOT     the least a fill takes, and the least a remainder holds
+ *   MAKER       SHA256 of the scriptPubKey that receives the payments
+ *   EXPIRY      a lock time: below 500,000,000 a block height, else a Unix
+ *               time, which consensus compares with the median time past
+ *   REFUND_KEY  the x-only key that takes the coin back after EXPIRY
+ *   CLEARER     the x-only key whose rounds may fill the order
+ *
+ * A round publishes its price in its last output, a null-data output whose
+ * scriptPubKey is exactly
+ *
+ *     OP_RETURN OP_PUSHDATA1 80 <BASE 32> <QUOTE 32> <N 8> <D 8>
+ *
+ * meaning N atoms of QUOTE for every D atoms of BASE, each number big-endian.
+ * Every order in the round reads that one output, so the round has one price.
+ *
+ * The coin at input k owns outputs 2k and 2k+1, for any k.
+ *
+ *   FILL    a round. The coin holds ASSET_A explicitly. A partial fill leaves
+ *           at output 2k+1 a remainder of ASSET_A, explicitly and with no
+ *           nonce, at this same script and of at least MIN_LOT; a whole fill
+ *           leaves nothing, and output 2k+1 is then the round's. The fill is
+ *           at least MIN_LOT and one atom. The last output publishes BASE =
+ *           ASSET_A and QUOTE = ASSET_B, or, when FLIP, BASE = ASSET_B and
+ *           QUOTE = ASSET_A; the order's rate n/d of ASSET_B per ASSET_A is
+ *           N/D, or D/N when FLIP, and d is at least one. The rate is at least
+ *           the limit, n * LIMIT_DEN >= LIMIT_NUM * d. Output 2k pays MAKER
+ *           exactly ceil(fill * n / d) of ASSET_B, explicitly and with no
+ *           nonce: fill * n <= paid * d < fill * n + d. Every product is
+ *           compared at 128 bits. CLEARER signs (BIP340) the round:
+ *           SHA256(T || T || genesis || jet::tx_hash()), T = SHA256("SeqDEX/clearing"),
+ *           which names every input, every spent coin and every output of the
+ *           transaction on this chain, and no other message.
+ *   REFUND  the refund key, once the transaction's lock time reaches EXPIRY:
+ *           a BIP340 signature over jet::sig_all_hash().
+ *
+ * Every spend carries no annex. The clearer's digest and the refund key's
+ * signature cover every input's annex already; the rule makes the order safe
+ * on its own terms, and no path's cost comes near its budget.
+ *
+ * The spender chooses the path in PATH: Left((partial, (flip, (N, D)))) a
+ * fill, Right(()) the refund. No branch depends on a value, and each term is
+ * read in a statement of its own, so each path's pruned program is one
+ * constant for every order and every k.
+ */
+// include output_reader
+
+/* The data leaf's hash over the terms, in the template's order. */
+fn terms_leaf(assets: (u256, u256), limit: (u64, u64), min_lot: u64, maker: u256, refund: (u32, Pubkey), clearer: Pubkey) -> u256 {
+    let (asset_a, asset_b): (u256, u256) = assets;
+    let (num, den): (u64, u64) = limit;
+    let (expiry, key): (u32, Pubkey) = refund;
+    let ctx: Ctx8 = jet::tapdata_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_a);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, asset_b);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, num);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, den);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, min_lot);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, maker);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, expiry);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, clearer);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b; refuses a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* b - a for 128-bit a and b; refuses a < b. No branch depends on the values. */
+fn sub_128(b: u128, a: u128) -> u128 {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    let (borrow, lo): (bool, u64) = jet::subtract_64(bl, al);
+    let (underflow, hi): (bool, u64) = jet::full_subtract_64(borrow, bh, ah);
+    assert!(jet::eq_1(<bool>::into(underflow), 0));
+    <(u64, u64)>::into((hi, lo))
+}
+
+/* SHA256 of the clearing output's scriptPubKey for (base, quote, n, d). */
+fn clearing_script(base: u256, quote: u256, n: u64, d: u64) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x6a4c);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x50);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, base);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, quote);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, n);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, d);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* The round's price as this order's rate (ASSET_B per ASSET_A), read from the
+ * last output. */
+fn round_rate(asset_a: u256, asset_b: u256, flip: bool, published: (u64, u64)) -> (u64, u64) {
+    let (n, d): (u64, u64) = published;
+    let (borrow, last): (bool, u32) = jet::decrement_32(jet::num_outputs());
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    let here: u256 = unwrap(jet::output_script_hash(last));
+    match flip {
+        false => {
+            assert!(jet::eq_256(here, clearing_script(asset_a, asset_b, n, d)));
+            (n, d)
+        },
+        true => {
+            assert!(jet::eq_256(here, clearing_script(asset_b, asset_a, n, d)));
+            (d, n)
+        },
+    }
+}
+
+/* What the clearer signs: the round transaction, on this chain, under the tag. */
+fn clearing_digest() -> u256 {
+    let tag: u256 = 0x132ccf14703b118aa833412f9685f82a2dbba0fe721cd5e731e1ff5a244cf756;
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, tag);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, tag);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::tx_hash());
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+fn fill(assets: (u256, u256), limit: (u64, u64), min_lot: u64, maker: u256, clearer: Pubkey, how: (bool, (bool, (u64, u64))), sig: Signature) {
+    let (asset_a, asset_b): (u256, u256) = assets;
+    let (limit_num, limit_den): (u64, u64) = limit;
+    let (partial, priced): (bool, (bool, (u64, u64))) = how;
+    let (flip, published): (bool, (u64, u64)) = priced;
+
+    // The coin holds ASSET_A, explicitly.
+    let (held, locked): (u256, u64) = in_explicit_current();
+    assert!(jet::eq_256(held, asset_a));
+
+    // Input k owns outputs 2k and 2k+1.
+    let k: u32 = jet::current_index();
+    let (carry, credit): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let (carry1, rest_at): (bool, u32) = jet::increment_32(credit);
+    assert!(jet::eq_1(<bool>::into(carry1), 0));
+
+    // What leaves the coin: all of it, or all but the remainder at 2k+1.
+    let filled: u64 = match partial {
+        true => {
+            let (rest_asset, rest, rest_script): (u256, u64, u256) = out_explicit(rest_at);
+            assert!(jet::eq_256(rest_asset, asset_a));
+            assert!(jet::eq_256(rest_script, jet::current_script_hash()));
+            out_no_nonce(rest_at);
+            assert!(jet::le_64(min_lot, rest));
+            minus(locked, rest)
+        },
+        false => locked,
+    };
+    assert!(jet::le_64(min_lot, filled));
+    assert!(jet::lt_64(0, filled));
+
+    // The round's one price, as this order's rate, and the order's limit.
+    let (n, d): (u64, u64) = round_rate(asset_a, asset_b, flip, published);
+    assert!(jet::lt_64(0, d));
+    let short: u128 = sub_128(jet::multiply_64(n, limit_den), jet::multiply_64(limit_num, d));
+
+    // The payment: exactly ceil(filled * n / d) of ASSET_B to MAKER, that is
+    // filled * n <= paid * d < filled * n + d.
+    let (paid_asset, paid, paid_script): (u256, u64, u256) = out_explicit(credit);
+    assert!(jet::eq_256(paid_asset, asset_b));
+    assert!(jet::eq_256(paid_script, maker));
+    out_no_nonce(credit);
+    let over: u128 = sub_128(jet::multiply_64(paid, d), jet::multiply_64(filled, n));
+    let (over_hi, over_lo): (u64, u64) = <u128>::into(over);
+    assert!(jet::eq_64(over_hi, 0));
+    assert!(jet::lt_64(over_lo, d));
+
+    // The clearer signed this round.
+    jet::bip_0340_verify((clearer, clearing_digest()), sig);
+}
+
+fn refund(expiry: u32, key: Pubkey, sig: Signature) {
+    match jet::lt_32(expiry, 500000000) {
+        true => jet::check_lock_height(expiry),
+        false => jet::check_lock_time(expiry),
+    };
+    jet::bip_0340_verify((key, jet::sig_all_hash()), sig);
+}
+
+fn main() {
+    // Each term is read in a statement of its own, so that no two witness
+    // values are read in one environment: two equal values read side by side
+    // would be one shared node, and the program would then depend on the terms.
+    let asset_a: u256 = witness::ASSET_A;
+    let asset_b: u256 = witness::ASSET_B;
+    let limit_num: u64 = witness::LIMIT_NUM;
+    let limit_den: u64 = witness::LIMIT_DEN;
+    let min_lot: u64 = witness::MIN_LOT;
+    let maker: u256 = witness::MAKER;
+    let expiry: u32 = witness::EXPIRY;
+    let refund_key: Pubkey = witness::REFUND_KEY;
+    let clearer: Pubkey = witness::CLEARER;
+
+    // No annex, on any path: whoever relays a spend could otherwise attach
+    // one, growing it to the relay's size limit at the relay's lowest fee
+    // rate under the same txid. No path needs one for its budget.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
+
+    // The terms are the data leaf's, and the tree is this leaf and the data
+    // leaf alone.
+    assert!(jet::eq_256(terms_leaf((asset_a, asset_b), (limit_num, limit_den), min_lot, maker, (expiry, refund_key), clearer), unwrap(jet::tappath(0))));
+    assert!(is_none::<u256>(jet::tappath(1)));
+
+    match witness::PATH {
+        Left(how: (bool, (bool, (u64, u64)))) => fill((asset_a, asset_b), (limit_num, limit_den), min_lot, maker, clearer, how, witness::CLEARER_SIG),
+        Right(u: ()) => refund(expiry, refund_key, witness::REFUND_SIG),
+    };
+}
