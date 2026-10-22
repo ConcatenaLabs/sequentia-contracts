@@ -41,8 +41,9 @@
 //!
 //! Reply: compiler_version, cmr, commit_program_hex/bytes (no witness); with a
 //! witness: program_hex/bytes, witness_hex/bytes, redeem_cmr, cost_milli,
-//! extra_cells, extra_frames, and with a tx also executed, exec_error and
-//! sighash_all. On failure: {"error": "..."}.
+//! extra_cells, extra_frames, and with a tx also executed, exec_error,
+//! sighash_all, and tx_hash and clearing_digest (what a round order's clearer
+//! signs; see `round`). On failure: {"error": "..."}.
 
 use std::io::Read;
 use std::process::ExitCode;
@@ -297,9 +298,11 @@ fn run(req: &Value) -> Result<Value, String> {
     let env = if let Some(txhex) = req.get("tx").and_then(Value::as_str) {
         let mut tx: Transaction = deserialize(&unhex(txhex)?).map_err(|e| format!("tx: {e}"))?;
         let mut utxos = Vec::new();
+        let mut spent: Vec<TxOut> = Vec::new();
         for u in req["utxos"].as_array().ok_or("utxos missing")? {
             let o: TxOut = deserialize(&unhex(u.as_str().ok_or("utxo not a string")?)?)
                 .map_err(|e| format!("utxo: {e}"))?;
+            spent.push(o.clone());
             utxos.push(ElementsUtxo::from(o));
         }
         let index = req["index"].as_u64().ok_or("index missing")? as u32;
@@ -325,6 +328,16 @@ fn run(req: &Value) -> Result<Value, String> {
             let mut item = vec![0x50u8];
             item.extend_from_slice(a);
             input.witness.script_witness = vec![item];
+        }
+        match sequentia_contracts::round::clearing_digest(&genesis.to_byte_array(), &tx, &spent) {
+            Ok(d) => {
+                let t = sequentia_contracts::round::tx_hash(&tx, &spent)?;
+                out.insert("tx_hash".into(), hex(&t).into());
+                out.insert("clearing_digest".into(), hex(&d).into());
+            }
+            Err(e) => {
+                out.insert("clearing_digest_error".into(), e.into());
+            }
         }
         let env = ElementsEnv::new(Arc::new(tx), utxos, index, cmr, cb, annex, genesis);
         out.insert(

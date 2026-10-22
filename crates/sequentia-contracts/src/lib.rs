@@ -13,6 +13,7 @@ pub mod bond;
 pub mod descriptor;
 pub mod lint;
 pub mod pool;
+pub mod round;
 pub mod sale;
 pub mod simplex;
 pub mod vault;
