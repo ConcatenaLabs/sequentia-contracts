@@ -1,0 +1,218 @@
+/* Arca's accumulator batch, `arca/accumulator-1`: one batch output holding up
+ * to 1,024 leaves, from which one owner leaves in one transaction while every
+ * other owner's proof stays valid.
+ *
+ * The batch output is a taproot output with the NUMS internal key and three
+ * nodes:
+ *
+ *     root = TapBranch( TapBranch(X, D), SWEEP )
+ *
+ *   X      this program;
+ *   D      the hidden data leaf H_TapData(ROOT ‖ OPERATOR ‖ BITMAP);
+ *   SWEEP  the batch output's sweep (tapscript): the sweep token at R in the
+ *          input the witness names and the operator's signature, the same leaf
+ *          a tree's batch output carries.
+ *
+ *   ROOT      the root of a Merkle-sum tree of depth 10 over the leaf records,
+ *             fixed for the batch's life;
+ *   OPERATOR  the operator's key S;
+ *   BITMAP    16 words of 64 bits, big-endian, 128 bytes: slot j's bit is
+ *             bit 63 - (j mod 64) of word j / 64, so slot 0 is the first bit
+ *             of the first byte. A set bit is a leaf that has left.
+ *
+ * The leaf record of slot j, below 1,024:
+ *
+ *     rec_j = SHA256(0x00 ‖ j ‖ OWNER ‖ SPK ‖ VALUE ‖ RESERVE)
+ *
+ * weighs VALUE + RESERVE. An inner node over (hl, wl) and (hr, wr) is
+ * SHA256(0x01 ‖ hl ‖ wl ‖ hr ‖ wr) and weighs wl + wr. Integers are
+ * big-endian at their width (j two bytes, weights and amounts eight); an empty
+ * slot is 32 zero bytes of weight 0, which no record hashes to. The path
+ * runs from the record up, and its directions are the bits of j, the lowest
+ * first: a set bit puts the running node on the right.
+ *
+ * An EXIT of slot j, the batch output at input k, requires:
+ *
+ *   - j below 1,024; rec_j a member of ROOT on the path j names, every node
+ *     on it weighing the sum of its two children with no overflow;
+ *   - j's bit clear in BITMAP, and D the data leaf of ROOT, OPERATOR and
+ *     BITMAP: the first hash of the control block's path, which is two hashes
+ *     long;
+ *   - KEY's BIP340 signature over
+ *       SHA256(SHA256("Arca/accumulator-exit") ‖ genesis ‖ ROOT ‖ rec_j ‖ TIME)
+ *     where KEY is OWNER, or OPERATOR when BY_OPERATOR; and the transaction's
+ *     lock time a time at or after TIME. The signature names no outpoint and
+ *     no bitmap, so it can be made at any time and holds for every state of
+ *     the batch: a watcher or a receiver can hold it, and it becomes good at
+ *     TIME;
+ *   - output 2k: exactly VALUE of the batch output's own asset, explicit, with
+ *     no nonce, to the script whose SHA256 is SPK (the leaf's hash-locked
+ *     entry);
+ *   - output 2k+1: exactly the rest, the input less VALUE less RESERVE,
+ *     explicit, with no nonce, to this same batch output with j's bit set in
+ *     BITMAP and nothing else changed. When nothing is left there is no rest.
+ *
+ * RESERVE is what the exit leaves for its fee. No branch depends on a witness
+ * value but whether anything is left, and each witness value is read in a
+ * statement of its own, so the pruned program is one of two constants
+ * whatever the batch, the slot and k.
+ */
+// include output_reader
+
+/* a when m is zero, b when m is all ones. */
+fn sel64(m: u64, a: u64, b: u64) -> u64 {
+    jet::xor_64(a, jet::and_64(jet::xor_64(a, b), m))
+}
+
+fn sel128(m: u64, a: u128, b: u128) -> u128 {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    <(u64, u64)>::into((sel64(m, ah, bh), sel64(m, al, bl)))
+}
+
+fn sel256(m: u64, a: u256, b: u256) -> u256 {
+    let (ah, al): (u128, u128) = <u256>::into(a);
+    let (bh, bl): (u128, u128) = <u256>::into(b);
+    <(u128, u128)>::into((sel128(m, ah, bh), sel128(m, al, bl)))
+}
+
+/* An inner node of the Merkle-sum tree. */
+fn inner(lh: u256, lw: u64, rh: u256, rw: u64) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x01);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, lh);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, lw);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, rh);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, rw);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* One level: the running node (hash, weight) and the rest of j go up past one
+ * sibling, on the side the lowest bit of j names, with no branch. */
+fn step(sibling: (u256, u64), acc: (u256, u64, u16)) -> (u256, u64, u16) {
+    let (sh, sw): (u256, u64) = sibling;
+    let (h, w, at): (u256, u64, u16) = acc;
+    let m: u64 = jet::left_extend_1_64(jet::rightmost_16_1(at));
+    let (carry, sum): (bool, u64) = jet::add_64(w, sw);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let up: u256 = inner(sel256(m, h, sh), sel64(m, w, sw), sel256(m, sh, h), sel64(m, sw, w));
+    (up, sum, jet::right_shift_16(1, at))
+}
+
+/* One word of the bitmap into the old and the new data leaf: the target word
+ * must not hold the slot's bit, and gets it. No branch. */
+fn scan(word: u64, acc: (Ctx8, Ctx8, u16, (u16, u64))) -> (Ctx8, Ctx8, u16, (u16, u64)) {
+    let (old, new, i, at): (Ctx8, Ctx8, u16, (u16, u64)) = acc;
+    let (target, mask): (u16, u64) = at;
+    let hit: u64 = jet::left_extend_1_64(<bool>::into(jet::eq_16(i, target)));
+    let bit: u64 = jet::and_64(mask, hit);
+    assert!(jet::is_zero_64(jet::and_64(word, bit)));
+    let (carry, next): (bool, u16) = jet::increment_16(i);
+    (jet::sha_256_ctx_8_add_8(old, word), jet::sha_256_ctx_8_add_8(new, jet::or_64(word, bit)), next, at)
+}
+
+/* What KEY signs to authorise the exit of rec from root: chain, root, record
+ * and time. SHA256("Arca/accumulator-exit") is the constant. */
+fn exit_digest(root: u256, rec: u256, time: u32) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x095bbb3bdaf88bc9d50ef36841c7578a34f226e1509fa03db0cf99a7211ada3f);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, rec);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, time);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256 of OP_1 <key>, the output key of this input's internal key and the
+ * tree `tree`. */
+fn output_of(tree: u256) -> u256 {
+    let key: Pubkey = jet::build_taptweak(jet::internal_key(), tree);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b, refusing a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+fn main() {
+    // Each value is read in a statement of its own, so no two witness values
+    // share a node whatever they hold, and the pruned program does not depend
+    // on them.
+    let root: u256 = witness::ROOT;
+    let operator: u256 = witness::OPERATOR;
+    let bitmap: [u64; 16] = witness::BITMAP;
+    let j: u16 = witness::INDEX;
+    let owner: u256 = witness::OWNER;
+    let spk: u256 = witness::SPK;
+    let value: u64 = witness::VALUE;
+    let reserve: u64 = witness::RESERVE;
+    let path: [(u256, u64); 10] = witness::PATH;
+    let time: u32 = witness::TIME;
+    let by_operator: bool = witness::BY_OPERATOR;
+    let sig: Signature = witness::SIG;
+
+    // The slot exists.
+    assert!(jet::lt_16(j, 1024));
+
+    // The record and its weight.
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x00);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, j);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, spk);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, value);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, reserve);
+    let rec: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    let (carry, weight): (bool, u64) = jet::add_64(value, reserve);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+
+    // The record is in ROOT at slot j. The root's weight is the batch's
+    // value when the round made it, which a wallet checks; nothing here
+    // changes it.
+    let (top, total, above): (u256, u64, u16) = array_fold::<step, 10>(path, (rec, weight, j));
+    assert!(jet::eq_256(top, root));
+
+    // The bitmap: j's bit clear in the state the coin holds, set in the next.
+    let word_at: u16 = jet::right_shift_16(6, j);
+    let mask: u64 = jet::right_shift_64(jet::rightmost_16_8(jet::and_16(j, 63)), 0x8000000000000000);
+    let start: Ctx8 = jet::sha_256_ctx_8_add_32(jet::sha_256_ctx_8_add_32(jet::tapdata_init(), root), operator);
+    let (old, new, count, at): (Ctx8, Ctx8, u16, (u16, u64)) = array_fold::<scan, 16>(bitmap, (start, start, 0, (word_at, mask)));
+    let held_state: u256 = jet::sha_256_ctx_8_finalize(old);
+    let next_state: u256 = jet::sha_256_ctx_8_finalize(new);
+    assert!(jet::eq_256(held_state, unwrap(jet::tappath(0))));
+    let sweep: u256 = unwrap(jet::tappath(1));
+    assert!(is_none::<u256>(jet::tappath(2)));
+
+    // The owner, or the operator, authorises it, from TIME on.
+    let by: u64 = jet::left_extend_1_64(<bool>::into(by_operator));
+    let key: Pubkey = sel256(by, owner, operator);
+    jet::bip_0340_verify((key, exit_digest(root, rec, time)), sig);
+    jet::check_lock_time(time);
+
+    // Input k owns outputs 2k and 2k+1.
+    let (asset, held): (u256, u64) = in_explicit_current();
+    let k: u32 = jet::current_index();
+    let (c1, entry_at): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(c1), 0));
+    let (c2, rest_at): (bool, u32) = jet::increment_32(entry_at);
+    assert!(jet::eq_1(<bool>::into(c2), 0));
+
+    // The leaf's entry.
+    out_require(entry_at, asset, value, spk);
+
+    // The rest, under the next state.
+    let rest: u64 = minus(minus(held, value), reserve);
+    match jet::is_zero_64(rest) {
+        true => (),
+        false => {
+            let tree: u256 = jet::build_tapbranch(jet::build_tapbranch(jet::tapleaf_hash(), next_state), sweep);
+            out_require(rest_at, asset, rest, output_of(tree));
+        },
+    };
+}
