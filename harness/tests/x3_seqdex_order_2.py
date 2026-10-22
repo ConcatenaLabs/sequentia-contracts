@@ -2,10 +2,12 @@
 
 Version 2 is version 1 with one more rule: a spend carries no annex. This runs
 X1 against it, every fill, refund and refusal of X1 again under the new
-commitment root, and refuses a fill with an annex of 3 and of 1,000 bytes on
-the order's input, in the mempool and in a block forced with `generateblock`,
+commitment root, and refuses a fill with an annex of 3 and of 1,000 bytes and
+a zero annex of 1,000 bytes on the order's input, in the mempool (for the
+program's failure, or for the annex itself on a node from Sequentia 25.2.4)
+and in a block forced with `generateblock` (for the program's failure),
 beside the same fill without one. X1 offers the same annexed fills to version
-1, whose mempool takes them."""
+1, whose mempool takes them on a node before 25.2.4."""
 import os
 import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
