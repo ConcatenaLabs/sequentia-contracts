@@ -231,6 +231,8 @@ struct Exit {
     tx: Transaction,
     utxos: Vec<TxOut>,
     k: u32,
+    /// The batch input's annex, with its 0x50 tag, if any.
+    annex: Option<Vec<u8>>,
 }
 
 /// The exit of slot `j` from `batch` holding `held` at input `k` (k other
@@ -262,7 +264,7 @@ fn exit(batch: &Batch, cmr: [u8; 32], asset: &[u8; 32], j: usize, k: u32, held: 
         output.push(out(asset, rest, &batch.left(j).spk(cmr)));
     }
     output.push(TxOut::new_fee(slot.reserve, AssetId::from_slice(asset).unwrap()));
-    Exit { tx: Transaction { version: 2, lock_time: LockTime::from_consensus(NOW), input, output }, utxos, k }
+    Exit { tx: Transaction { version: 2, lock_time: LockTime::from_consensus(NOW), input, output }, utxos, k, annex: None }
 }
 
 /// What a spend presents: the slot's record values, path, time, flag, key.
@@ -290,13 +292,19 @@ fn run(source: &str, batch: &Batch, e: &Exit, c: &Claim, key: &Keypair) -> Resul
     let digest = exit_digest(batch.root(), c.slot.record(c.j as u16), c.time);
     let secp = Secp256k1::new();
     let sig = secp.sign_schnorr_no_aux_rand(&Message::from_digest(digest), key).serialize();
+    // The jets read an input's annex from its witness stack, as the node
+    // does: the last item, when it starts with 0x50.
+    let mut tx = e.tx.clone();
+    if let Some(a) = &e.annex {
+        tx.input[e.k as usize].witness.script_witness = vec![vec![0x00], vec![0x00], a.clone()];
+    }
     let env = ElementsEnv::new(
-        Arc::new(e.tx.clone()),
+        Arc::new(tx),
         e.utxos.iter().cloned().map(ElementsUtxo::from).collect(),
         e.k,
         program.commit().cmr(),
         cb,
-        None,
+        e.annex.clone(),
         BlockHash::from_byte_array(GENESIS),
     );
     let wv: WitnessValues =
@@ -504,6 +512,23 @@ fn exits_the_program_accepts_and_refuses() {
     let mut other_op = b.clone();
     other_op.operator = xonly(&keypair("another operator"));
     refuse("a data leaf the coin does not hold", run(&source, &other_op, &base(), &Claim::of(&b, j), &owner(j)));
+
+    // An annex on the batch input, which the authorisation does not sign: one
+    // byte past its tag, and a large one; the owner's exit, the operator's,
+    // and the last leaf's exit (no rest).
+    for (name, annex) in [("a 2-byte annex", vec![0x50, 0x00]), ("a 1,000-byte annex", [vec![0x50], vec![0xaa; 999]].concat())] {
+        let mut e = base();
+        e.annex = Some(annex.clone());
+        refuse(&format!("the owner's exit with {name}"), run(&source, &b, &e, &Claim::of(&b, j), &owner(j)));
+        let mut e = exit(&b, cmr, &asset, 77, 0, b.total());
+        e.annex = Some(annex.clone());
+        let mut c = Claim::of(&b, 77);
+        c.by_operator = true;
+        refuse(&format!("the operator's exit with {name}"), run(&source, &b, &e, &c, &s));
+        let mut e = exit(&lone, cmr, &asset, 5, 0, lone.total());
+        e.annex = Some(annex);
+        refuse(&format!("the last leaf's exit with {name}"), run(&source, &lone, &e, &Claim::of(&lone, 5), &keypair("lone 5")));
+    }
 }
 
 #[test]
