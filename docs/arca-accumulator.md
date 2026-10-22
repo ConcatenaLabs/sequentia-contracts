@@ -57,6 +57,7 @@ With the batch output at input `k`, the witness carries the state (`ROOT`,
 | `H_TapData(ROOT ‖ OPERATOR ‖ BITMAP)` is the first hash of the control block's path, which is two hashes long, and `j`'s bit is clear in `BITMAP` | A slot that has left; a state the coin does not hold |
 | `KEY` signs, BIP340, `SHA256(SHA256("Arca/accumulator-exit") ‖ genesis ‖ ROOT ‖ rec_j ‖ TIME)`, `KEY` being `OWNER`, or `OPERATOR` when `BY_OPERATOR` | A stranger's signature; another slot's owner; the owner's signature under the operator's flag, and the operator's without it |
 | The transaction's lock time is a time at or after `TIME`, with a non-final input | A lock time one second early; a lock time that is a height; final inputs |
+| No annex on the batch input: the signature names none, and the exit's cost never needs the budget one would add | An annex of any size, on the owner's exit, the operator's and the last leaf's |
 | Output `2k`: exactly `VALUE` of the coin's asset, explicit, no nonce, to the script whose SHA256 is `SPK` | One atom short; another script; another asset; a nonce; a coin of another asset |
 | Output `2k+1`, unless nothing is left: exactly the input less `VALUE` less `RESERVE`, explicit, no nonce, at this output with `j`'s bit set and nothing else changed (the same program, internal key and `SWEEP`) | One atom short; the old state; another slot's bit; a second bit as well; another sweep leaf; a nonce; no rest |
 
@@ -71,11 +72,11 @@ the batch output was created with.
 
 ## Building a spend with no compiler
 
-The witness stack is `[witness, program, cmr, control block]`:
+The witness stack is `[witness, program, cmr, control block]`, with no annex:
 
-- `cmr` is `a85d27ba922892647b3fe4435fa05e4197d1c6096a14f9f665a92574b0d2a874`;
+- `cmr` is `9b6467a1f9d787f6e93ac2422194e61fc56638db63735c6f24ba2c7a86bc0b96`;
 - `program` is one of the two constants in `templates/arca_accumulator/exits.json`:
-  `exit` (2,003 bytes) when a rest is left, `exit_last` (1,877) when the exit
+  `exit` (2,018 bytes) when a rest is left, `exit_last` (1,891) when the exit
   takes the last of the batch;
 - `witness` is 743 bytes: `ROOT`, `OPERATOR`, the 16 words of `BITMAP`, `INDEX`,
   `OWNER`, `SPK`, `VALUE`, `RESERVE`, each sibling and its weight, `TIME`, then
@@ -111,6 +112,6 @@ Measured there, with 1,024 leaves:
 | The five node transactions that take one leaf out of a 1,024-leaf radix-4 tree, for comparison | 2,854 vB |
 
 The leaf's entry (234 vB) and its exit (219 vB) follow in both. The cost bound
-is 4,094 weight units for `exit` and 3,895 for `exit_last`, against a budget
-of 11,586 and 11,082: four weight units for each of the 2,884 and 2,758
+is 4,097 weight units for `exit` and 3,898 for `exit_last`, against a budget
+of 11,646 and 11,138: four weight units for each of the 2,899 and 2,772
 bytes of the input's witness, plus 50.
