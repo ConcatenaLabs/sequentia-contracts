@@ -41,6 +41,10 @@
  *   WITHDRAW  the maker: MAKER_KEY signs jet::sig_all_hash(), which commits to
  *             the chain, every input and output and this input. Either coin.
  *
+ * Every spend carries no annex. A fill and a pair sign nothing, so nothing
+ * would bind an annex anyone relaying the spend could attach; the withdrawal
+ * refuses one too, and no path's cost comes near its budget.
+ *
  * The spender chooses the path in PATH: Left(true) a fill in which the pool
  * sells BASE, Left(false) one in which it buys BASE, Right(Left(())) the pair,
  * Right(Right(())) the withdrawal. No branch depends on a value, and each term
@@ -188,6 +192,11 @@ fn main() {
     let reserve_base: u64 = witness::RESERVE_BASE;
     let reserve_quote: u64 = witness::RESERVE_QUOTE;
     let maker_key: Pubkey = witness::MAKER_KEY;
+
+    // No annex, on any path: whoever relays a spend could otherwise attach
+    // one, growing it to the relay's size limit at the relay's lowest fee
+    // rate under the same txid. No path needs one for its budget.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
 
     // The terms are the data leaf's, and the tree is this leaf and the data
     // leaf alone.

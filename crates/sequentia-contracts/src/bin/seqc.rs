@@ -329,9 +329,17 @@ fn run(req: &Value) -> Result<Value, String> {
             item.extend_from_slice(a);
             input.witness.script_witness = vec![item];
         }
-        match sequentia_contracts::round::clearing_digest(&genesis.to_byte_array(), &tx, &spent) {
+        // The digest reads an annex as the node does, from a stack of at least
+        // two items; the one-item stack above is the library's form.
+        let mut whole = tx.clone();
+        if let Some(a) = &annex {
+            let mut item = vec![0x50u8];
+            item.extend_from_slice(a);
+            whole.input[index as usize].witness.script_witness = vec![vec![], item];
+        }
+        match sequentia_contracts::round::clearing_digest(&genesis.to_byte_array(), &whole, &spent) {
             Ok(d) => {
-                let t = sequentia_contracts::round::tx_hash(&tx, &spent)?;
+                let t = sequentia_contracts::round::tx_hash(&whole, &spent)?;
                 out.insert("tx_hash".into(), hex(&t).into());
                 out.insert("clearing_digest".into(), hex(&d).into());
             }

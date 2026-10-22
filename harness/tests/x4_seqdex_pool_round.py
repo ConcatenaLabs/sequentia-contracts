@@ -1,4 +1,4 @@
-"""X3: the SeqDEX pool and the clearing round, on an anchored chain.
+"""X4: the SeqDEX pool and the clearing round, on an anchored chain.
 
 The template `seqdex_pool` is a maker's two coins, one of BASE and one of
 QUOTE, at one address under one program with the pool's terms in a data leaf:
@@ -24,6 +24,9 @@ in one transaction, one of them in part; that round is reorged out with its
 Bitcoin anchor and mined again. Every violation is refused by the mempool and
 in a block forced with `generateblock`, each for its reason, beside a control
 that differs from it only in the property it breaks and that the node accepts.
+No spend of either program carries an annex: each path is refused with an
+annex of 3 and of 1,000 bytes, any signature over it made over the annexed
+transaction, so that the refusal is the annex rule's ("Assertion failed").
 Every transaction pays its fee in an issued asset; none touches the policy
 asset."""
 import os
@@ -160,8 +163,8 @@ class RoundOrder:
         return rate[0] * self.limit_den >= self.limit_num * rate[1]
 
 
-class X3(SimBase, BitcoinTestFramework):
-    NAME = "x3"
+class X4(SimBase, BitcoinTestFramework):
+    NAME = "x4"
 
     def set_test_params(self):
         self.chain_params()
@@ -303,9 +306,10 @@ class X3(SimBase, BitcoinTestFramework):
         tx.r = {at[i]: r for i, r in control.r.items()}
         return self.done(tx)
 
-    def withdraw_tx(self, P, coins, sk, sig_tx=None, control=None):
+    def withdraw_tx(self, P, coins, sk, sig_tx=None, control=None, annex=None):
         """The maker withdraws `coins` of pool P to the wallet, each signed by sk
-        over its own sig_all_hash (over `sig_tx`'s, when given)."""
+        over its own sig_all_hash (over `sig_tx`'s, when given). With `annex`,
+        input 0 carries it and its signature covers it."""
         fc = self.F()
         outs = [self.out(c.amount, self.wallet_spk(), P.B_OUT if c.txout.nAsset.vchCommitment[1:] == P.B_OUT[1:]
                          else P.Q_OUT) for c in coins]
@@ -314,13 +318,14 @@ class X3(SimBase, BitcoinTestFramework):
         st = sig_tx or tx
         tx.r, tx.sig = {}, {}
         for i in range(len(coins)):
-            sig = sign_schnorr(sk, self.sim_sighash(P.leaf, st, i))
+            a = annex if i == 0 else None
+            sig = sign_schnorr(sk, self.sim_sighash(P.leaf, st, i, annex=a))
             tx.sig[i] = sig
             if control is None:
                 tx.r[i] = self.sim_satisfy(P.leaf, tx, i, P.witness(WITHDRAW, sig))
             else:
                 old = self.stack(control, i)
-                self.set_sim_wit(tx, i, P.leaf, old[1], bit_replace(old[0], control.sig[i], sig))
+                self.set_sim_wit(tx, i, P.leaf, old[1], bit_replace(old[0], control.sig[i], sig), annex=a)
                 tx.r[i] = control.r[i]
         return self.done(tx)
 
@@ -372,8 +377,13 @@ class X3(SimBase, BitcoinTestFramework):
         tx.fills, tx.price = fills, price
         return tx
 
-    def clearing_digest(self, tx, leaf):
-        r = seqc(self.req(leaf, tx, 0))
+    def clearing_digest(self, tx, leaf, annex=None):
+        """What the clearer signs for `tx`, as seqc computes it; with `annex`,
+        input 0 carries it."""
+        req = self.req(leaf, tx, 0)
+        if annex is not None:
+            req["annex"] = annex.hex()
+        r = seqc(req)
         return bytes.fromhex(r["clearing_digest"]), r["tx_hash"]
 
     def round_satisfy(self, tx, sk):
@@ -398,14 +408,16 @@ class X3(SimBase, BitcoinTestFramework):
         tx.meta["tx_hash"] = th
         return self.done(tx)
 
-    def resign(self, control, tx, sk, sig_tx=None):
+    def resign(self, control, tx, sk, sig_tx=None, annex=None):
         """`tx` with the control's programs, its witnesses carrying the clearer's
-        signature by `sk` over `tx` (or over `sig_tx`), then signed by the wallet."""
-        digest, _ = self.clearing_digest(sig_tx or tx, tx.fills[0][0].leaf)
+        signature by `sk` over `tx` (or over `sig_tx`), then signed by the wallet.
+        With `annex`, input 0 carries it and the signature covers it."""
+        digest, _ = self.clearing_digest(sig_tx or tx, tx.fills[0][0].leaf, annex)
         sig = sign_schnorr(sk, digest)
         for k in control.r:
             st = self.stack(control, k)
-            self.set_sim_wit(tx, k, tx.fills[k][0].leaf, st[1], bit_replace(st[0], control.sig, sig))
+            self.set_sim_wit(tx, k, tx.fills[k][0].leaf, st[1], bit_replace(st[0], control.sig, sig),
+                             annex=annex if k == 0 else None)
         tx.r, tx.sig = dict(control.r), sig
         return self.done(tx)
 
@@ -496,6 +508,13 @@ class X3(SimBase, BitcoinTestFramework):
         lot = self.pool_satisfy(P, self.sell_tx(P, xc, yc, P.min_lot, P.ask_price(P.min_lot), pay_y[1], fc), SELL)
         self.reject(self.reuse(lot, self.sell_tx(P, xc, yc, P.min_lot - 1, P.ask_price(P.min_lot - 1), pay_y[1], fc)),
                     "pool/neg_sell_moves_one_atom_under_the_min_lot", J, control=lot)
+        # An annex on either coin: a fill signs nothing, so anyone relaying it
+        # could add one.
+        for n in (3, 1000):
+            for i, what in ((0, "base_coin"), (1, "quote_coin")):
+                t = self.reuse(sell, self.sell_tx(P, xc, yc, DB, P.ask_price(DB), pay_y[0], fc))
+                t.wit.vtxinwit[i].scriptWitness.stack.append(b"\x50" + bytes([0xab]) * (n - 1))
+                self.reject(t, "pool/neg_%s_with_an_annex_of_%d_bytes" % (what, n), A, control=sell, index=i)
         txid = self.ok(sell, "pool/sell_at_the_ask", extra={"base_out": DB, "quote_in": P.ask_price(DB),
                                                              "base_times_ask_num": DB * P.ask_num})
         xc, yc = self.utxo_at(txid, 0), self.utxo_at(txid, 1)
@@ -537,6 +556,9 @@ class X3(SimBase, BitcoinTestFramework):
         other = self.withdraw_tx(P, [xc, yc], maker_sk)
         self.reject(self.withdraw_tx(P, [xc, yc], maker_sk, sig_tx=other, control=w),
                     "pool/neg_withdraw_signature_over_another_transaction", J, control=w)
+        for n in (3, 1000):
+            self.reject(self.withdraw_tx(P, [xc, yc], maker_sk, control=w, annex=bytes([0xab]) * (n - 1)),
+                        "pool/neg_withdraw_with_an_annex_of_%d_bytes_the_maker_signed" % n, A, control=w)
         # Taking both coins through the fill path, paying nothing.
         t = self.pool_tx(P, xc, yc, P.reserve_base, yc.amount, [w.prev[2]],
                          [self.out(xc.amount - P.reserve_base, self.taker_spk, P.B_OUT),
@@ -586,9 +608,9 @@ class X3(SimBase, BitcoinTestFramework):
         self.rec("round/clearing", {"price": "%d/%d" % (N, D), "fills": rnd.meta["fills"],
                                     "tx_hash": rnd.meta["tx_hash"], "clearer_digest": rnd.digest.hex()})
 
-        def rneg(label, tx, expect=J, index=0, sk=clearer_sk, sig_tx=None, control=None):
+        def rneg(label, tx, expect=J, index=0, sk=clearer_sk, sig_tx=None, control=None, annex=None):
             c = control or rnd
-            self.reject(self.resign(c, tx, sk, sig_tx), label, expect, control=c, index=index)
+            self.reject(self.resign(c, tx, sk, sig_tx, annex), label, expect, control=c, index=index)
 
         # A fill at another price than the published one: A1 credited at its own
         # limit (1.00), the clearer keeping the difference; and A1 credited one
@@ -626,6 +648,10 @@ class X3(SimBase, BitcoinTestFramework):
         t.r = dict(rnd.r)
         self.reject(self.done(t), "round/neg_bid_reads_the_price_unflipped", J, control=rnd, index=2)
 
+        # An annex on A1's input, the clearer signing the annexed round.
+        for n in (3, 1000):
+            rneg("round/neg_order_with_an_annex_of_%d_bytes_the_clearer_signed" % n,
+                 self.round_tx(fills, price, gap, fc), A, annex=bytes([0xab]) * (n - 1))
         # A price below a limit: A2 and B1 alone at A2's limit, 105/100, accepted;
         # at 104,999/100,000, A2 refuses.
         def two(n, d):
@@ -664,27 +690,30 @@ class X3(SimBase, BitcoinTestFramework):
         self.mine_to(B2.expiry)
         fc = self.F()
 
-        def refund(coin, sk, sig_tx=None, control=None):
+        def refund(coin, sk, sig_tx=None, control=None, annex=None):
             tx = self.mktx([(coin, 0xfffffffe), (fc, 0xfffffffe)],
                            [self.out(coin.amount, self.wallet_spk(), B2.A_OUT),
                             self.out(fc.amount - FEE, self.change_spk, self.Z_OUT), self.fee(FEE, self.Z_OUT)],
                            locktime=B2.expiry)
-            sig = sign_schnorr(sk, self.sim_sighash(B2.leaf, sig_tx or tx, 0))
+            sig = sign_schnorr(sk, self.sim_sighash(B2.leaf, sig_tx or tx, 0, annex=annex))
             if control is None:
                 tx.r = {0: self.sim_satisfy(B2.leaf, tx, 0, B2.witness(REFUND, refund_sig=sig))}
             else:
                 st = self.stack(control, 0)
-                self.set_sim_wit(tx, 0, B2.leaf, st[1], bit_replace(st[0], control.sig, sig))
+                self.set_sim_wit(tx, 0, B2.leaf, st[1], bit_replace(st[0], control.sig, sig), annex=annex)
                 tx.r = control.r
             tx.sig = sig
             return self.done(tx)
         rf = refund(rest, refund_sk)
         assert self.accept(rf)["allowed"], self.accept(rf)
         self.reject(refund(rest, other_sk, control=rf), "refund/neg_signed_by_another_key", J, control=rf)
+        for n in (3, 1000):
+            self.reject(refund(rest, refund_sk, control=rf, annex=bytes([0xab]) * (n - 1)),
+                        "refund/neg_with_an_annex_of_%d_bytes_the_refund_key_signed" % n, A, control=rf)
         self.ok(rf, "refund/by_height_at_expiry", extra={"expiry": B2.expiry})
         self.ro_program["refund_height"] = self.stack(rf, 0)[1]
         self.rec("round_order_program", {k: {"bytes": len(v), "hex": v.hex()} for k, v in self.ro_program.items()})
 
 
 if __name__ == "__main__":
-    X3().main()
+    X4().main()

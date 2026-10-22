@@ -56,7 +56,7 @@ TESTS = [
     ("e1", "e1_subscription_escrow", "The subscription escrow, tapscript: a release of two subscriptions, a cancel and a refund by anyone after the deadline; every violation refused"),
     ("x1", "x1_seqdex_order", "The SeqDEX order: an order beyond the 2^63 bound filled in part at inputs 0 and 1 and in whole, two orders in one transaction, the refund by height and by time; every violation refused"),
     ("x2", "x2_seqdex_guarded_order", "The guarded SeqDEX order: filled in part and in whole and refunded beside its guard coin at input 0; every spend without the guard, with another, or with the order at input 0 refused"),
-    ("x3", "x3_seqdex_pool_round", "The SeqDEX pool and the clearing round, anchored: a pool funded, filled from both sides and withdrawn by its maker; four round orders cleared at one price, reorged out with their anchor and mined again; every violation refused"),
+    ("x4", "x4_seqdex_pool_round", "The SeqDEX pool and the clearing round, anchored: a pool funded, filled from both sides and withdrawn by its maker; four round orders cleared at one price, reorged out with their anchor and mined again; every violation, an annex on any path included, refused"),
 ]
 CEILINGS = [
     ("s1c", "s1_ceiling_annex", "Budget threshold, annex cap, program size, consensus cost cap"),
@@ -83,7 +83,7 @@ ENABLE_BITCOIND=true
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, u1, u2, v1, v2, l1, l2, c1, b1, e1, x1, x2, x3, s1c, s1d); default all but s1c and s1d")
+    ap.add_argument("tests", nargs="*", help="test ids (s0 ... s7, d1, d2, h1, f1, o1, o2, p1, p2, m1, m2, u1, u2, v1, v2, l1, l2, c1, b1, e1, x1, x2, x4, s1c, s1d); default all but s1c and s1d")
     ap.add_argument("--node-repo",
                     default=os.environ.get("SEQUENTIA_REPO", os.path.join(os.path.dirname(ROOT), "Sequentia")),
                     help="a Sequentia checkout, for its functional test framework "

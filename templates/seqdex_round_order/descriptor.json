@@ -85,20 +85,20 @@
       }
     ],
     "slots": [],
-    "summary": "A SeqDEX round order: filled, in part or in whole, only in a clearing round its clearer signs, at the one price the round publishes in its last output and never below its limit; after expiry the refund key takes it back.",
+    "summary": "A SeqDEX round order: filled, in part or in whole, only in a clearing round its clearer signs, at the one price the round publishes in its last output and never below its limit; after expiry the refund key takes it back. No spend carries an annex.",
     "tree": {
       "branch": [
         {
           "leaf": "order",
           "simplicity": {
-            "cmr": "6f8172d252fd6fe24900c01687631d1549b8bad08320e37e087d21956723b330",
+            "cmr": "270257e102fb0bf65f1c163ca392c49157a0acb9f1eaafe2016914b61720e3e7",
             "compiler": {
               "name": "simplicityhl",
               "version": "0.7.2"
             },
-            "max_cost_wu": 694,
+            "max_cost_wu": 697,
             "source": "seqdex_round_order.simf",
-            "source_sha256": "16d66f69d6149966b3434d1beea76e5d2054c2910237702a2c641f9861b2d6f5",
+            "source_sha256": "0090f7b20fdc305a44007287c608a418b3bca2081b9916aa3c368c7c7fc945f7",
             "witness": [
               {
                 "name": "ASSET_A",
@@ -181,7 +181,7 @@
     },
     "version": 1
   },
-  "template_hash": "28acb9ce831765a254099547a9f5b6ac77b2b381fafcc17ca656ec546ab97cd1",
+  "template_hash": "beb7d0004a13958214cf9968a82ddf8dc24b4e0cfcddc0d84f49a8d38338d254",
   "chains": [
     {
       "name": "sequentia-testnet",
@@ -195,42 +195,42 @@
     }
   ],
   "measured": {
-    "record": "harness/records/x3.json",
+    "record": "harness/records/x4.json",
     "fill_whole": {
       "transaction": "a round of four orders, the clearer's two gap coins and a fee coin; twelve outputs, the clearing output last",
-      "vsize": 3087,
-      "weight": 12348,
-      "program_bytes": 1583,
+      "vsize": 3107,
+      "weight": 12426,
+      "program_bytes": 1602,
       "witness_bytes": 269,
-      "cost_bound_wu": 648,
-      "budget_wu": 7882
+      "cost_bound_wu": 651,
+      "budget_wu": 7958
     },
     "fill_whole_flip": {
       "transaction": "the same round, a bid filled whole",
-      "vsize": 3087,
-      "weight": 12348,
-      "program_bytes": 1587,
+      "vsize": 3107,
+      "weight": 12426,
+      "program_bytes": 1606,
       "witness_bytes": 269,
-      "cost_bound_wu": 648,
-      "budget_wu": 7898
+      "cost_bound_wu": 651,
+      "budget_wu": 7974
     },
     "fill_flip": {
       "transaction": "the same round, a bid filled in part",
-      "vsize": 3087,
-      "weight": 12348,
-      "program_bytes": 1697,
+      "vsize": 3107,
+      "weight": 12426,
+      "program_bytes": 1718,
       "witness_bytes": 269,
-      "cost_bound_wu": 694,
-      "budget_wu": 8338
+      "cost_bound_wu": 697,
+      "budget_wu": 8422
     },
     "refund": {
       "transaction": "the remainder and a fee coin; the refund, the fee change and the fee",
-      "vsize": 525,
-      "weight": 2099,
-      "program_bytes": 545,
+      "vsize": 529,
+      "weight": 2115,
+      "program_bytes": 561,
       "witness_bytes": 253,
-      "cost_bound_wu": 292,
-      "budget_wu": 3666
+      "cost_bound_wu": 295,
+      "budget_wu": 3730
     }
   }
 }

@@ -48,6 +48,10 @@
  *   REFUND  the refund key, once the transaction's lock time reaches EXPIRY:
  *           a BIP340 signature over jet::sig_all_hash().
  *
+ * Every spend carries no annex. The clearer's digest and the refund key's
+ * signature cover every input's annex already; the rule makes the order safe
+ * on its own terms, and no path's cost comes near its budget.
+ *
  * The spender chooses the path in PATH: Left((partial, (flip, (N, D)))) a
  * fill, Right(()) the refund. No branch depends on a value, and each term is
  * read in a statement of its own, so each path's pruned program is one
@@ -205,6 +209,11 @@ fn main() {
     let expiry: u32 = witness::EXPIRY;
     let refund_key: Pubkey = witness::REFUND_KEY;
     let clearer: Pubkey = witness::CLEARER;
+
+    // No annex, on any path: whoever relays a spend could otherwise attach
+    // one, growing it to the relay's size limit at the relay's lowest fee
+    // rate under the same txid. No path needs one for its budget.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
 
     // The terms are the data leaf's, and the tree is this leaf and the data
     // leaf alone.

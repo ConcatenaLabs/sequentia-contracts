@@ -48,6 +48,12 @@ them for anything.
 | pair | `Right(Left(()))` | anyone, at the `QUOTE` coin | Input `j-1` holds `BASE` explicitly at this script. That coin's program judges the move |
 | withdraw | `Right(Right(()))` | `MAKER_KEY` | A BIP340 signature over `jet::sig_all_hash()`: one transaction, one input, this chain. Either coin, alone or together |
 
+No spend of a pool carries an annex. A fill and a pair sign nothing, so nothing
+would bind an annex: anyone relaying a fill could attach one of up to 100,000
+bytes, and the copy that reaches a mempool first, at the relay's lowest fee rate
+under the same txid, would keep the honest one out. The withdrawal refuses one
+too. No path needs an annex for its budget.
+
 Each side rounds in the pool's favour, so no sequence of fills draws value out
 by rounding. A coin at the address with no partner, or with a partner of the
 wrong asset, can only be withdrawn; a stray coin that someone pairs with the
@@ -128,6 +134,10 @@ publishes, and it can leave an order out; the refund after `EXPIRY` bounds that
 `PATH` = `Right(())`: `REFUND_KEY` signs `jet::sig_all_hash()` once the
 transaction's lock time reaches `EXPIRY`, exactly as in `seqdex/order`.
 
+No spend of a round order carries an annex. The clearer's digest and the refund
+key's `sig_all_hash` already cover every input's annex; the rule keeps the order
+safe on its own terms, and no path needs an annex for its budget.
+
 ## A round
 
 The round orders sit at inputs `0..n-1`, each crediting its maker at `2k` and
@@ -147,13 +157,13 @@ The witness stack of every spend is `[witness, program, cmr, control block]`.
 
 | Template | Path | Program | Witness |
 |---|---|---|---|
-| `seqdex/pool` | `sell` | 1,332 B | the terms, then `01` |
-| | `buy` | 1,333 B | the terms, then `00` |
-| | `pair` | 771 B | the terms, then `10` |
-| | `withdraw` | 551 B | the terms, `11`, the 64-byte signature |
-| `seqdex/round-order` | `fill`, `fill_flip` | 1,693, 1,697 B | the terms, `0`, `partial`, `flip`, `N` and `D` (64 bits each), the clearer's 64-byte signature |
-| | `fill_whole`, `fill_whole_flip` | 1,583, 1,587 B | the same |
-| | `refund_height`, `refund_time` | 545, 544 B | the terms, `1`, the 64-byte signature |
+| `seqdex/pool` | `sell` | 1,353 B | the terms, then `01` |
+| | `buy` | 1,355 B | the terms, then `00` |
+| | `pair` | 791 B | the terms, then `10` |
+| | `withdraw` | 569 B | the terms, `11`, the 64-byte signature |
+| `seqdex/round-order` | `fill`, `fill_flip` | 1,714, 1,718 B | the terms, `0`, `partial`, `flip`, `N` and `D` (64 bits each), the clearer's 64-byte signature |
+| | `fill_whole`, `fill_whole_flip` | 1,602, 1,606 B | the same |
+| | `refund_height`, `refund_time` | 561 B each | the terms, `1`, the 64-byte signature |
 
 Each witness is padded with zero bits to a whole byte. The program is one
 constant per path because no branch depends on a value and each term is read in
@@ -162,22 +172,25 @@ prunes each program for every vector's terms, for terms holding equal values
 (and a round order whose clearer key is its refund key), at input indices 0, 1
 and 3, and requires `fills.json` each time; every fill it builds executes only
 because the clearer signed `round::clearing_digest`, which holds that function to
-the program's own jet. `seqc run` prints `tx_hash` and `clearing_digest` for any
-transaction it is given.
+the program's own jet. It also runs every path with an annex of 3 and of 1,000
+bytes, the signatures covering it, and requires each refused. `seqc run` prints
+`tx_hash` and `clearing_digest` for any transaction it is given, reading an annex
+as the node does: the last item of a witness stack of at least two, after its
+`0x50` tag.
 
 ## Measured
 
-`harness/tests/x3_seqdex_pool_round.py`, on an anchored chain (a parent node
+`harness/tests/x4_seqdex_pool_round.py`, on an anchored chain (a parent node
 standing in for Bitcoin, `-con_bitcoin_anchor=1 -validateanchor=1`), recorded in
-`harness/records/x3.json`. Every transaction pays its fee in an issued asset.
+`harness/records/x4.json`. Every transaction pays its fee in an issued asset.
 
 | Spend | vsize | Covenant inputs: program, witness, cost bound, budget |
 |---|---|---|
-| Pool sell: the pool's two coins, a payment coin, a fee coin; six outputs | 1,287 vB | base 1,332 B, 153 B, 497 WU, 6,406 WU; quote 771 B, 153 B, 315 WU, 4,162 WU |
-| Pool buy, the same layout | 1,287 vB | the same, 1,333 B for the base coin |
-| Withdrawal of both coins by the maker | 843 vB | 551 B, 217 B, 311 WU, 3,538 WU each |
-| A round of four orders (two asks, two bids, one filled in part), the clearer's two gap coins and a fee coin; twelve outputs with the clearing output | 3,087 vB | 1,583 to 1,697 B, 269 B, 648 to 694 WU, 7,882 to 8,338 WU each |
-| A round order's refund by height | 525 vB | 545 B, 253 B, 292 WU, 3,666 WU |
+| Pool sell: the pool's two coins, a payment coin, a fee coin; six outputs | 1,297 vB | base 1,353 B, 153 B, 499 WU, 6,490 WU; quote 791 B, 153 B, 317 WU, 4,242 WU |
+| Pool buy, the same layout | 1,298 vB | the same, 1,355 B and 500 WU for the base coin |
+| Withdrawal of both coins by the maker | 852 vB | 569 B, 217 B, 314 WU, 3,610 WU each |
+| A round of four orders (two asks, two bids, one filled in part), the clearer's two gap coins and a fee coin; twelve outputs with the clearing output | 3,107 vB | 1,602 to 1,718 B, 269 B, 651 to 697 WU, 7,958 to 8,422 WU each |
+| A round order's refund by height | 529 vB | 561 B, 253 B, 295 WU, 3,730 WU |
 
 No spend needs an annex. A round order's input carries about 2 KB of witness
 (about 510 vB), and a pool fill's two inputs about 2.4 KB.

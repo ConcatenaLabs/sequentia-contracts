@@ -97,20 +97,20 @@
       }
     ],
     "slots": [],
-    "summary": "A SeqDEX pool: a maker's two coins, one of each asset, that anyone fills from either side at the pool's bid and ask, never below its reserve, and that only the maker withdraws.",
+    "summary": "A SeqDEX pool: a maker's two coins, one of each asset, that anyone fills from either side at the pool's bid and ask, never below its reserve, and that only the maker withdraws. No spend carries an annex.",
     "tree": {
       "branch": [
         {
           "leaf": "pool",
           "simplicity": {
-            "cmr": "1dc9a6ac072bda5497f01838736af304a0870a8ab04ca9c59450f8f0dfbe760a",
+            "cmr": "770bbf39eb4505312f6e5ac3ae7d54c79384e8fcd625917b2ca19c2a092771eb",
             "compiler": {
               "name": "simplicityhl",
               "version": "0.7.2"
             },
-            "max_cost_wu": 497,
+            "max_cost_wu": 500,
             "source": "seqdex_pool.simf",
-            "source_sha256": "bfe28c0813f8ecc415ce8f7c57a87080838356a601e35f26e09947605fba05e0",
+            "source_sha256": "a3896913e23119c36d07b7f67b181bdfd70184324aca8e9292244a1e4cae283e",
             "witness": [
               {
                 "name": "BASE",
@@ -194,7 +194,7 @@
     },
     "version": 1
   },
-  "template_hash": "bcfd549635ba346c2fa800008addb9f84f8050289fea6f495ca2583001c60547",
+  "template_hash": "ce898f6e75efe7c9755e14536180b39d50ec6d79eefd0ce3e3b60fd05c34474c",
   "chains": [
     {
       "name": "sequentia-testnet",
@@ -208,42 +208,42 @@
     }
   ],
   "measured": {
-    "record": "harness/records/x3.json",
+    "record": "harness/records/x4.json",
     "sell": {
       "transaction": "the pool's two coins, a payment coin and a fee coin; the pool again, the taker's base, the payment change, the fee change and the fee",
-      "vsize": 1287,
-      "weight": 5147,
-      "program_bytes": 1332,
+      "vsize": 1297,
+      "weight": 5188,
+      "program_bytes": 1353,
       "witness_bytes": 153,
-      "cost_bound_wu": 497,
-      "budget_wu": 6406
+      "cost_bound_wu": 499,
+      "budget_wu": 6490
     },
     "buy": {
       "transaction": "the same layout",
-      "vsize": 1287,
-      "weight": 5148,
-      "program_bytes": 1333,
+      "vsize": 1298,
+      "weight": 5190,
+      "program_bytes": 1355,
       "witness_bytes": 153,
-      "cost_bound_wu": 497,
-      "budget_wu": 6410
+      "cost_bound_wu": 500,
+      "budget_wu": 6498
     },
     "pair": {
       "transaction": "the quote coin beside the sell",
-      "vsize": 1287,
-      "weight": 5147,
-      "program_bytes": 771,
+      "vsize": 1297,
+      "weight": 5188,
+      "program_bytes": 791,
       "witness_bytes": 153,
-      "cost_bound_wu": 315,
-      "budget_wu": 4162
+      "cost_bound_wu": 317,
+      "budget_wu": 4242
     },
     "withdraw": {
       "transaction": "both coins and a fee coin; each coin to the maker, the fee change and the fee",
-      "vsize": 843,
-      "weight": 3372,
-      "program_bytes": 551,
+      "vsize": 852,
+      "weight": 3408,
+      "program_bytes": 569,
       "witness_bytes": 217,
-      "cost_bound_wu": 311,
-      "budget_wu": 3538
+      "cost_bound_wu": 314,
+      "budget_wu": 3610
     }
   }
 }

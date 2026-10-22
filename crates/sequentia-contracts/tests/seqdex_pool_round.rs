@@ -166,10 +166,31 @@ impl Template {
         k: u32,
         sign: &dyn Fn([u8; 32], [u8; 32]) -> Vec<(&'static str, Value)>,
     ) -> (Vec<u8>, Vec<u8>) {
+        self.try_spend(t, tx, utxos, k, None, sign).unwrap()
+    }
+
+    /// spend, with `annex` (its bytes after the 0x50 tag) on input k when
+    /// given, as the node reads one: the last item of a stack of at least
+    /// two. The digest and sig_all_hash the spender signs then cover it, so a
+    /// refusal is the program's annex rule alone.
+    fn try_spend(
+        &self,
+        t: &Terms,
+        mut tx: Transaction,
+        utxos: Vec<TxOut>,
+        k: u32,
+        annex: Option<Vec<u8>>,
+        sign: &dyn Fn([u8; 32], [u8; 32]) -> Vec<(&'static str, Value)>,
+    ) -> Result<(Vec<u8>, Vec<u8>), String> {
         let program = sequentia_contracts::compile(&self.source, Default::default()).unwrap();
         let cmr = program.commit().cmr();
         let (spk, cb) = self.derive(t);
         assert_eq!(utxos[k as usize].script_pubkey.as_bytes(), &spk[..], "the coin is not at the instance's script");
+        if let Some(a) = &annex {
+            let mut item = vec![0x50u8];
+            item.extend_from_slice(a);
+            tx.input[k as usize].witness.script_witness = vec![vec![], item];
+        }
         let genesis = BlockHash::all_zeros();
         let digest = clearing_digest(&genesis.to_byte_array(), &tx, &utxos).unwrap();
         let tx = Arc::new(tx);
@@ -179,16 +200,15 @@ impl Template {
             k,
             cmr,
             cb,
-            None,
+            annex,
             genesis,
         );
         let wv = self.witness(t, sign(env.c_tx_env().sighash_all().to_byte_array(), digest));
-        let satisfied = program.satisfy_with_env(wv, Some(&env)).unwrap();
+        let satisfied = program.satisfy_with_env(wv, Some(&env)).map_err(|e| e.to_string())?;
         let node = satisfied.redeem().clone();
-        let mut mac = BitMachine::for_program(&node).unwrap();
-        mac.exec(&node, &env).unwrap();
-        let (p, w) = node.to_vec_with_witness();
-        (p, w)
+        let mut mac = BitMachine::for_program(&node).map_err(|e| e.to_string())?;
+        mac.exec(&node, &env).map_err(|e| e.to_string())?;
+        Ok(node.to_vec_with_witness())
     }
 }
 
@@ -518,4 +538,96 @@ fn a_wrong_digest_does_not_execute() {
         ],
     );
     assert!(program.satisfy_with_env(wv, Some(&env)).is_err(), "a signature over sig_all_hash satisfied the fill");
+}
+
+#[test]
+fn every_path_refuses_an_annex() {
+    // A pool sell and its pair, a withdrawal, a round order's fill and its
+    // refund, each executed without an annex and refused with one of 3 and of
+    // 1,000 bytes, the signatures covering the annexed transaction.
+    let secp = Secp256k1::new();
+    let maker = Keypair::from_seckey_slice(&secp, &h("the pool maker")).unwrap();
+    let clearer = Keypair::from_seckey_slice(&secp, &h("the clearer")).unwrap();
+    let pool_t = Template::load("seqdex_pool", "pool");
+    let mut p = Terms(read("seqdex_pool", "vectors.json")["addresses"][0]["params"].as_object().unwrap().clone());
+    for (k, v) in [("BID_NUM", 9u64), ("BID_DEN", 10), ("ASK_NUM", 11), ("ASK_DEN", 10), ("MIN_LOT", 1), ("RESERVE_BASE", 1), ("RESERVE_QUOTE", 1)] {
+        p.set(k, &v.to_be_bytes());
+    }
+    p.set("MAKER_KEY", &maker.x_only_public_key().0.serialize());
+    let (pspk, _) = pool_t.derive(&p);
+    let (base, quote) = (p.get("BASE"), p.get("QUOTE"));
+    let sell_tx = Transaction {
+        version: 2,
+        lock_time: LockTime::ZERO,
+        input: vec![input(0, Sequence::MAX), input(1, Sequence::MAX)],
+        output: vec![out(&base, 9_000, &pspk), out(&quote, 11_100, &pspk), out(&base, 1_000, &[0x51])],
+    };
+    let pool_utxos = vec![out(&base, 10_000, &pspk), out(&quote, 10_000, &pspk)];
+    let path = |v: &'static str| move |_: [u8; 32], _: [u8; 32]| {
+        vec![("PATH", json!({"value": v, "type": "Either<bool, Either<(), ()>>"})), ("MAKER_SIG", sig_value(&[0; 64]))]
+    };
+    let withdraw = move |sighash: [u8; 32], _: [u8; 32]| {
+        vec![
+            ("PATH", json!({"value": "Right(Right(()))", "type": "Either<bool, Either<(), ()>>"})),
+            ("MAKER_SIG", sig_value(&schnorr(&maker, sighash))),
+        ]
+    };
+    let order_t = Template::load("seqdex_round_order", "order");
+    let mut o = Terms(read("seqdex_round_order", "vectors.json")["addresses"][0]["params"].as_object().unwrap().clone());
+    let maker_spk: Vec<u8> = [0x51u8, 0x20].iter().copied().chain(h("maker program")).collect();
+    o.set("MAKER", &sha256::Hash::hash(&maker_spk).to_byte_array());
+    o.set("CLEARER", &clearer.x_only_public_key().0.serialize());
+    o.set("REFUND_KEY", &clearer.x_only_public_key().0.serialize());
+    for (k, v) in [("LIMIT_NUM", 1u64), ("LIMIT_DEN", 1), ("MIN_LOT", 1)] {
+        o.set(k, &v.to_be_bytes());
+    }
+    let (ospk, _) = order_t.derive(&o);
+    let (a, b) = (o.get("ASSET_A"), o.get("ASSET_B"));
+    let fill_tx = Transaction {
+        version: 2,
+        lock_time: LockTime::ZERO,
+        input: vec![input(0, Sequence::MAX)],
+        output: vec![
+            out(&b, 1_000, &maker_spk),
+            out(&a, 1_000, &[0x51]),
+            out(&a, 0, &clearing_script(a.as_slice().try_into().unwrap(), b.as_slice().try_into().unwrap(), 1, 1)),
+        ],
+    };
+    let fill = move |_: [u8; 32], digest: [u8; 32]| {
+        vec![
+            ("PATH", json!({"value": "Left((false, (false, (1, 1))))", "type": "Either<(bool, (bool, (u64, u64))), ()>"})),
+            ("CLEARER_SIG", sig_value(&schnorr(&clearer, digest))),
+            ("REFUND_SIG", sig_value(&[0; 64])),
+        ]
+    };
+    let expiry = o.num("EXPIRY") as u32;
+    let refund_tx = Transaction {
+        version: 2,
+        lock_time: LockTime::from_consensus(expiry),
+        input: vec![input(0, Sequence::ENABLE_LOCKTIME_NO_RBF)],
+        output: vec![out(&a, 1_000, &[0x51])],
+    };
+    let refund = move |sighash: [u8; 32], _: [u8; 32]| {
+        vec![
+            ("PATH", json!({"value": "Right(())", "type": "Either<(bool, (bool, (u64, u64))), ()>"})),
+            ("CLEARER_SIG", sig_value(&[0; 64])),
+            ("REFUND_SIG", sig_value(&schnorr(&clearer, sighash))),
+        ]
+    };
+    let sell = path("Left(true)");
+    let pair = path("Right(Left(()))");
+    let cases: Vec<(&str, &Template, &Terms, Transaction, Vec<TxOut>, u32, &dyn Fn([u8; 32], [u8; 32]) -> Vec<(&'static str, Value)>)> = vec![
+        ("pool sell", &pool_t, &p, sell_tx.clone(), pool_utxos.clone(), 0, &sell),
+        ("pool pair", &pool_t, &p, sell_tx, pool_utxos.clone(), 1, &pair),
+        ("pool withdrawal", &pool_t, &p, Transaction { version: 2, lock_time: LockTime::ZERO, input: vec![input(0, Sequence::MAX)], output: vec![out(&base, 10_000, &[0x51])] }, vec![pool_utxos[0].clone()], 0, &withdraw),
+        ("round order fill", &order_t, &o, fill_tx, vec![out(&a, 1_000, &ospk)], 0, &fill),
+        ("round order refund", &order_t, &o, refund_tx, vec![out(&a, 1_000, &ospk)], 0, &refund),
+    ];
+    for (name, t, terms, tx, utxos, k, sign) in cases {
+        t.try_spend(terms, tx.clone(), utxos.clone(), k, None, sign).unwrap_or_else(|e| panic!("{name} without an annex: {e}"));
+        for n in [3usize, 1000] {
+            let annex = vec![0xab; n - 1];
+            assert!(t.try_spend(terms, tx.clone(), utxos.clone(), k, Some(annex), sign).is_err(), "{name} took an annex of {n} bytes");
+        }
+    }
 }

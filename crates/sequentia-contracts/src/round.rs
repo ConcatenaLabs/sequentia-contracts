@@ -92,11 +92,12 @@ fn conf_nonce(n: &Nonce) -> Vec<u8> {
     }
 }
 
-/// The annex of an input's witness: the last item, when it starts with 0x50
-/// and the stack has at least two items (BIP341).
+/// The annex of an input's witness as the node gives it to Simplicity: the
+/// last item without its 0x50 tag, when the stack has at least two items and
+/// that item starts with the tag (BIP341).
 fn annex(stack: &[Vec<u8>]) -> Option<&[u8]> {
     match stack.last() {
-        Some(last) if stack.len() >= 2 && last.first() == Some(&0x50) => Some(last),
+        Some(last) if stack.len() >= 2 && last.first() == Some(&0x50) => Some(&last[1..]),
         _ => None,
     }
 }
