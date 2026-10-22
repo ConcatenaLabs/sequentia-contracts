@@ -101,14 +101,15 @@ batch whose slots hold equal values, and after earlier exits, and requires
 A negative case proves nothing until a block refuses it. The Arca repository's
 `covenant/tests/accumulator.rs` builds a 1,024-leaf batch on an anchored
 regtest chain, takes owners out one after another, and forces each refusal
-into a block on a node checking scripts inline, beside an accepted control.
+into a block on a node checking scripts inline, beside an accepted control;
+an annex on the exit's witness, of 3 or 1,000 bytes, is one of them.
 Measured there, with 1,024 leaves:
 
 | Spend | Size |
 |---|---|
-| An exit, its fee from the slot's reserve | 976 vB |
-| An exit by the operator, a coin of the batch's asset attached for the fee | 1,184 vB |
-| The exit of the last leaf, with no rest (`exit_last`) | 866 vB |
+| An exit, its fee from the slot's reserve | 979 vB |
+| An exit by the operator, a coin of the batch's asset attached for the fee | 1,187 vB |
+| The exit of the last leaf, with no rest (`exit_last`) | 869 vB |
 | The five node transactions that take one leaf out of a 1,024-leaf radix-4 tree, for comparison | 2,854 vB |
 
 The leaf's entry (234 vB) and its exit (219 vB) follow in both. The cost bound
