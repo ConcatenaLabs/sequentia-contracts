@@ -1,4 +1,5 @@
-//! The SeqDEX order's pruned programs against `templates/seqdex_order/fills.json`.
+//! The SeqDEX order's pruned programs against `fills.json`, for version 1
+//! (`templates/seqdex_order`) and version 2 (`templates/seqdex_order_2`).
 //!
 //! The template claims that a caller with no compiler can build any spend of
 //! an order: the pruned program of each path is one constant, whatever the
@@ -9,7 +10,12 @@
 //! for terms that hold equal values (a 1:1 price, one asset on both sides, a
 //! minimum lot equal to the price terms), at k = 0, 1 and 3, and requires the
 //! constants of `fills.json` every time. `WRITE_FILLS=1 cargo test --test
-//! seqdex_order` rewrites the file from the first order instead.
+//! seqdex_order` rewrites the files from the first order instead.
+//!
+//! Version 2 differs from version 1 in one rule: a spend carries no annex. A
+//! fill signs nothing, so an annex on it is bound by nothing, and whoever
+//! relays the fill could attach one. The last test runs a fill with an annex
+//! on the order's input beside the same fill without one, on both versions.
 
 use std::sync::Arc;
 
@@ -25,7 +31,8 @@ use sequentia_contracts::simplicity::BitMachine;
 use sequentia_contracts::simplicityhl::WitnessValues;
 use serde_json::{json, Value};
 
-const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/seqdex_order");
+const V1: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/seqdex_order");
+const V2: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/seqdex_order_2");
 
 fn unhex(s: &str) -> Vec<u8> {
     (0..s.len())
@@ -38,8 +45,8 @@ fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
 
-fn read(name: &str) -> Value {
-    serde_json::from_str(&std::fs::read_to_string(format!("{DIR}/{name}")).unwrap()).unwrap()
+fn read(dir: &str, name: &str) -> Value {
+    serde_json::from_str(&std::fs::read_to_string(format!("{dir}/{name}")).unwrap()).unwrap()
 }
 
 fn h(label: &str) -> [u8; 32] {
@@ -96,6 +103,7 @@ fn out(asset: &[u8], value: u64, spk: &[u8]) -> TxOut {
 
 /// (program, witness) of the order's spend at input k of `tx`.
 fn spend(
+    dir: &str,
     source: &str,
     terms: &Terms,
     tx: Transaction,
@@ -106,7 +114,7 @@ fn spend(
 ) -> (Vec<u8>, Vec<u8>) {
     let program = sequentia_contracts::compile(source, Default::default()).unwrap();
     let cmr = program.commit().cmr();
-    let derived = derive(terms);
+    let derived = derive(dir, terms);
     let cb = ControlBlock::from_slice(&unhex(derived["leaves"]["order"]["control_block"].as_str().unwrap())).unwrap();
     assert_eq!(
         hex(&utxos[k as usize].script_pubkey.to_bytes()),
@@ -144,9 +152,9 @@ fn spend(
     (p, w)
 }
 
-fn derive(terms: &Terms) -> Value {
+fn derive(dir: &str, terms: &Terms) -> Value {
     // The descriptor reader of this crate is the address reference.
-    let d = sequentia_contracts::descriptor::Descriptor::load(std::path::Path::new(&format!("{DIR}/descriptor.json")))
+    let d = sequentia_contracts::descriptor::Descriptor::load(std::path::Path::new(&format!("{dir}/descriptor.json")))
         .unwrap();
     let params = terms.0.iter().map(|(k, v)| (k.clone(), v.as_str().unwrap().to_string())).collect();
     let x = d.model().unwrap().derive(&params, &Default::default()).unwrap();
@@ -226,12 +234,24 @@ fn refund_tx(terms: &Terms, spk: &[u8], lock: u32) -> (Transaction, Vec<TxOut>) 
     (tx, vec![out(&a, 1_000_000, spk)])
 }
 
+fn source(dir: &str, simf: &str) -> String {
+    sequentia_contracts::expand(&std::fs::read_to_string(format!("{dir}/{simf}")).unwrap()).unwrap()
+}
+
 #[test]
-fn every_order_spends_by_the_constant_programs_of_fills_json() {
-    let raw = std::fs::read_to_string(format!("{DIR}/seqdex_order.simf")).unwrap();
-    let source = sequentia_contracts::expand(&raw).unwrap();
-    let descriptor = read("descriptor.json");
-    let vectors = read("vectors.json");
+fn every_order_of_version_1_spends_by_the_constant_programs_of_fills_json() {
+    prunes_to_fills_json(V1, "seqdex_order.simf");
+}
+
+#[test]
+fn every_order_of_version_2_spends_by_the_constant_programs_of_fills_json() {
+    prunes_to_fills_json(V2, "seqdex_order_2.simf");
+}
+
+fn prunes_to_fills_json(dir: &str, simf: &str) {
+    let source = source(dir, simf);
+    let descriptor = read(dir, "descriptor.json");
+    let vectors = read(dir, "vectors.json");
     let secp = Secp256k1::new();
     let refund_key = Keypair::from_seckey_slice(&secp, &h("the refund key")).unwrap();
     let maker = sha256::Hash::hash(
@@ -267,12 +287,12 @@ fn every_order_spends_by_the_constant_programs_of_fills_json() {
 
     let mut got: std::collections::BTreeMap<&str, Vec<u8>> = Default::default();
     for (n, o) in orders.iter().enumerate() {
-        let spk = unhex(derive(o)["script_pubkey"].as_str().unwrap());
+        let spk = unhex(derive(dir, o)["script_pubkey"].as_str().unwrap());
         for k in [0u32, 1, 3] {
             for (name, path, partial) in [("fill", "Left(true)", true), ("fill_whole", "Left(false)", false)] {
                 let filled = if partial { 4_000_000 } else { 10_000_000 };
                 let (tx, utxos) = fill_tx(o, &spk, k, 10_000_000, filled, partial);
-                let (p, _) = spend(&source, o, tx, utxos, k, path, None);
+                let (p, _) = spend(dir, &source, o, tx, utxos, k, path, None);
                 let want = got.entry(name).or_insert_with(|| p.clone());
                 assert_eq!(hex(want), hex(&p), "order {n} at k={k}: the {name} program differs");
             }
@@ -280,7 +300,7 @@ fn every_order_spends_by_the_constant_programs_of_fills_json() {
         let expiry = o.num("EXPIRY") as u32;
         let name = if expiry < 500_000_000 { "refund_height" } else { "refund_time" };
         let (tx, utxos) = refund_tx(o, &spk, expiry);
-        let (p, _) = spend(&source, o, tx, utxos, 0, "Right(())", Some(&refund_key));
+        let (p, _) = spend(dir, &source, o, tx, utxos, 0, "Right(())", Some(&refund_key));
         let want = got.entry(name).or_insert_with(|| p.clone());
         assert_eq!(hex(want), hex(&p), "order {n}: the {name} program differs");
     }
@@ -302,7 +322,62 @@ fn every_order_spends_by_the_constant_programs_of_fills_json() {
         }
     });
     if std::env::var("WRITE_FILLS").is_ok() {
-        std::fs::write(format!("{DIR}/fills.json"), serde_json::to_string_pretty(&want).unwrap() + "\n").unwrap();
+        std::fs::write(format!("{dir}/fills.json"), serde_json::to_string_pretty(&want).unwrap() + "\n").unwrap();
     }
-    assert_eq!(read("fills.json"), want, "fills.json differs from what the program prunes to");
+    assert_eq!(read(dir, "fills.json"), want, "{dir}/fills.json differs from what the program prunes to");
+}
+
+/// Runs the program of the order at input k of `tx` on the Bit Machine, the
+/// order's witness stack ending in `annex` when there is one, as the node
+/// gives it to the jets.
+fn run_annexed(dir: &str, source: &str, terms: &Terms, mut tx: Transaction, utxos: Vec<TxOut>, k: u32, path: &str,
+    annex: Option<&[u8]>) -> Result<(), String> {
+    let program = sequentia_contracts::compile(source, Default::default()).unwrap();
+    let cmr = program.commit().cmr();
+    let cbb = unhex(derive(dir, terms)["leaves"]["order"]["control_block"].as_str().unwrap());
+    let cb = ControlBlock::from_slice(&cbb).unwrap();
+    if let Some(a) = annex {
+        assert_eq!(a[0], 0x50, "an annex starts 0x50");
+        tx.input[k as usize].witness.script_witness = vec![vec![0], vec![0], cmr.as_ref().to_vec(), cbb.clone(), a.to_vec()];
+    }
+    let tx = Arc::new(tx);
+    let env = ElementsEnv::new(tx.clone(), utxos.into_iter().map(ElementsUtxo::from).collect(), k, cmr, cb,
+        annex.map(|a| a.to_vec()), BlockHash::all_zeros());
+    let wv: WitnessValues = serde_json::from_str(&terms.witness(path, &[0u8; 64]).to_string()).unwrap();
+    let satisfied = program.satisfy_with_env(wv, Some(&env)).map_err(|e| e.to_string())?;
+    let node = satisfied.redeem().clone();
+    let mut mac = BitMachine::for_program(&node).map_err(|e| e.to_string())?;
+    mac.exec(&node, &env).map(|_| ()).map_err(|e| e.to_string())
+}
+
+#[test]
+fn a_fill_with_an_annex_is_refused_by_version_2_and_taken_by_version_1() {
+    let base = Terms(read(V1, "vectors.json")["addresses"][0]["params"].as_object().unwrap().clone());
+    let mut o = base.clone();
+    let maker = sha256::Hash::hash(&[0x51u8, 0x20].iter().copied().chain(h("maker program")).collect::<Vec<u8>>());
+    o.set("MAKER", maker.as_ref());
+    o.set("MIN_LOT", &1_000u64.to_be_bytes());
+    let long = [vec![0x50u8], vec![0xab; 999]].concat();
+    for (dir, simf) in [(V1, "seqdex_order.simf"), (V2, "seqdex_order_2.simf")] {
+        let source = source(dir, simf);
+        let spk = unhex(derive(dir, &o)["script_pubkey"].as_str().unwrap());
+        for k in [0u32, 1] {
+            for (path, partial) in [("Left(true)", true), ("Left(false)", false)] {
+                let filled = if partial { 4_000_000 } else { 10_000_000 };
+                let (tx, utxos) = fill_tx(&o, &spk, k, 10_000_000, filled, partial);
+                let plain = run_annexed(dir, &source, &o, tx.clone(), utxos.clone(), k, path, None);
+                assert!(plain.is_ok(), "{simf} {path} k={k}: the fill without an annex is refused: {plain:?}");
+                for annex in [&[0x50u8, 0xaa, 0xbb][..], &long[..]] {
+                    let r = run_annexed(dir, &source, &o, tx.clone(), utxos.clone(), k, path, Some(annex));
+                    if dir == V2 {
+                        assert!(r.is_err(), "version 2 {path} k={k}: a fill with a {}-byte annex is taken", annex.len());
+                        eprintln!("version 2 {path} k={k}, {}-byte annex: refused ({})", annex.len(), r.unwrap_err());
+                    } else {
+                        assert!(r.is_ok(), "version 1 {path} k={k}: refused {r:?}");
+                        eprintln!("version 1 {path} k={k}, {}-byte annex: taken", annex.len());
+                    }
+                }
+            }
+        }
+    }
 }
