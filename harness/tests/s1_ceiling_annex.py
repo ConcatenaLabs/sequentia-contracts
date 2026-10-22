@@ -15,6 +15,10 @@ SEC = b"\x11" * 32
 class S1C(SimBase, BitcoinTestFramework):
     NAME = "s1c"
     BUDGET = "Program's execution cost could exceed budget"
+    # Relay takes an annex on a Simplicity leaf only when it is zeros and exactly
+    # as large as the program's cost needs; a block takes any.
+    UNNEEDED = "Simplicity annex is larger than the program's cost needs"
+    NONZERO = "Simplicity annex must be zeros after its tag"
 
     def set_test_params(self):
         self.chain_params()
@@ -84,7 +88,13 @@ class S1C(SimBase, BitcoinTestFramework):
             self.log.info("E0 %s rust=%s node=%s", name, r["executed"], res["allowed"])
             # Both the Rust library and the node read the annex the same way.
             assert r["executed"], (name, r.get("exec_error"))
-            self.send(tx, "e0/%s_spend" % name)
+            if ann is None:
+                self.send(tx, "e0/%s_spend" % name)
+            else:
+                # The program needs no budget and the annex is not zeros, so relay
+                # refuses it; a block takes it, and the program reads it there.
+                self.try_mempool(tx, "e0/%s_mempool" % name, self.NONZERO)
+                self.try_block(tx, "e0/%s_block" % name, "mined")
 
     # -- E1: exact budget threshold
     def e1_threshold(self):
@@ -108,6 +118,9 @@ class S1C(SimBase, BitcoinTestFramework):
         self.rec("e1/one_byte_short", d)
         assert d["budget_wu"] < need_wu
         self.reject(tx, "e1/neg_one_byte_short", self.BUDGET, control=exact)
+        # One byte more than the program needs is valid, and relay refuses it.
+        _, over, _ = self.build(prog, L + 1, u=u)
+        self.try_mempool(over, "e1/one_byte_over_mempool", self.UNNEEDED)
         self.send(exact, "e1/exact_annex", extra=dx)
 
     # -- E2: the relay-standard annex cap (100,000 bytes including the tag)
@@ -120,13 +133,20 @@ class S1C(SimBase, BitcoinTestFramework):
             self.rec(tag + "/need", {"cost_milli": r["cost_milli"], "need_budget_wu": need_wu,
                                      "annex_item_bytes_needed": L + 1, "program_bytes": r["program_bytes"]})
             if L + 1 <= 100000:
-                _, tx, r = self.build(prog, 99999, u=u)       # item = 100,000 bytes: the cap
+                # The smallest annex that buys the budget relays, close to the cap.
+                _, tx, r = self.build(prog, L, u=u)
                 d = self.sim_measure(tx, 0, r)
                 t0 = time.time()
-                self.send(tx, tag + "/annex_100000_standard", extra=d)
+                self.send(tx, tag + "/min_annex_standard", extra=d)
                 self.rec(tag + "/seconds_accept_and_mine", round(time.time() - t0, 2))
+                # The cap itself buys more than the program needs: relay refuses
+                # it, a block takes it.
                 u2 = self.fund(prog.spk, 1_0000_0000, self.X)
-                _, tx, r = self.build(prog, 100000, u=u2)     # item = 100,001 bytes: one past
+                _, tx, r = self.build(prog, 99999, u=u2)      # item = 100,000 bytes: the cap
+                self.try_mempool(tx, tag + "/annex_100000_mempool", self.UNNEEDED)
+                self.try_block(tx, tag + "/annex_100000_block", "mined")
+                u3 = self.fund(prog.spk, 1_0000_0000, self.X)
+                _, tx, r = self.build(prog, 100000, u=u3)     # item = 100,001 bytes: one past
                 # past the relay limit on an annex, consensus still takes it
                 self.try_mempool(tx, tag + "/annex_100001_mempool", "bad-witness-nonstandard")
                 self.try_block(tx, tag + "/annex_100001_block", "mined")

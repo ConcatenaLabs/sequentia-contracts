@@ -1,6 +1,6 @@
 # Arca's resting order
 
-`templates/arca_order` (`arca/order-2`) is the fill program of an order that
+`templates/arca_order_3` (`arca/order-3`) is the fill program of an order that
 rests as a leaf in an Arca tree. The Arca operator fills it while the maker is
 offline; nobody fills it without the operator, the maker included; each fill
 pays the maker's credit to a leaf of its own; and one exit delay after the leaf
@@ -9,6 +9,29 @@ reaches the chain, anyone may land it as SeqDEX's own order
 repository (`ConcatenaLabs/arca`, `covenant/src/order.rs`) builds the leaf and
 its spends and proves every path on a node; this repository holds the program
 and its pruned forms.
+
+## Versions
+
+| Program | Template | Root | Lands as |
+|---|---|---|---|
+| `arca/order-3` | `templates/arca_order_3` | `2d352aa6b8d2708e3ea867baa35dc3e855a6ffda2d951268ff98fdf959f5f337` | `seqdex/order` version 2 |
+| `arca/order-2` | `templates/arca_order` | `fac4e5ebe8c377159c28f5fc74e6c492132983859d500081e46c727641b9e164` | `seqdex/order` version 1 |
+
+`order-3` is `order-2` with one more rule: a fill carries no annex. The
+operator's signature covers the coin and the outputs, not an annex, and the
+node relays an annex of up to 100,000 bytes on a Simplicity leaf spend. On
+`order-2`, whoever holds a signed fill (the operator, or anyone a fill reached
+on its way to the chain) can therefore attach one: a fill grows from about
+1,400 to some 26,000 vB, its fee rate falls to the relay floor, and the mempool
+keeps that copy when the honest one arrives. `order-3` refuses it; its cost is
+far inside the budget its own witness buys, so it never needs one. The program
+does not choose where its leaf lands (`LAND_LEAF` is a parameter); the Arca
+repository builds an `order-3` leaf's landing as `seqdex/order` version 2,
+which refuses an annex too, and an `order-2` leaf's as version 1.
+
+Every new order rests as `order-3`. An `order-2` leaf already resting is filled
+and landed as before until it is gone. Everything below holds for both
+programs.
 
 ## The leaf
 
@@ -71,12 +94,13 @@ value.
 
 ## Building a spend with no compiler
 
-The witness stack is `[witness, program, cmr, control block]`:
+The witness stack is `[witness, program, cmr, control block]`, with no annex:
 
-- `cmr` is `fac4e5ebe8c377159c28f5fc74e6c492132983859d500081e46c727641b9e164`;
-- `program` is one of six constants in `templates/arca_order/fills.json`, by
-  `PATH` and `m`: `fill_m2`, `fill_m3`, `fill_m4` (2,771 to 2,846 bytes) and
-  `fill_whole_m2`, `fill_whole_m3`, `fill_whole_m4` (2,453 to 2,528);
+- `cmr` is the program's root (above);
+- `program` is one of six constants in the program's `fills.json`, by `PATH`
+  and `m`: `fill_m2`, `fill_m3`, `fill_m4` and `fill_whole_m2`,
+  `fill_whole_m3`, `fill_whole_m4`; `order-3`'s are 2,785 to 2,860 bytes and
+  2,467 to 2,541, `order-2`'s 2,771 to 2,846 and 2,453 to 2,528;
 - `witness` is the 346 bytes of `P`, the 64-byte signature, `m` as one byte,
   then `PATH` as one bit, padded with zero bits to a whole byte.
 
@@ -88,13 +112,15 @@ and remainders independently of the program, runs every fill on the Bit
 Machine, refuses the cases above there, prunes the program for orders holding
 equal values (a 1:1 price, one asset on both sides, two equal credit keys, a
 remainder three fills down) at `k` = 0, 1 and 3, and requires `fills.json` each
-time.
+time, for both programs. It also runs signed part and whole fills at `k` = 0
+and 1 with an annex of 3 and of 1,000 bytes beside the same fills without one:
+`order-3` refuses each, `order-2` takes each.
 
 ## On the chain
 
 A negative case proves nothing until a block refuses it. The Arca repository's
-`covenant/tests/order_resting.rs` spends every one of the six programs in
-blocks and forces each refusal above into a block on a node checking scripts
+`covenant/tests/order_resting.rs` spends every one of the six programs of each
+version in blocks and forces each refusal above into a block on a node checking scripts
 inline, each beside an accepted control, along with every way an earlier
 design's in-tree fill could be reversed. Measured there, on a fill with one
 payment coin and one fee coin: a partial fill is 1,441 vB with change and

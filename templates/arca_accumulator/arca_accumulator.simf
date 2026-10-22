@@ -45,6 +45,8 @@
  *     no bitmap, so it can be made at any time and holds for every state of
  *     the batch: a watcher or a receiver can hold it, and it becomes good at
  *     TIME;
+ *   - no annex on the batch input: the signature does not name one, and the
+ *     exit's cost never needs the budget one would add;
  *   - output 2k: exactly VALUE of the batch output's own asset, explicit, with
  *     no nonce, to the script whose SHA256 is SPK (the leaf's hash-locked
  *     entry);
@@ -194,6 +196,11 @@ fn main() {
     let key: Pubkey = sel256(by, owner, operator);
     jet::bip_0340_verify((key, exit_digest(root, rec, time)), sig);
     jet::check_lock_time(time);
+
+    // No annex on this input: the signature does not name one, and the
+    // program's cost is a constant well inside the witness's own budget, so
+    // nobody holding the signature can add weight to the exit.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
 
     // Input k owns outputs 2k and 2k+1.
     let (asset, held): (u256, u64) = in_explicit_current();

@@ -4,6 +4,10 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
 from simplicity import *  # noqa: E402,F401,F403
 
+# Relay takes an annex on a Simplicity leaf only when it is zeros and exactly as
+# large as the program's cost needs; a block takes any.
+UNNEEDED_ANNEX = "Simplicity annex is larger than the program's cost needs"
+
 
 class S1(SimBase, BitcoinTestFramework):
     NAME = "s1"
@@ -61,20 +65,23 @@ class S1(SimBase, BitcoinTestFramework):
         # The same spend with an 8-byte annex. The node's sig_all_hash commits to
         # the annex. A signature over the hash computed WITHOUT it must be refused;
         # one over the hash computed WITH it (the pinned library reads the annex
-        # from the input's witness, as the node does) must be accepted.
+        # from the input's witness, as the node does) must be accepted. The
+        # program needs no budget, so relay refuses the annex before running it
+        # and both are put to a block: the first refused there, the second mined.
         u = self.fund(prog.spk, AMT, self.X)
         annex = b"\x00" * 8
         tx, r, _ = spend(u, annex=annex, sign_annex=False)
         self.rec("p2pk/annex8_sig_without_annex_local", {"executed": r.get("executed"),
                                                          "exec_error": r.get("exec_error")})
-        signed_over_annex, _, _ = spend(u, annex=annex, sign_annex=True)
+        signed_over_annex, r, msg = spend(u, annex=annex, sign_annex=True)
+        self.try_mempool(signed_over_annex, "p2pk/annex8_signed_over_annex_mempool", UNNEEDED_ANNEX)
         self.reject(tx, "p2pk/annex8_sig_without_annex", "Assertion failed inside jet",
-                    control=signed_over_annex)
-        tx, r, msg = spend(u, annex=annex, sign_annex=True)
-        m = self.sim_measure(tx, 0, r)
+                    mempool=UNNEEDED_ANNEX, control=signed_over_annex, control_mined=True)
+        m = self.sim_measure(signed_over_annex, 0, r)
+        m.update(self.measure(signed_over_annex))
         m["sighash_all_with_annex"] = msg.hex()
-        m["annex_item_bytes"] = len(tx.wit.vtxinwit[0].scriptWitness.stack[-1])
-        self.send(tx, "p2pk/spend_annex8_signed_over_annex", extra=m)
+        m["annex_item_bytes"] = len(signed_over_annex.wit.vtxinwit[0].scriptWitness.stack[-1])
+        self.rec("p2pk/spend_annex8_signed_over_annex", m)
 
 if __name__ == "__main__":
     S1().main()

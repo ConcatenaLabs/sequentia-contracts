@@ -116,6 +116,9 @@ class Order:
 
 class X1(SimBase, BitcoinTestFramework):
     NAME = "x1"
+    TEMPLATE = "seqdex_order"
+    # Version 1 takes an annex on a fill; version 2 (x3) refuses one.
+    ANNEX_REFUSED = False
 
     def set_test_params(self):
         self.chain_params()
@@ -281,7 +284,7 @@ class X1(SimBase, BitcoinTestFramework):
         self.boot(issue=("X", "Y", "Z"))
         node = self.node
         self.rec("whitelist", self.whitelist(self.X, self.Y, self.Z))
-        self.sa, self.desc, self.vectors, self.sources = load_template("seqdex_order")
+        self.sa, self.desc, self.vectors, self.sources = load_template(self.TEMPLATE)
         self.text, self.body = self.sources["order"]
         self.fill_program = {}
         self.taker_spk, self.change_spk = self.wallet_spk(), self.wallet_spk()
@@ -451,6 +454,7 @@ class X1(SimBase, BitcoinTestFramework):
         for k in ("credit", "rest", "taker", "orders"):
             setattr(tb, k, getattr(t, k))
         neg("fill/neg_confidential_coin_at_the_address", tb, A, other_coin=True)
+        self.annexed(p1, lambda: fill(OA, a0, F1))
         txid1 = self.ok(p1, "fill/A_partial_at_input_0",
                         extra={"filled": F1, "paid": OA.price(F1), "k": 0, "filled_times_rate_num": F1 * OA.num})
         a1 = self.utxo_at(txid1, 1)
@@ -553,6 +557,22 @@ class X1(SimBase, BitcoinTestFramework):
         self.rec_refund_program("time", rt)
         self.rec("fill_program", {k: {"bytes": len(v), "hex": v.hex(), "path_byte": PATH_BYTE[k].hex()}
                                   for k, v in self.fill_program.items()})
+
+    def annexed(self, control, make):
+        """`make()`, the control's fill, with an annex of 3 and of 1,000 bytes on
+        the order's input: nothing a fill carries signs it, so anyone who
+        relays the fill could add one. Version 2 refuses it in the mempool and
+        in a block, beside the control; version 1 takes it."""
+        for n in (3, 1000):
+            t = self.reuse(control, make())
+            st = t.wit.vtxinwit[0].scriptWitness.stack
+            st.append(b"\x50" + bytes([0xab]) * (n - 1))
+            assert len(st) == 5 and st[-1][0] == 0x50
+            label = "fill/%s_annex_of_%d_bytes" % ("neg" if self.ANNEX_REFUSED else "version_1_takes_an", n)
+            if self.ANNEX_REFUSED:
+                self.reject(t, label, A, control=control)
+            else:
+                self.try_mempool(t, label, "accepted")
 
     def rec_refund_program(self, kind, tx):
         st = tx.wit.vtxinwit[0].scriptWitness.stack
