@@ -1,6 +1,6 @@
 # The SeqDEX order
 
-`templates/seqdex_order` (`seqdex/order`) is a resting order on the SeqDEX book:
+`templates/seqdex_order_2` (`seqdex/order` version 2) is a resting order on the SeqDEX book:
 a maker's coin of one asset that any taker fills, in part or in whole, by paying
 the maker in another asset at the order's price, and that the maker takes back
 after the order expires. Nobody but the taker has to be online for a fill.
@@ -10,6 +10,26 @@ so the program's commitment root is one constant and an order's address is that
 root plus its terms: any language derives it with one hash per leaf and one curve
 tweak, and needs no compiler. The price is checked on 128-bit products, so every
 64-bit amount and price fills; nothing has to be kept under 2^63.
+
+## Versions
+
+| Version | Template | Root | Template hash |
+|---|---|---|---|
+| 2 | `templates/seqdex_order_2` | `5f0819996f39cf22adfaa0da711a99dd0e06379e901c585c0db56ecd3d1f1cca` | `5e5a45fe64b85134c8f3706f0f21abfacb871c40cae4f449406ba6f86fa03cdd` |
+| 1 | `templates/seqdex_order` | `f9b42b838b6295f4f376760fbb02eed9cb20f872f07ee4b9df7273d26822ee44` | `322c0e596e9552a4c20f6a7f9ed518013a50076ec8b2b9005fd032077ebcd157` |
+
+Version 2 is version 1 with one more rule: no spend carries an annex. A fill
+signs nothing, so nothing binds an annex on it, and the node relays an annex of
+up to 100,000 bytes on a Simplicity leaf spend. On version 1, whoever relays a
+fill can therefore attach one: the fill grows to some 26,000 vB, its fee rate
+falls to the relay floor, and the mempool keeps that copy when the honest one
+arrives, since both have the same txid. Version 2 refuses it. No path needs an
+annex for its budget: each path's own witness buys far more than it costs.
+
+Every new order uses version 2. A version 1 coin already resting fills, and is
+refunded, exactly as before until it is gone; an offer names its version by
+its template hash. Everything below holds for both versions except where it
+names one.
 
 ## The output
 
@@ -92,14 +112,16 @@ that in the terms.
 
 ## Building a spend with no compiler
 
-The witness stack of every spend is `[witness, program, cmr, control block]`:
+The witness stack of every spend is `[witness, program, cmr, control block]`,
+with no annex:
 
-- `cmr` is the template's root, `f9b42b838b6295f4f376760fbb02eed9cb20f872f07ee4b9df7273d26822ee44`;
+- `cmr` is the version's root (above);
 - the control block is the one the address mirrors derive for the leaf `order`;
 - `program` is one of four constants, the pruned program of each path, held in
-  `templates/seqdex_order/fills.json`: `fill` (1,092 bytes), `fill_whole` (981),
-  and `refund_height` and `refund_time` (505 each), chosen by whether `EXPIRY` is
-  below 500,000,000;
+  the version's `fills.json`: `fill`, `fill_whole`, and `refund_height` and
+  `refund_time`, chosen by whether `EXPIRY` is below 500,000,000. Version 2's
+  are 1,105, 994 and 516 bytes (`templates/seqdex_order_2/fills.json`),
+  version 1's 1,092, 981 and 505 (`templates/seqdex_order/fills.json`);
 - `witness` is the bit string of the 156 data-leaf bytes, then `PATH` (`01` for a
   partial fill, `00` for a whole one, `1` for the refund), then for the refund the
   64-byte signature, padded with zero bits to a whole byte. A fill's witness is
@@ -109,9 +131,12 @@ The program is one constant per path because no branch of a fill depends on a
 value, and because each term is read in a statement of its own: two equal values
 read side by side, such as a 1:1 price, would otherwise be one shared node, and
 the program would depend on the terms. `crates/sequentia-contracts/tests/seqdex_order.rs`
-prunes the program for every vector's terms, for terms holding equal values, and
-at `k` = 0, 1 and 3, and requires `fills.json` each time; the regtest test `x1`
-requires it of every spend it mines. A refund still needs the chain's
+prunes each version's program for every vector's terms, for terms holding equal
+values, and at `k` = 0, 1 and 3, and requires its `fills.json` each time; the
+regtest tests `x3` (version 2) and `x1` (version 1) require it of every spend
+they mine. The same test runs part and whole fills at `k` = 0 and 1 with an
+annex of 3 and of 1,000 bytes on the order's input, beside the same fills
+without one: version 2 refuses each, version 1 takes each. A refund still needs the chain's
 `sig_all_hash` of the transaction, which `seqc run` prints.
 
 ## Choosing terms
@@ -126,16 +151,20 @@ requires it of every spend it mines. A refund still needs the chain's
 
 ## Measured
 
-`harness/tests/x1_seqdex_order.py`, recorded in `harness/records/x1.json` and in
-the descriptor's `measured`. Each transaction pays its fee in a third issued
-asset; none touches the policy asset.
+`harness/tests/x3_seqdex_order_2.py` (version 2) and `x1_seqdex_order.py`
+(version 1), recorded in `harness/records/x3.json` and `x1.json` and in each
+descriptor's `measured`. Each transaction pays its fee in a third issued asset;
+none touches the policy asset. X3 runs every spend and refusal of X1 again under
+version 2's root, and refuses a fill with an annex of 3 and of 1,000 bytes in
+the mempool and in a block (`Assertion failed`), beside the same fill without
+one; X1 offers the same annexed fills to version 1, whose mempool takes them.
 
 | Spend | vsize | Program | Witness | Cost bound | Budget |
 |---|---|---|---|---|---|
-| Partial fill: the order, a payment coin, a fee coin; six outputs | 917 vB | 1,092 B | 157 B | 356 WU | 5,462 WU |
-| Whole fill: five outputs | 811 vB | 981 B | 157 B | 313 WU | 5,018 WU |
-| Two orders in one transaction, at inputs 0 and 1 | 1,403 vB | 1,092 + 981 B | 157 + 157 B | 356 + 313 WU | 5,462 + 5,018 WU |
-| Refund, by height or by time | 507 vB | 505 B | 221 B | 254 WU | 3,370 WU |
+| Partial fill: the order, a payment coin, a fee coin; six outputs | 921 vB (v1: 917) | 1,105 B (1,092) | 157 B | 359 WU (356) | 5,514 WU (5,462) |
+| Whole fill: five outputs | 814 vB (811) | 994 B (981) | 157 B | 316 WU (313) | 5,070 WU (5,018) |
+| Two orders in one transaction, at inputs 0 and 1 | 1,409 vB (1,403) | 1,105 + 994 B | 157 + 157 B | 359 + 316 WU | 5,514 + 5,070 WU |
+| Refund, by height or by time | 509 vB (507) | 516 B (505) | 221 B | 257 WU (254) | 3,414 WU (3,370) |
 
 The witness's own size earns far more budget than the program costs, so no spend
 needs an annex. The order's input carries about 1,350 witness bytes (338 vB) in a

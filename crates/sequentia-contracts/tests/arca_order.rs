@@ -1,5 +1,5 @@
-//! Arca's resting order, `arca/order-2`, against
-//! `templates/arca_order/fills.json`.
+//! Arca's resting order, `arca/order-2` (`templates/arca_order`) and
+//! `arca/order-3` (`templates/arca_order_3`), each against its `fills.json`.
 //!
 //! The leaf is `TapBranch(TapBranch(C, L), TapBranch(F, D))`: the standard
 //! rebindable collaborative script `C`, a landing `L` (only its hash matters
@@ -11,7 +11,12 @@
 //! holding equal values, at k = 0, 1 and 3, for both paths and every m, and
 //! requires the constants of `fills.json` each time, with the witness the
 //! data leaf's bytes, the signature, m and PATH. `WRITE_FILLS=1 cargo test
-//! --test arca_order` rewrites the file from the first order instead.
+//! --test arca_order` rewrites the files from the first order instead.
+//!
+//! `order-3` differs from `order-2` in one rule: a fill carries no annex. The
+//! operator's digest does not cover one, so whoever holds a signed fill could
+//! attach one. The last test runs signed fills with an annex beside the same
+//! fills without one, on both programs.
 
 use std::sync::Arc;
 
@@ -25,7 +30,8 @@ use sequentia_contracts::simplicity::BitMachine;
 use sequentia_contracts::simplicityhl::WitnessValues;
 use serde_json::{json, Value};
 
-const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/arca_order");
+const V2: (&str, &str) = (concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/arca_order"), "arca_order.simf");
+const V3: (&str, &str) = (concat!(env!("CARGO_MANIFEST_DIR"), "/../../templates/arca_order_3"), "arca_order_3.simf");
 const NUMS: &str = "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
 
 /// The frozen collaborative script around `K`, owner and operator.
@@ -283,6 +289,13 @@ fn fill(p: &P, cmr: [u8; 32], k: u32, locked: u64, filled: u64, partial: bool, e
 /// Signs `f` for the coin of `p` over outputs `0..m` and runs the program;
 /// returns (program, witness) or the Bit Machine's error.
 fn run(source: &str, p: &P, f: &Fill, m: u8, partial: bool, key: &Keypair) -> Result<(Vec<u8>, Vec<u8>), String> {
+    run_annexed(source, p, f, m, partial, key, None)
+}
+
+/// `run`, the coin's witness stack ending in `annex` when there is one, as the
+/// node gives it to the jets.
+fn run_annexed(source: &str, p: &P, f: &Fill, m: u8, partial: bool, key: &Keypair, annex: Option<&[u8]>)
+    -> Result<(Vec<u8>, Vec<u8>), String> {
     let program = sequentia_contracts::compile(source, Default::default()).unwrap();
     let cmr: [u8; 32] = program.commit().cmr().to_byte_array();
     let cb = ControlBlock::from_slice(&p.control_block(cmr, GENESIS)).unwrap();
@@ -290,14 +303,19 @@ fn run(source: &str, p: &P, f: &Fill, m: u8, partial: bool, key: &Keypair) -> Re
     let digest = fill_digest(GENESIS, p, locked, &f.tx.output[..m as usize]);
     let secp = Secp256k1::new();
     let sig = secp.sign_schnorr_no_aux_rand(&Message::from_digest(digest), key).serialize();
-    let tx = Arc::new(f.tx.clone());
+    let mut tx = f.tx.clone();
+    if let Some(a) = annex {
+        assert_eq!(a[0], 0x50, "an annex starts 0x50");
+        tx.input[f.k as usize].witness.script_witness =
+            vec![vec![0], vec![0], cmr.to_vec(), p.control_block(cmr, GENESIS), a.to_vec()];
+    }
     let env = ElementsEnv::new(
-        tx,
+        Arc::new(tx),
         f.utxos.iter().cloned().map(ElementsUtxo::from).collect(),
         f.k,
         program.commit().cmr(),
         cb,
-        None,
+        annex.map(|a| a.to_vec()),
         BlockHash::from_byte_array(GENESIS),
     );
     let wv: WitnessValues = serde_json::from_str(&p.witness(&sig, m, partial).to_string()).unwrap();
@@ -322,8 +340,8 @@ fn pack(b: &[bool]) -> Vec<u8> {
     b.chunks(8).map(|c| c.iter().enumerate().fold(0u8, |a, (i, &x)| a | ((x as u8) << (7 - i)))).collect()
 }
 
-fn source() -> String {
-    sequentia_contracts::expand(&std::fs::read_to_string(format!("{DIR}/arca_order.simf")).unwrap()).unwrap()
+fn source((dir, simf): (&str, &str)) -> String {
+    sequentia_contracts::expand(&std::fs::read_to_string(format!("{dir}/{simf}")).unwrap()).unwrap()
 }
 
 fn cmr_of(source: &str) -> [u8; 32] {
@@ -349,8 +367,17 @@ fn order(seed: &str, operator: &Keypair) -> P {
 }
 
 #[test]
-fn fills_the_program_accepts_and_refuses() {
-    let source = source();
+fn fills_order_2_accepts_and_refuses() {
+    accepts_and_refuses(V2);
+}
+
+#[test]
+fn fills_order_3_accepts_and_refuses() {
+    accepts_and_refuses(V3);
+}
+
+fn accepts_and_refuses(v: (&str, &str)) {
+    let source = source(v);
     let cmr = cmr_of(&source);
     let secp = Secp256k1::new();
     let s = Keypair::from_seckey_slice(&secp, &h("the operator")).unwrap();
@@ -431,8 +458,18 @@ fn fills_the_program_accepts_and_refuses() {
 }
 
 #[test]
-fn every_fill_spends_by_the_constant_programs_of_fills_json() {
-    let source = source();
+fn every_fill_of_order_2_spends_by_the_constant_programs_of_fills_json() {
+    prunes_to_fills_json(V2);
+}
+
+#[test]
+fn every_fill_of_order_3_spends_by_the_constant_programs_of_fills_json() {
+    prunes_to_fills_json(V3);
+}
+
+fn prunes_to_fills_json(v: (&str, &str)) {
+    let dir = v.0;
+    let source = source(v);
     let cmr = cmr_of(&source);
     let secp = Secp256k1::new();
     let s = Keypair::from_seckey_slice(&secp, &h("the operator")).unwrap();
@@ -470,8 +507,37 @@ fn every_fill_spends_by_the_constant_programs_of_fills_json() {
         .collect();
     let want = json!({"fills": 1, "cmr": hex(&cmr), "paths": paths});
     if std::env::var("WRITE_FILLS").is_ok() {
-        std::fs::write(format!("{DIR}/fills.json"), serde_json::to_string_pretty(&want).unwrap() + "\n").unwrap();
+        std::fs::write(format!("{dir}/fills.json"), serde_json::to_string_pretty(&want).unwrap() + "\n").unwrap();
     }
-    let have: Value = serde_json::from_str(&std::fs::read_to_string(format!("{DIR}/fills.json")).unwrap()).unwrap();
-    assert_eq!(have, want, "fills.json differs from what the program prunes to");
+    let have: Value = serde_json::from_str(&std::fs::read_to_string(format!("{dir}/fills.json")).unwrap()).unwrap();
+    assert_eq!(have, want, "{dir}/fills.json differs from what the program prunes to");
+}
+
+#[test]
+fn a_signed_fill_with_an_annex_is_refused_by_order_3_and_taken_by_order_2() {
+    let secp = Secp256k1::new();
+    let s = Keypair::from_seckey_slice(&secp, &h("the operator")).unwrap();
+    let p = order("one", &s);
+    let long = [vec![0x50u8], vec![0xab; 999]].concat();
+    for v in [V2, V3] {
+        let source = source(v);
+        let cmr = cmr_of(&source);
+        for (k, partial, extra) in [(0u32, true, 2usize), (0, false, 1), (1, true, 0), (1, false, 1)] {
+            let filled = if partial { 4_000_000 } else { 10_000_000 };
+            let f = fill(&p, cmr, k, 10_000_000, filled, partial, extra);
+            let m = 2 * k as u8 + if partial { 2 } else { 1 } + extra as u8;
+            let plain = run_annexed(&source, &p, &f, m, partial, &s, None);
+            assert!(plain.is_ok(), "{} k={k} partial={partial}: the fill without an annex is refused: {plain:?}", v.1);
+            for annex in [&[0x50u8, 0xaa, 0xbb][..], &long[..]] {
+                let r = run_annexed(&source, &p, &f, m, partial, &s, Some(annex));
+                if v == V3 {
+                    let e = r.expect_err("order-3 took a fill with an annex");
+                    println!("order-3 k={k} partial={partial} m={m}, {}-byte annex: refused ({e})", annex.len());
+                } else {
+                    r.unwrap_or_else(|e| panic!("order-2 refused: {e}"));
+                    println!("order-2 k={k} partial={partial} m={m}, {}-byte annex: taken", annex.len());
+                }
+            }
+        }
+    }
 }
