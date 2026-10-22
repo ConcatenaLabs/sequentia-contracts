@@ -28,7 +28,8 @@
  *   O  SHA256 of output_hash(0) ‖ … ‖ output_hash(m-1).
  *
  * Inputs after n and outputs after m are free, so whoever broadcasts can
- * attach a fee coin and its change in any asset.
+ * attach a fee coin and its change in any asset. The spend carries no annex:
+ * the signed digest does not cover one.
  *
  * Both loops run to a fixed index past the largest n and m (inputs 16 and
  * 17, output 4), so every spend runs the same branches and the pruned
@@ -114,6 +115,11 @@ fn main() {
     // The parameters are the data leaf's: the first hash of the control
     // block's path.
     assert!(jet::eq_256(data_leaf(owner, operator, salt), unwrap(jet::tappath(0))));
+
+    // No annex: nothing the two keys sign covers one, so a spend that took
+    // one could be inflated by whoever holds it, up to the size relay
+    // allows, and read by no one who counts its witness items.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
 
     // n from 1 to 16 and m from 1 to 4; this coin is one of the n.
     assert!(jet::lt_8(0, n));

@@ -40,6 +40,7 @@ the owner's signature and the operator's. The program requires:
 |---|---|
 | `H_TapData(OWNER ‖ OPERATOR ‖ SALT)` is the first hash of the control block's path | Parameters the coin does not commit to |
 | `1 ≤ n ≤ 16`, `1 ≤ m ≤ 4`, `k < n`, and inputs `0..n-1` and outputs `0..m-1` exist | A spend that names no input, or this coin outside what it names |
+| The spend carries no annex | An annex attached by whoever holds the spend: the digest covers none, so one could be inflated at will (relay takes up to 100,000 bytes on a Simplicity leaf) and would hide the spend from a reader that counts its witness items |
 | `OWNER` and then `OPERATOR` sign, BIP340, `SHA256(K ‖ k ‖ n ‖ I ‖ m ‖ O)` | Any spend the pair was not made for: the coin at another index, beside another coin than the ones named, a coin of another asset or amount, other outputs or outputs in another order, another salt, another chain |
 
 where, in the bytes signed:
@@ -53,9 +54,9 @@ where, in the bytes signed:
 | `m` | 1 | How many outputs the signers commit to |
 | `O` | 32 | `SHA256(output_hash(0) ‖ … ‖ output_hash(m-1))`: each whole output, nonce and range proof included |
 
-Inputs after `n` and outputs after `m` are free, as are sequences, the lock
-time and the annex, so whoever broadcasts can attach a fee coin and its change
-in any asset a producer accepts.
+Inputs after `n` and outputs after `m` are free, as are sequences and the lock
+time, so whoever broadcasts can attach a fee coin and its change in any asset a
+producer accepts. The annex is not free: the spend carries none.
 
 What this binds beyond `vtxo-1`'s tapscript path:
 
@@ -83,8 +84,8 @@ rest is 43 + 32m bytes, never 70, so no `vtxo-1` signature is a signature here.
 
 The witness stack is `[witness, program, cmr, control block]`:
 
-- `cmr` is `83bd261c1cafb63fda7cc7cdc00cca55f25b4bbd9e768ae46b71af64349927a0`;
-- `program` is the one constant in `templates/arca_collab/collab.json`, 1,107
+- `cmr` is `0ac093395a590bea632fc8424d29b77bcd9702fb6a685b60c879df141b6dbf9c`;
+- `program` is the one constant in `templates/arca_collab/collab.json`, 1,158
   bytes;
 - `witness` is the 96 bytes of `D`, `n` and `m` one byte each, then the
   owner's 64-byte signature and the operator's, 226 bytes;
@@ -94,7 +95,7 @@ The witness stack is `[witness, program, cmr, control block]`:
 Both loops, over the inputs and over the outputs, run to a fixed index past
 the largest `n` and `m` (inputs 16 and 17, output 4), so every spend runs the
 same branches and the pruned program is one constant whatever `n`, `m`, `k` and
-the keys. Its cost bound is 1,823 weight units; a spend's budget, four times
+the keys. Its cost bound is 1,826 weight units; a spend's budget, four times
 its witness bytes, is above 5,500.
 
 `crates/sequentia-contracts/tests/arca_collab.rs` builds the output and the
@@ -110,7 +111,7 @@ A negative case proves nothing until a block refuses it. The Arca repository's
 `covenant/tests/vtxo2.rs` spends this program in blocks on a node checking
 scripts inline, and forces each attack that a `vtxo-1` pair allows into a block
 twice: against a `vtxo-1` leaf, where it is mined, and against a `vtxo-2` leaf,
-where the block is refused. Measured there: a coin spent alone into one output,
-or into its checkpoint, is 543 vB where the tapscript path's is 280; a swap
-reassignment naming a `vtxo-2` and a `vtxo-1` checkpoint 768 vB; the exit 219 vB,
+where the block is refused; an annex on a co-signed spend among them. Measured there: a coin spent alone into one output,
+or into its checkpoint, is 556 vB where the tapscript path's is 280; a swap
+reassignment naming a `vtxo-2` and a `vtxo-1` checkpoint 780 vB; the exit 219 vB,
 the same as `vtxo-1`'s.
