@@ -1,0 +1,497 @@
+/* Arca's accumulator batch without a sweep, `arca/accumulator-2`: one batch
+ * output holding up to 1,024 leaves, from which one owner leaves in one
+ * transaction (EXIT), or from which the operator takes back, in one
+ * transaction, up to 14 slots whose owners gave them up (RELEASE), while every
+ * other owner's proof stays valid. Nothing else spends it: there is no sweep,
+ * and no path moves a slot its owner has neither taken out nor released.
+ *
+ * The batch output is a taproot output with the NUMS internal key and two
+ * leaves:
+ *
+ *     root = TapBranch(X, D)
+ *
+ *   X      this program;
+ *   D      the hidden data leaf H_TapData(ROOT ‖ OPERATOR ‖ BITMAP).
+ *
+ *   ROOT      the root of a Merkle-sum tree of depth 10 over the leaf records,
+ *             fixed for the batch's life;
+ *   OPERATOR  the operator's key S;
+ *   BITMAP    16 words of 64 bits, big-endian, 128 bytes: slot j's bit is
+ *             bit 63 - (j mod 64) of word j / 64, so slot 0 is the first bit
+ *             of the first byte. A set bit is a slot that has left, by its
+ *             exit or by its release.
+ *
+ * The leaf record of slot j, below 1,024:
+ *
+ *     rec_j = SHA256(0x00 ‖ j ‖ OWNER ‖ SPK ‖ VALUE ‖ RESERVE)
+ *
+ * weighs VALUE + RESERVE. An inner node over (hl, wl) and (hr, wr) is
+ * SHA256(0x01 ‖ hl ‖ wl ‖ hr ‖ wr) and weighs wl + wr. Integers are
+ * big-endian at their width (j two bytes, weights and amounts eight); an empty
+ * slot is 32 zero bytes of weight 0, which no record hashes to. The path
+ * runs from the record up, and its directions are the bits of j, the lowest
+ * first: a set bit puts the running node on the right. These are
+ * `arca/accumulator-1`'s records and tree.
+ *
+ * With the batch output at input k, either action requires:
+ *
+ *   - D the data leaf of ROOT, OPERATOR and BITMAP: the only hash of the
+ *     control block's path;
+ *   - no annex on the batch input;
+ *   - output 2k+1: exactly the rest, the input less what the action takes
+ *     out, explicit, with no nonce, to this same batch output with the bits
+ *     of the slots that left set in BITMAP and nothing else changed. When
+ *     nothing is left there is no rest.
+ *
+ * An EXIT of slot j requires:
+ *
+ *   - j below 1,024; rec_j a member of ROOT on the path j names, every node
+ *     on it weighing the sum of its two children with no overflow; j's bit
+ *     clear in BITMAP;
+ *   - KEY's BIP340 signature over
+ *       SHA256(SHA256("Arca/accumulator-exit") ‖ genesis ‖ ROOT ‖ rec_j ‖ TIME)
+ *     where KEY is OWNER, or OPERATOR when BY_OPERATOR; and the transaction's
+ *     lock time a time at or after TIME. The signature names no outpoint and
+ *     no bitmap, so it holds for every state of the batch;
+ *   - output 2k: exactly VALUE of the batch output's own asset, explicit, with
+ *     no nonce, to the script whose SHA256 is SPK (the leaf's hash-locked
+ *     entry);
+ *   - the rest is the input less VALUE less RESERVE. RESERVE is what the exit
+ *     leaves for its fee.
+ *
+ * A RELEASE of the slots j_1 < ... < j_n, n from 1 to 14, requires for each:
+ *
+ *   - j_i below 1,024; rec_j a member of ROOT on the path j names, every node
+ *     on it weighing the sum of its two children with no overflow; its bit
+ *     clear in BITMAP;
+ *   - OWNER's BIP340 signature over
+ *       SHA256(SHA256("Arca/accumulator-release") ‖ genesis ‖ ROOT ‖ rec_j ‖ M)
+ *     where M is the explicit asset of the input the slot names: the
+ *     connector asset of the round that made the owner's new coin, which
+ *     exists only while that round is in the chain, so a release is void with
+ *     the round it names;
+ *
+ *   and for the whole: OPERATOR's BIP340 signature over
+ *       SHA256(SHA256("Arca/accumulator-release-outputs") ‖ genesis ‖ D ‖ k
+ *              ‖ outputs_hash)
+ *   (k four bytes big-endian, outputs_hash the jet's commitment to every
+ *   output of the transaction), since what the slots held is the operator's;
+ *   the rest is the input less every VALUE and RESERVE released. Output 2k is
+ *   not pinned.
+ *
+ * A release signature names one slot (rec_j names j) of one batch (ROOT) for
+ * one round (M) on one chain (genesis). It names no outpoint and no bitmap, so
+ * releases signed at different times ride one transaction; it cannot release
+ * another slot, and it cannot release a slot twice, whose bit is set once it
+ * has.
+ *
+ * No branch depends on a witness value but the action, how many slots a
+ * release holds, and whether anything is left, and each witness value is read
+ * in a statement of its own, so the pruned program is one of 30 constants
+ * whatever the batch, the slots and k: an exit, the release of each n from 1
+ * to 14, each with a rest and without. The places nest, so a release of n
+ * slots prunes to n of them, and its cost bound grows with n: 14 is the most
+ * whose cost the witness pays for with no annex, at four budget units a
+ * witness byte, with a rest and without (a program of 15 places releasing 15
+ * slots without a rest costs 46,536 units against a budget of 46,058).
+ */
+// include output_reader
+
+type Path = [(u256, u64); 10];
+/* INDEX, OWNER, SPK, VALUE, RESERVE, PATH, TIME, BY_OPERATOR, SIG. */
+type Exit = (u16, u256, u256, u64, u64, Path, u32, bool, Signature);
+/* INDEX, OWNER, SPK, VALUE, RESERVE, PATH, the input holding M, SIG. */
+type Released = (u16, u256, u256, u64, u64, Path, u32, Signature);
+// BEGIN PLACES
+/* The places of a release, nested: a release of n slots holds n of them,
+ * and the program prunes to the n it holds. */
+type P1 = Option<Released>;
+type P2 = Option<(Released, P1)>;
+type P3 = Option<(Released, P2)>;
+type P4 = Option<(Released, P3)>;
+type P5 = Option<(Released, P4)>;
+type P6 = Option<(Released, P5)>;
+type P7 = Option<(Released, P6)>;
+type P8 = Option<(Released, P7)>;
+type P9 = Option<(Released, P8)>;
+type P10 = Option<(Released, P9)>;
+type P11 = Option<(Released, P10)>;
+type P12 = Option<(Released, P11)>;
+type P13 = Option<(Released, P12)>;
+type P14 = Option<(Released, P13)>;
+type Places = P14;
+// END PLACES
+/* The places of a release, and the operator's signature. */
+type Release = (Places, Signature);
+/* The root, the lowest index the next slot may have, the weight released,
+ * the slots released, the bits they set. */
+type Tally = (u256, u16, u64, u16, [u64; 16]);
+
+/* a when m is zero, b when m is all ones. */
+fn sel64(m: u64, a: u64, b: u64) -> u64 {
+    jet::xor_64(a, jet::and_64(jet::xor_64(a, b), m))
+}
+
+fn sel128(m: u64, a: u128, b: u128) -> u128 {
+    let (ah, al): (u64, u64) = <u128>::into(a);
+    let (bh, bl): (u64, u64) = <u128>::into(b);
+    <(u64, u64)>::into((sel64(m, ah, bh), sel64(m, al, bl)))
+}
+
+fn sel256(m: u64, a: u256, b: u256) -> u256 {
+    let (ah, al): (u128, u128) = <u256>::into(a);
+    let (bh, bl): (u128, u128) = <u256>::into(b);
+    <(u128, u128)>::into((sel128(m, ah, bh), sel128(m, al, bl)))
+}
+
+/* An inner node of the Merkle-sum tree. */
+fn inner(lh: u256, lw: u64, rh: u256, rw: u64) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x01);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, lh);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, lw);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, rh);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, rw);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* One level: the running node (hash, weight) and the rest of j go up past one
+ * sibling, on the side the lowest bit of j names, with no branch. */
+fn step(sibling: (u256, u64), acc: (u256, u64, u16)) -> (u256, u64, u16) {
+    let (sh, sw): (u256, u64) = sibling;
+    let (h, w, at): (u256, u64, u16) = acc;
+    let m: u64 = jet::left_extend_1_64(jet::rightmost_16_1(at));
+    let (carry, sum): (bool, u64) = jet::add_64(w, sw);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let up: u256 = inner(sel256(m, h, sh), sel64(m, w, sw), sel256(m, sh, h), sel64(m, sw, w));
+    (up, sum, jet::right_shift_16(1, at))
+}
+
+/* The record of slot j and its weight, refusing an index of 1,024 or more, a
+ * weight that overflows and a record that is not in `root` at slot j. */
+fn member(root: u256, j: u16, owner: u256, spk: u256, value: u64, reserve: u64, path: Path) -> (u256, u64) {
+    assert!(jet::lt_16(j, 1024));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_1(ctx, 0x00);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, j);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, owner);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, spk);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, value);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_8(ctx, reserve);
+    let rec: u256 = jet::sha_256_ctx_8_finalize(ctx);
+    let (carry, weight): (bool, u64) = jet::add_64(value, reserve);
+    assert!(jet::eq_1(<bool>::into(carry), 0));
+    let (top, total, above): (u256, u64, u16) = array_fold::<step, 10>(path, (rec, weight, j));
+    assert!(jet::eq_256(top, root));
+    (rec, weight)
+}
+
+/* `bit` when the word `w` is the word `at`, else nothing. */
+fn hit(w: u16, at: u16, bit: u64) -> u64 {
+    jet::and_64(bit, jet::left_extend_1_64(<bool>::into(jet::eq_16(w, at))))
+}
+
+/* The bits `masks` sets, with slot j's as well. */
+fn with_slot(masks: [u64; 16], j: u16) -> [u64; 16] {
+    let at: u16 = jet::right_shift_16(6, j);
+    let bit: u64 = jet::right_shift_64(jet::rightmost_16_8(jet::and_16(j, 63)), 0x8000000000000000);
+    let [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15]: [u64; 16] = masks;
+    [
+        jet::or_64(m0, hit(0, at, bit)), jet::or_64(m1, hit(1, at, bit)),
+        jet::or_64(m2, hit(2, at, bit)), jet::or_64(m3, hit(3, at, bit)),
+        jet::or_64(m4, hit(4, at, bit)), jet::or_64(m5, hit(5, at, bit)),
+        jet::or_64(m6, hit(6, at, bit)), jet::or_64(m7, hit(7, at, bit)),
+        jet::or_64(m8, hit(8, at, bit)), jet::or_64(m9, hit(9, at, bit)),
+        jet::or_64(m10, hit(10, at, bit)), jet::or_64(m11, hit(11, at, bit)),
+        jet::or_64(m12, hit(12, at, bit)), jet::or_64(m13, hit(13, at, bit)),
+        jet::or_64(m14, hit(14, at, bit)), jet::or_64(m15, hit(15, at, bit))
+    ]
+}
+
+/* One word of the bitmap and the bits the action sets in it, into the old and
+ * the new data leaf: the word must hold none of those bits. No branch. */
+fn scan(pair: (u64, u64), acc: (Ctx8, Ctx8)) -> (Ctx8, Ctx8) {
+    let (word, bits): (u64, u64) = pair;
+    let (old, new): (Ctx8, Ctx8) = acc;
+    assert!(jet::is_zero_64(jet::and_64(word, bits)));
+    (jet::sha_256_ctx_8_add_8(old, word), jet::sha_256_ctx_8_add_8(new, jet::or_64(word, bits)))
+}
+
+/* What KEY signs to authorise the exit of rec from root: chain, root, record
+ * and time. SHA256("Arca/accumulator-exit") is the constant. */
+fn exit_digest(root: u256, rec: u256, time: u32) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x095bbb3bdaf88bc9d50ef36841c7578a34f226e1509fa03db0cf99a7211ada3f);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, rec);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, time);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* What OWNER signs to release rec from root for the round of connector asset
+ * m: chain, root, record and m. SHA256("Arca/accumulator-release") is the
+ * constant. */
+fn release_digest(root: u256, rec: u256, m: u256) -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0x67d669f5a5ec391f281cdb422363108e0f49586ec15fd6dec1ad9ac00dcec585);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, root);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, rec);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, m);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* What OPERATOR signs to take released slots: chain, the state the coin
+ * holds, the coin's input index and every output of the transaction.
+ * SHA256("Arca/accumulator-release-outputs") is the constant. */
+fn payout_digest() -> u256 {
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, 0xca90dacf6cc7d465058f076243869cf60ba5bdcc7c8480264ca9c40fb572ede6);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::genesis_block_hash());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, unwrap(jet::tappath(0)));
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_4(ctx, jet::current_index());
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, jet::outputs_hash());
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* SHA256 of OP_1 <key>, the output key of this input's internal key and the
+ * tree `tree`. */
+fn output_of(tree: u256) -> u256 {
+    let key: Pubkey = jet::build_taptweak(jet::internal_key(), tree);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_init();
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_2(ctx, 0x5120);
+    let ctx: Ctx8 = jet::sha_256_ctx_8_add_32(ctx, key);
+    jet::sha_256_ctx_8_finalize(ctx)
+}
+
+/* a - b, refusing a difference below zero. */
+fn minus(a: u64, b: u64) -> u64 {
+    let (borrow, d): (bool, u64) = jet::subtract_64(a, b);
+    assert!(jet::eq_1(<bool>::into(borrow), 0));
+    d
+}
+
+/* The exit's checks; the bits it sets and what it takes out. */
+fn exit(root: u256, operator: u256, e: Exit, asset: u256, entry_at: u32) -> ([u64; 16], u64) {
+    let (j, owner, spk, value, reserve, path, time, by_operator, sig): Exit = e;
+    let (rec, weight): (u256, u64) = member(root, j, owner, spk, value, reserve, path);
+    // The owner, or the operator, authorises it, from TIME on.
+    let by: u64 = jet::left_extend_1_64(<bool>::into(by_operator));
+    let key: Pubkey = sel256(by, owner, operator);
+    jet::bip_0340_verify((key, exit_digest(root, rec, time)), sig);
+    jet::check_lock_time(time);
+    // The leaf's entry.
+    out_require(entry_at, asset, value, spk);
+    (with_slot([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], j), weight)
+}
+
+/* One slot of a release: it must come after the slot before it, be in the
+ * root, and carry its owner's release for the round whose connector asset its
+ * named input holds. */
+fn release_one(s: Released, acc: Tally) -> Tally {
+    let (root, floor, total, count, masks): Tally = acc;
+    let (j, owner, spk, value, reserve, path, m_at, sig): Released = s;
+    assert!(jet::le_16(floor, j));
+    let (rec, weight): (u256, u64) = member(root, j, owner, spk, value, reserve, path);
+    let m: u256 = match unwrap(jet::input_asset(m_at)) {
+        Left(blinded: (u1, u256)) => panic!(),
+        Right(explicit: u256) => explicit,
+    };
+    jet::bip_0340_verify((owner, release_digest(root, rec, m)), sig);
+    let (c1, sum): (bool, u64) = jet::add_64(total, weight);
+    assert!(jet::eq_1(<bool>::into(c1), 0));
+    let (c2, next): (bool, u16) = jet::increment_16(j);
+    let (c3, more): (bool, u16) = jet::increment_16(count);
+    (root, next, sum, more, with_slot(masks, j))
+}
+
+// BEGIN LEVELS
+/* The release of the slots the places hold, from the first. */
+fn places1(p: P1, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(s: Released) => release_one(s, t),
+    }
+}
+fn places2(p: P2, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P1)) => {
+            let (s, rest): (Released, P1) = x;
+            places1(rest, release_one(s, t))
+        },
+    }
+}
+fn places3(p: P3, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P2)) => {
+            let (s, rest): (Released, P2) = x;
+            places2(rest, release_one(s, t))
+        },
+    }
+}
+fn places4(p: P4, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P3)) => {
+            let (s, rest): (Released, P3) = x;
+            places3(rest, release_one(s, t))
+        },
+    }
+}
+fn places5(p: P5, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P4)) => {
+            let (s, rest): (Released, P4) = x;
+            places4(rest, release_one(s, t))
+        },
+    }
+}
+fn places6(p: P6, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P5)) => {
+            let (s, rest): (Released, P5) = x;
+            places5(rest, release_one(s, t))
+        },
+    }
+}
+fn places7(p: P7, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P6)) => {
+            let (s, rest): (Released, P6) = x;
+            places6(rest, release_one(s, t))
+        },
+    }
+}
+fn places8(p: P8, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P7)) => {
+            let (s, rest): (Released, P7) = x;
+            places7(rest, release_one(s, t))
+        },
+    }
+}
+fn places9(p: P9, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P8)) => {
+            let (s, rest): (Released, P8) = x;
+            places8(rest, release_one(s, t))
+        },
+    }
+}
+fn places10(p: P10, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P9)) => {
+            let (s, rest): (Released, P9) = x;
+            places9(rest, release_one(s, t))
+        },
+    }
+}
+fn places11(p: P11, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P10)) => {
+            let (s, rest): (Released, P10) = x;
+            places10(rest, release_one(s, t))
+        },
+    }
+}
+fn places12(p: P12, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P11)) => {
+            let (s, rest): (Released, P11) = x;
+            places11(rest, release_one(s, t))
+        },
+    }
+}
+fn places13(p: P13, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P12)) => {
+            let (s, rest): (Released, P12) = x;
+            places12(rest, release_one(s, t))
+        },
+    }
+}
+fn places14(p: P14, t: Tally) -> Tally {
+    match p {
+        None => t,
+        Some(x: (Released, P13)) => {
+            let (s, rest): (Released, P13) = x;
+            places13(rest, release_one(s, t))
+        },
+    }
+}
+// END LEVELS
+
+/* The release's checks; the bits it sets and what it takes out. */
+fn release(root: u256, operator: u256, r: Release) -> ([u64; 16], u64) {
+    let (places, sig): Release = r;
+    let (top, floor, total, count, masks): Tally = places14(places, (root, 0, 0, 0, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+    assert!(jet::lt_16(0, count));
+    // What the slots held is the operator's, so it signs where it goes.
+    jet::bip_0340_verify((operator, payout_digest()), sig);
+    (masks, total)
+}
+
+fn main() {
+    // Each value is read in a statement of its own, so no two witness values
+    // share a node whatever they hold, and the pruned program does not depend
+    // on them.
+    let root: u256 = witness::ROOT;
+    let operator: u256 = witness::OPERATOR;
+    let bitmap: [u64; 16] = witness::BITMAP;
+    let action: Either<Exit, Release> = witness::ACTION;
+
+    // Input k owns outputs 2k and 2k+1.
+    let (asset, held): (u256, u64) = in_explicit_current();
+    let k: u32 = jet::current_index();
+    let (c1, entry_at): (bool, u32) = jet::add_32(k, k);
+    assert!(jet::eq_1(<bool>::into(c1), 0));
+    let (c2, rest_at): (bool, u32) = jet::increment_32(entry_at);
+    assert!(jet::eq_1(<bool>::into(c2), 0));
+
+    let (bits, gone): ([u64; 16], u64) = match action {
+        Left(e: Exit) => exit(root, operator, e, asset, entry_at),
+        Right(r: Release) => release(root, operator, r),
+    };
+
+    // The bitmap: every bit the action sets clear in the state the coin
+    // holds, set in the next.
+    let [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15]: [u64; 16] = bitmap;
+    let [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15]: [u64; 16] = bits;
+    let pairs: [(u64, u64); 16] = [
+        (b0, m0), (b1, m1), (b2, m2), (b3, m3), (b4, m4), (b5, m5), (b6, m6), (b7, m7),
+        (b8, m8), (b9, m9), (b10, m10), (b11, m11), (b12, m12), (b13, m13), (b14, m14), (b15, m15)
+    ];
+    let start: Ctx8 = jet::sha_256_ctx_8_add_32(jet::sha_256_ctx_8_add_32(jet::tapdata_init(), root), operator);
+    let (old, new): (Ctx8, Ctx8) = array_fold::<scan, 16>(pairs, (start, start));
+    let held_state: u256 = jet::sha_256_ctx_8_finalize(old);
+    let next_state: u256 = jet::sha_256_ctx_8_finalize(new);
+    assert!(jet::eq_256(held_state, unwrap(jet::tappath(0))));
+    assert!(is_none::<u256>(jet::tappath(1)));
+
+    // No annex on this input: neither an exit's authorisation nor a
+    // release's names one, and the program's cost is a constant well inside
+    // the witness's own budget.
+    assert!(is_none::<u256>(jet::current_annex_hash()));
+
+    // The rest, under the next state.
+    let rest: u64 = minus(held, gone);
+    match jet::is_zero_64(rest) {
+        true => (),
+        false => {
+            let tree: u256 = jet::build_tapbranch(jet::tapleaf_hash(), next_state);
+            out_require(rest_at, asset, rest, output_of(tree));
+        },
+    };
+}
