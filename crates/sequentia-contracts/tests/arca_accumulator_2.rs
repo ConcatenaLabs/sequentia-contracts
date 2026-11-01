@@ -684,8 +684,19 @@ fn m_at_for(k: u32, rounds: Vec<usize>) -> impl Fn(usize) -> (u32, [u8; 32]) {
     }
 }
 
+/// Runs `f` on a thread with a large stack: the compiler and the witness
+/// reader recurse through the 14 nested places, deeper than a test thread's
+/// default stack allows on some hosts.
+fn on_big_stack(f: impl FnOnce() + Send + 'static) {
+    std::thread::Builder::new().stack_size(512 << 20).spawn(f).unwrap().join().unwrap_or_else(|e| std::panic::resume_unwind(e));
+}
+
 #[test]
 fn spends_the_program_accepts_and_refuses() {
+    on_big_stack(spends);
+}
+
+fn spends() {
     let source = source();
     let cmr = cmr_of(&source);
     let s = keypair("the operator");
@@ -927,6 +938,10 @@ fn spends_the_program_accepts_and_refuses() {
 
 #[test]
 fn every_spend_prunes_to_the_constants_of_paths_json() {
+    on_big_stack(prunes);
+}
+
+fn prunes() {
     let source = source();
     let cmr = cmr_of(&source);
     let s = keypair("the operator");
@@ -999,6 +1014,10 @@ fn every_spend_prunes_to_the_constants_of_paths_json() {
 #[test]
 #[ignore]
 fn places_that_fit() {
+    on_big_stack(places);
+}
+
+fn places() {
     let s = keypair("the operator");
     let asset = h("the batch asset");
     let b = full("one", &s);
