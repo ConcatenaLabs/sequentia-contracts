@@ -63,10 +63,12 @@ obvious from the code. Node and consensus conventions live in the
 
 - `cargo test` is the gate before every pull request; the parity gate needs a
   node checkout (`python3 parity/parity_gate.py --node <Sequentia>/src/simplicity`).
-- The regtest harness needs a built node, so CI does not run it. Run
-  `harness/run.py` before merging anything that touches a program, the harness or
-  `seqc`, and commit the records it writes together with the regenerated
-  `docs/harness-sizes.md` (`harness/compare.py`).
+- CI runs the regtest harness (every test but the ceilings) on every pull
+  request, against the newest node `master` build (`.github/workflows/harness.yml`).
+  Still run `harness/run.py` locally before merging anything that touches a
+  program, the harness or `seqc`, and commit the records it writes together with
+  the regenerated `docs/harness-sizes.md` (`harness/compare.py`): CI keeps its
+  records as a run artifact and commits nothing.
 - Each harness test starts and stops its own node. Never leave a `sequentiad`
   running; `harness/tmp/` holds data directories only of failed tests.
 - Pull requests go against `main`.

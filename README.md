@@ -30,6 +30,7 @@ tests.
 | `tools/token-covenants/` | Builds and signs spends of the supply cap and the verifier token for the services that mint through them, with no node access and no credential (its `README.md`) |
 | `tools/subscription-escrow/` | `escrow_leaves.py`, which wrote the subscription escrow's three tapscript leaves |
 | `.github/workflows/ci.yml` | Unit tests, lints, descriptor checks, the three address mirrors and the parity gate on every pull request |
+| `.github/workflows/harness.yml` | The regtest harness, every test but the ceilings, on every pull request against the newest node `master` build |
 
 ## Using the pinned compiler
 
@@ -286,6 +287,12 @@ It needs a Sequentia checkout for the node's functional test framework
 built from it. `--node-repo` defaults to `$SEQUENTIA_REPO`, else to a `Sequentia`
 checkout beside this repository, and `--sequentiad` to `src/sequentiad` in it. Node data
 directories go under `harness/tmp/` and are removed when a test passes.
+
+CI runs every test but the ceilings on every pull request
+(`.github/workflows/harness.yml`). It takes `sequentiad` and `sequentia-cli` from
+the newest node `master` commit whose `Build-dev` workflow passed, and the
+functional test framework from that same commit. The records and the logs of each
+run are kept as the run's artifacts.
 
 | Test | What it proves |
 |---|---|

@@ -1,0 +1,113 @@
+name: Harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Every harness job runs against one node build: the newest node master
+  # commit whose Build-dev workflow passed and published a Linux build.
+  node-build:
+    name: Find the node build
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      run: ${{ steps.node.outputs.run }}
+      sha: ${{ steps.node.outputs.sha }}
+    steps:
+      - name: Find the node build
+        id: node
+        run: |
+          # GitHub's listing of runs now and then answers with none at all,
+          # which a workflow with builds never has: asked again until it lists one.
+          run=""
+          for i in $(seq 1 10); do
+            run=$(gh api "repos/ConcatenaLabs/Sequentia/actions/workflows/build-dev.yml/runs?branch=master&status=success&per_page=1" \
+              --jq 'select(.total_count > 0) | .workflow_runs[0] | {databaseId: .id, headSha: .head_sha}' || true)
+            [ -n "$run" ] && break
+            echo "GitHub listed no successful node build (try $i of 10); asking again"
+            sleep 6
+          done
+          if [ -z "$run" ] || [ "$(jq -r .databaseId <<<"$run")" = null ]; then
+            echo "no successful node build on master"; exit 1
+          fi
+          echo "run=$(jq -r .databaseId <<<"$run")" >> "$GITHUB_OUTPUT"
+          echo "sha=$(jq -r .headSha <<<"$run")" >> "$GITHUB_OUTPUT"
+          echo "node build: run $(jq -r .databaseId <<<"$run"), commit $(jq -r .headSha <<<"$run")"
+
+  harness:
+    name: Regtest harness (${{ matrix.group }})
+    needs: node-build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: core
+            tests: s0 s1 s2 s3 s4 s5 s6 s7
+          - group: descriptors-oracles-pools
+            tests: d1 d2 h1 f1 o1 o2 p1 p2
+          - group: issuance
+            tests: m1 m2 m3 u1 u2 v1 v2 l1
+          - group: markets
+            tests: l2 c1 b1 e1 x1 x2 x3 x4
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download sequentiad
+        run: |
+          gh run download ${{ needs.node-build.outputs.run }} -R ConcatenaLabs/Sequentia \
+            -n sequentia-dev-x86_64-pc-linux-gnu -D "$RUNNER_TEMP/node"
+          tar -xf "$RUNNER_TEMP/node/sequentia-dev-linux.tar" -C "$RUNNER_TEMP/node"
+          echo "SEQUENTIAD=$RUNNER_TEMP/node/sequentia-dev-linux/bin/sequentiad" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/node/sequentia-dev-linux/bin/sequentiad" -version | head -1
+
+      # The harness drives the node through the node's own functional test
+      # framework, taken from the same commit as the binary.
+      - uses: actions/checkout@v4
+        with:
+          repository: ConcatenaLabs/Sequentia
+          ref: ${{ needs.node-build.outputs.sha }}
+          path: node
+          sparse-checkout: |
+            test/functional
+            share/rpcauth
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: harness-${{ matrix.group }}
+          workspaces: |
+            .
+            tools/mint-limiter
+            tools/token-covenants
+
+      - name: Run ${{ matrix.tests }}
+        run: |
+          harness/run.py --node-repo "$GITHUB_WORKSPACE/node" --sequentiad "$SEQUENTIAD" \
+            --tmpdir "$RUNNER_TEMP/harness" ${{ matrix.tests }}
+
+      - name: Show the logs of failed tests
+        if: failure()
+        run: |
+          for f in "$RUNNER_TEMP"/harness/logs/*.log; do
+            echo "::group::$f"; tail -n 80 "$f"; echo "::endgroup::"
+          done
+
+      - name: Keep the records and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-${{ matrix.group }}
+          path: |
+            harness/records
+            ${{ runner.temp }}/harness/logs
+          if-no-files-found: ignore
