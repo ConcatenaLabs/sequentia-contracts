@@ -26,7 +26,10 @@ in a block forced with `generateblock`, each for its reason, beside a control
 that differs from it only in the property it breaks and that the node accepts.
 No spend of either program carries an annex: each path is refused with an
 annex of 3 and of 1,000 bytes, any signature over it made over the annexed
-transaction, so that the refusal is the annex rule's ("Assertion failed").
+transaction, so that the block's refusal is the annex rule's ("Assertion
+failed"). The mempool refuses it for the same reason on a node before Sequentia
+25.2.4, and for the annex itself on one from it, which relays an annex only when
+it is zeros and as large as the program's cost needs.
 Every transaction pays its fee in an issued asset; none touches the policy
 asset."""
 import os
@@ -38,6 +41,7 @@ from simplicity import *  # noqa: E402,F401,F403
 from test_framework.util import get_auth_cookie, get_datadir_path, p2p_port, rpc_port  # noqa: E402
 
 J, A = "Assertion failed inside jet", "Assertion failed"
+RELAY_ANNEX = "Simplicity annex"               # the relay rule's refusals of an annex
 NONFINAL, NONFINAL_MEMPOOL = "bad-txns-nonfinal", "non-final"
 FEE = 30_000                                   # atoms of Z, the fee asset
 POOL_PATH_T = "Either<bool, Either<(), ()>>"
@@ -252,6 +256,15 @@ class X4(SimBase, BitcoinTestFramework):
         for k, v in saved.items():
             setattr(t2, k, v)
         return t2
+
+    def reject_annexed(self, tx, label, control, index=0):
+        """Refuse `tx`, a spend carrying an annex, beside `control`: in a block
+        for the annex rule's failed assertion, and in the mempool for the same
+        one, or for the annex itself where the node's relay rule refuses it
+        first (Sequentia 25.2.4 on)."""
+        reason = self.accept(tx).get("reject-reason") or ""
+        relay = reason.split("(", 1)[1].rstrip(")") if RELAY_ANNEX in reason else None
+        self.reject(tx, label, A, mempool=relay, control=control, index=index)
 
     def ok(self, tx, label, extra=None):
         m = {}
@@ -514,7 +527,7 @@ class X4(SimBase, BitcoinTestFramework):
             for i, what in ((0, "base_coin"), (1, "quote_coin")):
                 t = self.reuse(sell, self.sell_tx(P, xc, yc, DB, P.ask_price(DB), pay_y[0], fc))
                 t.wit.vtxinwit[i].scriptWitness.stack.append(b"\x50" + bytes([0xab]) * (n - 1))
-                self.reject(t, "pool/neg_%s_with_an_annex_of_%d_bytes" % (what, n), A, control=sell, index=i)
+                self.reject_annexed(t, "pool/neg_%s_with_an_annex_of_%d_bytes" % (what, n), sell, index=i)
         txid = self.ok(sell, "pool/sell_at_the_ask", extra={"base_out": DB, "quote_in": P.ask_price(DB),
                                                              "base_times_ask_num": DB * P.ask_num})
         xc, yc = self.utxo_at(txid, 0), self.utxo_at(txid, 1)
@@ -557,8 +570,8 @@ class X4(SimBase, BitcoinTestFramework):
         self.reject(self.withdraw_tx(P, [xc, yc], maker_sk, sig_tx=other, control=w),
                     "pool/neg_withdraw_signature_over_another_transaction", J, control=w)
         for n in (3, 1000):
-            self.reject(self.withdraw_tx(P, [xc, yc], maker_sk, control=w, annex=bytes([0xab]) * (n - 1)),
-                        "pool/neg_withdraw_with_an_annex_of_%d_bytes_the_maker_signed" % n, A, control=w)
+            self.reject_annexed(self.withdraw_tx(P, [xc, yc], maker_sk, control=w, annex=bytes([0xab]) * (n - 1)),
+                                "pool/neg_withdraw_with_an_annex_of_%d_bytes_the_maker_signed" % n, w)
         # Taking both coins through the fill path, paying nothing.
         t = self.pool_tx(P, xc, yc, P.reserve_base, yc.amount, [w.prev[2]],
                          [self.out(xc.amount - P.reserve_base, self.taker_spk, P.B_OUT),
@@ -650,8 +663,9 @@ class X4(SimBase, BitcoinTestFramework):
 
         # An annex on A1's input, the clearer signing the annexed round.
         for n in (3, 1000):
-            rneg("round/neg_order_with_an_annex_of_%d_bytes_the_clearer_signed" % n,
-                 self.round_tx(fills, price, gap, fc), A, annex=bytes([0xab]) * (n - 1))
+            self.reject_annexed(self.resign(rnd, self.round_tx(fills, price, gap, fc), clearer_sk,
+                                            annex=bytes([0xab]) * (n - 1)),
+                                "round/neg_order_with_an_annex_of_%d_bytes_the_clearer_signed" % n, rnd)
         # A price below a limit: A2 and B1 alone at A2's limit, 105/100, accepted;
         # at 104,999/100,000, A2 refuses.
         def two(n, d):
@@ -708,8 +722,8 @@ class X4(SimBase, BitcoinTestFramework):
         assert self.accept(rf)["allowed"], self.accept(rf)
         self.reject(refund(rest, other_sk, control=rf), "refund/neg_signed_by_another_key", J, control=rf)
         for n in (3, 1000):
-            self.reject(refund(rest, refund_sk, control=rf, annex=bytes([0xab]) * (n - 1)),
-                        "refund/neg_with_an_annex_of_%d_bytes_the_refund_key_signed" % n, A, control=rf)
+            self.reject_annexed(refund(rest, refund_sk, control=rf, annex=bytes([0xab]) * (n - 1)),
+                                "refund/neg_with_an_annex_of_%d_bytes_the_refund_key_signed" % n, rf)
         self.ok(rf, "refund/by_height_at_expiry", extra={"expiry": B2.expiry})
         self.ro_program["refund_height"] = self.stack(rf, 0)[1]
         self.rec("round_order_program", {k: {"bytes": len(v), "hex": v.hex()} for k, v in self.ro_program.items()})
